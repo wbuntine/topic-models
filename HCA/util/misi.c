@@ -29,6 +29,7 @@
 #include "srng.h"
 #include "misi.h"
 #include "gibbs.h"
+#include "lgamma.h"
 
 // #define MISI_CHECK
 
@@ -409,4 +410,70 @@ void dmi_free(D_DMi_t *ptr) {
   free(ptr->multiind);
   free(ptr->Mi);
   free(ptr->MI);
+}
+
+double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
+                      double a_burst, double *b_burst, stable_t *SD) {
+  D_MiSi_t dD;   
+  double la;
+  double lgbd[ptr->T];
+  double lgabd[ptr->T];
+  double lb[ptr->T];
+  int mi, l, t, i;
+  double likelihood = 0;
+  if ( a_burst>0 ) 
+    la = log(a_burst);
+  for (t=0; t<ptr->T; t++) {
+    lgbd[t] = lgamma(b_burst[t]);
+    lgabd[t] = lgamma(b_burst[t]/a_burst);
+    lb[t] = log(b_burst[t]);
+  }
+  misi_init(ptr,&dD);
+  /*
+   *    do for each document in turn;
+   *    have to build the counts and table counts for
+   *    each from the t,r values in ddS.z[]
+   */
+  for (i=0; i<ptr->DT; i++) {
+    misi_build(&dD, i, 0);
+    /*  compute likelihood and zero too*/
+    mi = ptr->MI[i];      
+    for (l=ptr->NdTcum[i]; l< ptr->NdTcum[i+1]; l++) {
+      if ( misi_multi(ptr,l) ) {
+	int mii = ptr->multiind[mi] - dD.mi_base;
+	t = Z_t(ptr->z[l]);
+	if ( dD.Mik[mii][t]>0 ) {
+	  if ( dD.Mik[mii][t]>1 ) {
+	    assert(dD.Mik[mii][t]>=dD.Sik[mii][t]);
+	    assert(dD.Sik[mii][t]>0);
+	    likelihood += S_S(SD,dD.Mik[mii][t],dD.Sik[mii][t]);
+	  }
+	  /*  zero these now so don't double count later */
+	  dD.Mik[mii][t] = 0;
+	  dD.Sik[mii][t] = 0;
+	}
+	mi++;
+      }
+    }
+    yap_infinite(likelihood);
+    /*    now have zeroed Mik and Sik for next round  */
+    for (t=0; t<ptr->T; t++)
+      if ( dD.Mi[t] ) {
+	int st = dD.Si[t];
+	if ( a_burst==0 ) {
+	  likelihood += st*lb[t];
+	} else {
+	  likelihood += st*la + gammadiff(st, b_burst[t]/a_burst, lgabd[t]);
+	}
+	likelihood -= gammadiff((int)dD.Mi[t], b_burst[t], lgbd[t]);
+      }
+    yap_infinite(likelihood);   
+    //  don't have to do because its zero'd above
+    //  misi_unbuild(&dD, i, 0);
+  }
+  for (t=0; t<ptr->T; t++)
+    likelihood += gammaprior(b_burst[t]);
+  
+  misi_free(&dD);
+  return likelihood;
 }

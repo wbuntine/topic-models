@@ -86,7 +86,7 @@ double lp_test_ML(/*
       yap_message("after remove_doc(d=%d,N=%d,T=%d)\n",
 		  i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
 #endif
-    continue;
+      continue;
     }
     for (r=0; r<ddP.mltburn; r++) 
       gibbs_lda(fix, i, ddD.N_dT[i], fact);
@@ -108,29 +108,6 @@ double lp_test_ML(/*
 #endif
     //  yap_message("%d:  %lf-%lf / %d\n", i, hmean, log(ddP.mltiter-ddP.mltburn) - hmean, thisw); 
     // check_m_evt(ddD.e[i]);
-#if 0
-    {
-      int v;
-      double total;
-      int t;
-      for (t=0; t<ddN.T; t++) {
-        if ( ddD.e[i]==0 ) {
-          total = 0;
-          for (v=0; v<ddN.W; v++)
-            total += phi0_prob(v, t);
-          if ( fabs(total-1.0)>0.01 )
-            yap_message("d=%d, t=%d:  tot phi0_prob = %lf\n",
-                        i, t, total);
-        }
-        total = 0;
-        for (v=0; v<ddN.W; v++)
-          total += word_side_prob(ddD.e[i], v, t);
-        if ( fabs(total-1.0)>0.01 )
-          yap_message("d=%d, t=%d:  tot word_side_prob = %lf\n",
-                      i, t, total);
-      }
-    }
-#endif
   }
   free(fact);
   if ( totw==0 )

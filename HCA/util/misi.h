@@ -22,6 +22,7 @@
 #define __MISI_H
 
 #include <stdint.h>
+#include "stable.h"
 
 /*
  *    used to build global data about word unique usage for a doc
@@ -126,5 +127,8 @@ void dmi_init(D_DMi_t *ptr,
 void dmi_check(D_DMi_t *pdmi, int i);
 /*  randomise 'r' assignments for these docs */
 void dmi_rand(D_DMi_t *pdmi, int firstdoc, int lastdoc);
+/*  compute likelihood  */
+double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
+                      double a_burst, double *b_burst, stable_t *SD);
 
 #endif

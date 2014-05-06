@@ -275,7 +275,8 @@ double gibbs_lda(/*
 	    wordfact(wid, t, &wtip[t]);
 	  tot += tf;
 	  if ( ddP.bdk!=NULL ) 
-	    wf = docprob(dD, t, i, mi, wf);
+	    wf = (fix_doc==GibbsHold)?docprob(dD, t, i, mi, wf):
+              docfact(dD, t, i, mi, wf, &dtip[t]);
 	  Z += p[t] = tf*wf;
 	} else
 	  p[t] = 0;

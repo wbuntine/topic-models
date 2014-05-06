@@ -38,49 +38,70 @@
  ************************************/
 
 /*
- *   probability of topic from doc level PDP
+ *   probability of topic from doc level PDP  
  *
- *       d    - doc
- *       n    - total count of this word in doc, 
- *                 decremented for current sampling step
- *       s    - tables for this word in doc (not including current word)
+ *       t    - topic
+ *       (i,mi)    -  word index and corresponding multi version
  *       pK   - input contribution to posterior from adding word with topic
  *       *dip - set to prob. indicator would be 1, if NULL leave
  */
-double docfact(int d, int n, int s, double pK, float *dip) {
+double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip) {
+  int N = dD->Mi[t], S = dD->Si[t];
+  int n, s;
   assert(dip);
   *dip = 1;
-  if ( !PCTL_BURSTY() ) {
+  if ( !PCTL_BURSTY() ) 
     return pK;
-  } else if ( s==0 ) {
-    return pK * (ddP.b_burst+ddP.a_burst*ddS.N_dT[d])/(ddP.b_burst+ddD.N_dT[d]); 
+  if ( M_multi(i) ) {
+    int mii;
+    // assert(mi<ddM.dim_multiind || did==ddN.D-1);
+    mii = ddM.multiind[mi]-dD->mi_base;
+    assert(mii>=0);
+    assert(mii<ddM.MI_max);
+    n = dD->Mik[mii][t];
+    s = dD->Sik[mii][t];
   } else {
-    double one = pK * (ddP.b_burst+ddP.a_burst*ddS.N_dT[d]) * (s+1.0)/(n+1.0);
+    n = s = 0;
+  }  
+  if ( s==0 ) {
+    return pK * (ddP.b_burst+ddP.a_burst*S)/(ddP.b_burst+N); 
+  } else {
+    double one = pK * (ddP.b_burst+ddP.a_burst*S) * (s+1.0)/(n+1.0);
     double zero = (n-s+1.0)/(n+1.0);
     one *= S_UV(ddC.a_burst,n,s+1);
     if ( s==1 )
       zero *= n - ddP.a_burst;
-    else {
-      assert(s>0);
+    else
       zero *= S_U(ddC.a_burst,n,s);    
-    }
     *dip = one/(one + zero);
-    return (one + zero) /(ddP.b_burst+ddD.N_dT[d]);
+    return (one + zero) /(ddP.b_burst+N);
   }
   return 0;
 }
 
 /*
- *   only used in estimation
+ *   counterpart to docfact()
+ *   only used in estimation, (ddP.bdk!=NULL version)
  */
-double docprob(int d, int n, int s, double pw) {
-  if ( !PCTL_BURSTY() ) {
-    return pw;
-  } else if ( s==0 ) {
-    return pw * (ddP.b_burst+ddP.a_burst*ddS.N_dT[d])/(ddP.b_burst+ddD.N_dT[d]); 
+double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw) {
+  int N = dD->Mi[t], S = dD->Si[t];
+  int n, s;
+  if ( M_multi(i) ) {
+    int mii;
+    // assert(mi<ddM.dim_multiind || did==ddN.D-1);
+    mii = ddM.multiind[mi]-dD->mi_base;
+    assert(mii>=0);
+    assert(mii<ddM.MI_max);
+    n = dD->Mik[mii][t];
+    s = dD->Sik[mii][t];
+  } else {
+    n = s = 0;
+  }  
+  if ( s==0 ) {
+    return pw * (ddP.b_burst+ddP.a_burst*S)/(ddP.b_burst+N); 
   } 
-  return (pw * (ddP.b_burst+ddP.a_burst*ddS.N_dT[d]) + (n-ddP.a_burst*s))
-    /(ddP.b_burst+ddD.N_dT[d]);
+  return (pw * (ddP.b_burst+ddP.a_burst*S) + (n-ddP.a_burst*s))
+    /(ddP.b_burst + N);
 }
 
 

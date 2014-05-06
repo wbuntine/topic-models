@@ -167,35 +167,11 @@ double likelihood_PYbeta() {
 }
 
 double likelihood_burst() {
-  double la;
-  double lb;
-  double lgb, lgba;
-  int i;
-  double likelihood;
-  likelihood = pctl_gammaprior(ddP.b_burst);
-  if ( ddP.a_burst>0 ) {
-    la = log(ddP.a_burst);
-    lgba = lgamma(ddP.b_burst/ddP.a_burst);
-  } else
-    lb = log(ddP.b_burst);
-  lgb = lgamma(ddP.b_burst);
-  for (i=0; i<ddD.dim_MiT; i++) {
-    likelihood += S_S(ddC.a_burst,ddD.Mi[i],ddS.Si[i]);
-  }
-  yap_infinite(likelihood);
-  for (i=0; i<ddN.DT; i++) {
-    if ( ddD.N_dT[i] ) {
-      int st = ddS.N_dT[i];
-      if ( ddP.a_burst==0 ) {
-        likelihood += st*lb;
-      } else {
-        likelihood += st*la + gammadiff(st,ddP.b_burst/ddP.a_burst,lgba);
-      }
-      likelihood -= gammadiff((int)ddD.N_dT[i],ddP.b_burst,lgb);
-    }
-  }
-  yap_infinite(likelihood);
-  return likelihood;
+  double b[ddN.T];
+  int t;
+  for (t=0; t<ddN.T; t++)
+    b[t] = ddP.b_burst;
+  return dmi_likelihood(&ddM,pctl_gammaprior,ddP.a_burst,b,ddC.a_burst);
 }
 
 double likelihood() {

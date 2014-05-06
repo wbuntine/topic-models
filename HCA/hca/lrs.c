@@ -126,10 +126,9 @@ double lp_test_LRS() {
        */
       t = samplet(p, Z, ddN.T, rng_unit(rngp));
       ddS.z[i] = t;   /*  implicitly unsets r */
-      if ( ddP.bdk!=NULL ) {
+      if ( ddP.bdk!=NULL ) 
 	/*  have to set dtip, then indicator r set in update_topic() */
-	docfact(&dD, t, i, mi, p[t], &dtip);  
-      }
+	docfact(&dD, t, i, mi, p[t], &dtip); 
       /*
        *  note we don't have a ttip or wtip to use, its just
        *   to warm up sampler for next word, so good enough to use 0.2

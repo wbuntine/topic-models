@@ -329,6 +329,10 @@ double wordfact(int j, int t, float *tip) {
 double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip) {
   int N = dD->Mi[t], S = dD->Si[t];
   int n, s;
+  assert(dip);
+  *dip = 1;
+  if ( ddP.bdk==NULL ) 
+    return pK;
   if ( M_multi(i) ) {
     int mii;
     // assert(mi<ddM.dim_multiind || did==ddN.D-1);
@@ -340,11 +344,7 @@ double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip) {
   } else {
     n = s = 0;
   }  
-  assert(dip);
-  *dip = 1;
-  if ( ddP.bdk==NULL ) {
-    return pK;
-  } else if ( s==0 ) {
+  if ( s==0 ) {
     return pK * (ddP.bdk[t]+ddP.ad*S)/(ddP.bdk[t]+N); 
   } else {
     double one = pK * (ddP.bdk[t]+ddP.ad*S) * (s+1.0)/(n+1.0);

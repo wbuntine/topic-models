@@ -53,71 +53,7 @@
 #define L_CACHE
 
 double likelihood_bdk() {
-  D_MiSi_t dD;   
-  double la;
-  double *lgbd = dvec(ddN.T);
-  double *lgabd = dvec(ddN.T);
-  double *lb = dvec(ddN.T);
-  int mi, l, t, i;
-  double likelihood = 0;
-  if ( ddP.ad>0 ) 
-    la = log(ddP.ad);
-  for (t=0; t<ddN.T; t++) {
-    lgbd[t] = lgamma(ddP.bdk[t]);
-    lgabd[t] = lgamma(ddP.bdk[t]/ddP.ad);
-    lb[t] = log(ddP.bdk[t]);
-  }
-  misi_init(&ddM,&dD);
-  /*
-   *    do for each document in turn;
-   *    have to build the counts and table counts for
-   *    each from the t,r values in ddS.z[]
-   */
-  for (i=0; i<ddN.DT; i++) {
-    misi_build(&dD, i, 0);
-    /*  compute likelihood and zero too*/
-    mi = ddM.MI[i];      
-    for (l=ddD.NdTcum[i]; l< ddD.NdTcum[i+1]; l++) {
-      if ( M_multi(l) ) {
-	int mii = ddM.multiind[mi] - dD.mi_base;
-	t = Z_t(ddS.z[l]);
-	if ( dD.Mik[mii][t]>0 ) {
-	  if ( dD.Mik[mii][t]>1 ) {
-	    assert(dD.Mik[mii][t]>=dD.Sik[mii][t]);
-	    assert(dD.Sik[mii][t]>0);
-	    likelihood += S_S(ddC.SD,dD.Mik[mii][t],dD.Sik[mii][t]);
-	  }
-	  /*  zero these now so don't double count later */
-	  dD.Mik[mii][t] = 0;
-	  dD.Sik[mii][t] = 0;
-	}
-	mi++;
-      }
-    }
-    yap_infinite(likelihood);
-    /*    now have zeroed Mik and Sik for next round  */
-    for (t=0; t<ddN.T; t++)
-      if ( dD.Mi[t] ) {
-	int st = dD.Si[t];
-	if ( ddP.ad==0 ) {
-	  likelihood += st*lb[t];
-	} else {
-	  likelihood += st*la + gammadiff(st, ddP.bdk[t]/ddP.ad, lgabd[t]);
-	}
-	likelihood -= gammadiff((int)dD.Mi[t], ddP.bdk[t], lgbd[t]);
-      }
-    yap_infinite(likelihood);   
-    //  don't have to do because its zero'd above
-    //  misi_unbuild(&dD, i, 0);
-  }
-  for (t=0; t<ddN.T; t++)
-    likelihood += pctl_gammaprior(ddP.bdk[t]);
-  
-  free(lgabd);
-  free(lgbd);
-  free(lb);
-  misi_free(&dD);
-  return likelihood;
+  return dmi_likelihood(&ddM,pctl_gammaprior,ddP.ad, ddP.bdk,ddC.SD);
 }
 
 double likelihood_DIRalpha() {

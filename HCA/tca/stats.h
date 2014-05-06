@@ -75,8 +75,9 @@ extern D_DMi_t ddM;
 #define M_multi(l)  misi_multi(&ddM,l)
 
 double gibbs_lda(enum GibbsType fix, int doc, int words, float *p, D_MiSi_t *dD);
-void update_topic(int i, int did, int wid, int t, int mi);
-int remove_topic(int i, int did, int wid, int t, int mi);
+void update_topic(int i, int did, int wid, int t, int mi, 
+                  float dtip, D_MiSi_t *dD);
+int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD);
 
 void get_probs(double *vp);
 
@@ -107,8 +108,8 @@ int doc_side_ind(int d, int t);
 
 double topicnorm(int d);
 
-double docfact(int d, int n, int s, double pK, float *dip);
-double docprob(int d, int n, int s, double pw);
+double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
+double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
 
 /*
  *  posterior sampling of table id for doc
