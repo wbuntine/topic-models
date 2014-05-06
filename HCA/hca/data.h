@@ -33,12 +33,12 @@ typedef struct D_dims_s {
   char **tokens;  //  optionally loaded
 } D_dims_t;
 
+/*
+ *    Basic data about documents:
+ *    we assume maximum number of words in corpus
+ *    fits in 32 bit
+ */
 typedef struct D_data_s {
-  /*
-   *    Basic data about documents:
-   *    we assume maximum number of words in corpus
-   *    fits in 32 bit
-   */
   uint32_t *w, *d;
   uint16_t *c;     // class, number in 0,...,C-1
   uint32_t *df;     // document freqency for word

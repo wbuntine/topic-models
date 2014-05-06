@@ -135,8 +135,9 @@ typedef struct D_pars_s {
 /*
  *  hyperparameters control
  */
-enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, ParAW, ParBW, 
-	       ParAW0, ParBW0, ParAD, ParBDK, 
+enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
+	       ParAW, ParBW, ParAW0, ParBW0, 
+               ParAD, ParBDK, 
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {
   char *name;
