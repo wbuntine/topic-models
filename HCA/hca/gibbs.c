@@ -262,60 +262,23 @@ double gibbs_lda(/*
      *    get topic probabilities
      ***********************/
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
-      if ( fix_doc==GibbsHold ) {
 	/*
-	 *   doing estimation, not sampling so use prob versions
+	 *    (fix_doc==GibbsHold) => 
+	 *          doing estimation, not sampling so use prob versions
+	 *     (fix_doc!=GibbsHold) => 
+	 *          doing sampling so use fact versions
 	 */
-	double tf = topicprob(did,t,Td_);
+	double tf = (fix_doc==GibbsHold)?topicprob(did,t,Td_):
+	  topicfact(did, t, Td_, &zerod, &ttip[t]);
 	if ( tf>0 ) {
+	  double wf = (fix_doc==GibbsHold)?wordprob(wid, t):
+	    wordfact(wid, t, &wtip[t]);
 	  tot += tf;
-	  if ( ddP.bdk==NULL ) {
-	    p[t] = tf * wordprob(wid, t);
-	  } else if ( M_multi(i) ) {
-	    int mii = ddM.multiind[mi]-dD->mi_base;
-	    assert(mii>=0);
-	    assert(mii<ddM.MI_max);
-	    p[t] = tf * docprobk(t,dD->Mi[t],dD->Si[t],
-				 dD->Mik[mii][t],dD->Sik[mii][t],
-				 wordprob(wid, t));
-	  } else {
-	    p[t] = tf * docprobk(t,dD->Mi[t],dD->Si[t], 0, 0,
-				 wordprob(wid, t));
-	  } 
-	  Z += p[t];
+	  if ( ddP.bdk!=NULL ) 
+	    wf = docprob(dD, t, i, mi, wf);
+	  Z += p[t] = tf*wf;
 	} else
 	  p[t] = 0;
-      } else {
-	/*
-	 *   doing sampling so use fact versions
-	 */
-	double tf = topicfact(did,t,Td_,&zerod, &ttip[t]);
-	if ( tf>0 ) {
-	  tot += tf;
-	  /*
-	   *    for hold out words need to estimate word probs,
-	   *    not sample t's
-	   */
-	  if ( ddP.bdk==NULL ) {
-	    p[t] = tf * wordfact(wid, t, &wtip[t]);
-	  } else if ( M_multi(i) ) {
-	    int mii;
-	    assert(mi<ddM.dim_multiind || did==ddN.D-1);
-	    mii = ddM.multiind[mi]-dD->mi_base;
-	    assert(mii>=0);
-	    assert(mii<ddM.MI_max);
-	    p[t] = tf * docfactk(t,dD->Mi[t],dD->Si[t],
-				 dD->Mik[mii][t],dD->Sik[mii][t],
-				 wordfact(wid, t, &wtip[t]),&dtip[t]);
-	  } else {
-	    /*   counts are out so must be 0 */
-	    p[t] = tf * docfactk(t,dD->Mi[t],dD->Si[t], 0, 0,
-				 wordfact(wid, t, &wtip[t]), &dtip[t]);
-	  }  
-	  Z += p[t];
-	} else
-	  p[t] = 0;
-      }
     }
     /***********************
      *    do any diagnostics/stats collection;

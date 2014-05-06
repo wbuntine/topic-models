@@ -14,6 +14,8 @@
  *           need to record which words occur multiple times in docs
  *   misi_*() routines do per document processing
  *           see dmi_rand() for usage
+ *
+ *   example statistical inference is docfact() and docprop()
  */
 
 #ifndef __MISI_H

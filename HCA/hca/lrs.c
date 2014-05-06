@@ -107,19 +107,11 @@ double lp_test_LRS() {
 	  for (t=0, Z=0, tot=0; t<ddN.T; t++) {
 	    double tf = topicprob(d, t, Td_);
 	    if ( tf>0 ) {
+	      double wf = wordprob(wid, t);
 	      tot += tf;
-	      if ( ddP.bdk!=NULL ) {
-		int m=0, s=0;
-		if ( M_multi(i) ) {
-		  int mii = ddD.multiind[mi] - dD.mi_base;
-		  m = dD.Mik[mii][t];
-		  s = dD.Sik[mii][t];
-		}
-		p[t] = tf * docprobk(t, dD.Mi[t], dD.Si[t], m, s, 
-				     wordprob(wid, t));
-	      } else 
-		p[t] = tf * wordprob(wid, t);
-	      Z += p[t];
+	      if ( ddP.bdk!=NULL ) 
+		wf = docprob(&dD, t, i, mi, wf);
+	      Z += p[t] = tf*wf;
 	    } else 
 	      p[t] = 0;
 	  }
@@ -136,13 +128,7 @@ double lp_test_LRS() {
       ddS.z[i] = t;   /*  implicitly unsets r */
       if ( ddP.bdk!=NULL ) {
 	/*  have to set dtip, then indicator r set in update_topic() */
-	if ( M_multi(i) ) {
-	  int mii = ddD.multiind[mi]-dD.mi_base;
-	  docfactk(t, dD.Mi[t], dD.Si[t], dD.Mik[mii][t], dD.Sik[mii][t], 
-		   p[t], &dtip);   
-	} else {
-	  dtip = 1;
-	}
+	docfact(&dD, t, i, mi, p[t], &dtip);  
       }
       /*
        *  note we don't have a ttip or wtip to use, its just

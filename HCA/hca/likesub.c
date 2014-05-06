@@ -322,14 +322,24 @@ double wordfact(int j, int t, float *tip) {
  *   probability of topic from doc level PDP  (ddP.bdk!=NULL version)
  *
  *       t    - topic
- *       N    - total words in doc for topic
- *       S    - tables for N
- *       n    - total count of this word type in doc for topic
- *       s    - tables for n
+ *       (i,mi)    -  word index and corresponding multi version
  *       pK   - input contribution to posterior from adding word with topic
  *       *dip - set to prob. indicator would be 1, if NULL leave
  */
-double docfactk(int t, int N, int S, int n, int s, double pK, float *dip) {
+double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip) {
+  int N = dD->Mi[t], S = dD->Si[t];
+  int n, s;
+  if ( M_multi(i) ) {
+    int mii;
+    // assert(mi<ddM.dim_multiind || did==ddN.D-1);
+    mii = ddM.multiind[mi]-dD->mi_base;
+    assert(mii>=0);
+    assert(mii<ddM.MI_max);
+    n = dD->Mik[mii][t];
+    s = dD->Sik[mii][t];
+  } else {
+    n = s = 0;
+  }  
   assert(dip);
   *dip = 1;
   if ( ddP.bdk==NULL ) {
@@ -351,13 +361,24 @@ double docfactk(int t, int N, int S, int n, int s, double pK, float *dip) {
 }
 
 /*
- *   counterpart to docfactk()
+ *   counterpart to docfact()
  *   only used in estimation, (ddP.bdk!=NULL version)
  */
-double docprobk(int t, int N, int S, int n, int s, double pw) {
-  if ( ddP.bdk==NULL ) {
-    return pw;
-  } else if ( s==0 ) {
+double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw) {
+  int N = dD->Mi[t], S = dD->Si[t];
+  int n, s;
+  if ( M_multi(i) ) {
+    int mii;
+    // assert(mi<ddM.dim_multiind || did==ddN.D-1);
+    mii = ddM.multiind[mi]-dD->mi_base;
+    assert(mii>=0);
+    assert(mii<ddM.MI_max);
+    n = dD->Mik[mii][t];
+    s = dD->Sik[mii][t];
+  } else {
+    n = s = 0;
+  }  
+  if ( s==0 ) {
     return pw * (ddP.bdk[t]+ddP.ad*S)/(ddP.bdk[t]+N); 
   } 
   return (pw * (ddP.bdk[t]+ddP.ad*S) + (n-ddP.ad*s))

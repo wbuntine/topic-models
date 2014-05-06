@@ -106,10 +106,8 @@ double alphabasetopicprob(int t);
 double topicfact(int d, int t, int tot, uint16_t *zerod, float *tip);
 double topicprob(int d, int t, int Ttot);
 double topicnorm(int d);
-double docfact(int d, int n, int s, double pK, float *tip);
-double docprob(int d, int n, int s, double pw);
-double docfactk(int t, int N, int S, int n, int s, double pK, float *dip);
-double docprobk(int t, int N, int S, int n, int s, double pw);
+double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
+double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
 
 #include "change.h"
 

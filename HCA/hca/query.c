@@ -228,41 +228,42 @@ static void query_docprob(int did, int *mimap, float *p, D_MiSi_t *dD,
        */
       double tf = tp[t];
       if ( tf>0 ) {
+	double wf = wordprob(wid, t);
 	tot += tf;
-	if ( ddP.bdk==NULL ) {
+	if ( ddP.bdk!=NULL ) {
+	  int n, s;
           /*
-           *  without burstiness
+           *  with burstiness;
+	   *  reproduce some logic in docprob() but
+	   *  we've got local data structures
            */
-	  p[t] = tf * wordprob(wid, t);
-	} else  if ( mimap[l]>ddN.N ) {
-          /*
-           *   doesn't occur in doc
-           */
-	  p[t] = tf * docprobk(t,dD->Mi[t],dD->Si[t], 0, 0,
-			       wordprob(wid, t));
-	} else  if ( mimap[l]<0 ) {
-          /*
-           *   occurs once in doc
-           */
-	  int z = Z_t(ddS.z[-mimap[l]-1]);
-	  int lcnt = (z==t)?1:0;
-	  p[t] = tf * docprobk(t,dD->Mi[t],dD->Si[t], lcnt, lcnt,
-			       wordprob(wid, t));
-	  if ( cmax < lcnt) cmax = lcnt;
-	} else {
-          /*
-           *   its a multi
-           */
-	  int mii = ddM.multiind[mimap[l]]-dD->mi_base;
-	  assert(mii>=0);
-	  assert(mii<ddM.MI_max);
-	  p[t] = tf * docprobk(t,dD->Mi[t],dD->Si[t],
-			       dD->Mik[mii][t],dD->Sik[mii][t],
-			       wordprob(wid, t));
-	  if ( cmax< dD->Mik[mii][t] )
-	    cmax = dD->Mik[mii][t];
-	} 
-	Z += p[t];
+	  if ( mimap[l]>ddN.N ) {
+	    /*
+	     *   doesn't occur in doc
+	     */
+	    n = s = 0;
+	  } else if ( mimap[l]<0 ) {
+	    /*
+	     *   occurs once in doc
+	     */
+	    int z = Z_t(ddS.z[-mimap[l]-1]);
+	    n = s = (z==t)?1:0;
+	  } else {
+	    /*
+	     *   its a multi
+	     */
+	    int mii = ddM.multiind[mimap[l]]-dD->mi_base;
+	    assert(mii>=0);
+	    assert(mii<ddM.MI_max);
+	    n = dD->Mik[mii][t];
+	    s = dD->Sik[mii][t];
+	  } 
+	  wf = (wf*(ddP.bdk[t]+ddP.ad*dD->Si[t]) + (n-ddP.ad*s))/
+	    (ddP.bdk[t]+dD->Mi[t]); 
+	  if ( cmax<n )
+	    cmax = n;
+	}
+	Z += p[t] = tf*wf;
       } else
 	p[t] = 0;
     }
