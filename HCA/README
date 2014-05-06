@@ -1,0 +1,65 @@
+OVERVIEW
+========
+HCA is research software that does various versions of non-parametric topic 
+models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, all with/without 
+burstiness modelling.  Various diagnostics, ``document completion'' testing 
+and coherence measurements with PMI are also supported.  The code
+runs on multi-core getting about 50% efficiency with 8 cores.
+
+The project home page and more details about the theory behind the software 
+can be found at:
+    https://github.com/wbuntine/topic-models/HCA/
+
+DOCUMENTATION
+=============
+The documentation is in "doc/".
+The man entry and the PDF file are the same.
+Examples for running the code are given in the section "Examples".
+There is example data files with all the different variant inputs
+in the "data/" directory in the main release, that can be downloaded
+separately (its largish because it has a lot of different demo files,
+even though its a small collection).
+Various scripts are provided "as is" with minor documention
+in "scripts/" directory.
+
+MAKING the PROGRAMME
+====================
+There are no prerequisites.  Although in Windows you will
+need to compile with "gcc".
+
+There is a simple Makefile in this directory currently configured
+to optimise the compiler for a Linux machine.  Edit the configuration
+if you have a Mac.
+
+Then:
+	#   this builds the two libraries in "lib/" and "util/" and hca
+	make
+	#   if it works OK do a simple test, one of
+	make linux-test
+	make windows-test
+
+INSTALLATION
+============
+Once the softare is made, there are two files to install:
+      doc/hca.1    -  the man entry
+      doc/tca.1    -  the man entry
+      src/hca/hca  -  the executable for non-parametric TMs
+      src/tca/tca  -  the executable for non-parametric dynamic TMs
+The man entry can be read using "man -l doc/hca.1", though
+doc/hcaman.pdf is a better rendering of the same source file.
+
+On Linux these can be installed locally at:
+	/usr/local/man/man1
+	/usr/local/bin
+respectively if you manage your own machine or on your home directory at
+	$PWD/man/man1
+	$PWD/bin
+if you have your MANPATH and PATH environment variables set up right.
+
+The documentation in "doc/" and the test data in "data/" should
+be used for reference.  The "scripts/" can be handy if you manage
+to figure them out!
+
+GETTING STARTED
+===============
+Work through the examples in the documentation using the data in "data/"

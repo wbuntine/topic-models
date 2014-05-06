@@ -1,0 +1,10 @@
+documents=395
+testdocs=50
+dfdocs=395
+features=4258
+components=1
+n_partition=1
+partition="0,4258"
+tags_long=text
+tags=T
+stopfile="stops.txt"

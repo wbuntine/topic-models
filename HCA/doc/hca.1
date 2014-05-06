@@ -1,0 +1,872 @@
+'\" t
+.\" Manual page created with latex2man on Tue May  6 12:40:22 EST 2014
+.\" NOTE: This file is generated, DO NOT EDIT.
+.de Vb
+.ft CW
+.nf
+..
+.de Ve
+.ft R
+
+.fi
+..
+.TH "HCA" "1" "2013/11/25" "Data Analysis Tools " "Data Analysis Tools "
+.SH NAME
+
+.PP
+hca
+is research software 
+that does various versions of non\-parametric topic models using Gibbs sampling including LDA, HDP\-LDA, NP\-LDA, all with/without burstiness modelling. Various diagnostics, ``document completion\&'' testing and coherence measurements with PMI are also supported. The code 
+runs on multi\-core getting about 50% efficiency with 8 cores. 
+.PP
+.SH SYNOPSIS
+
+.PP
+hca
+[\fB\-?\fP]
+[\fB\-?\fP\fIArg\fP]
+\fIDataStem\fP
+\fIRepStem\fP
+.PP
+.SH DESCRIPTION
+
+hca
+reads the collection of files with stem 
+\fIDataStem\fP
+that form the input set of data. 
+When checkpointing, or at termination, the output is written 
+to files with stem \fIRepStem\fP\&.
+On restart with the \fB\-r\fP\fI0\fP
+option, some of these 
+are also read initially to restore the previous state. 
+A log of the run is reported to stderr
+if the 
+\fB\-e\fP
+option is used. By default, the log goes to 
+RepStem.log\&.
+.PP
+The programme is research software, so not all options 
+or combinations of options work correctly. 
+Note that in this release, all the more experimental features 
+have been stripped, so this release contains 
+only moderately well tested components. 
+.PP
+The programme runs a Gibbs sampler for a variety of 
+non\-parametric topic models. 
+The model selected has three parts: 
+.TP
+alpha: 
+this is the prior on topic vector (theta) for each document. 
+LDA has a simple symmetric Dirichlet with parameter alpha 
+and the vector has dimension T (the number of topics). 
+.TP
+beta: 
+this is the prior on word vector (phi) for each topic. 
+LDA has a simple symmetric Dirichlet with parameter beta 
+and the vector has dimension W (the number of words). 
+.TP
+burst: 
+this is the burstiness component which has 
+a document specific variant of the word vector for 
+each topic. This is not used by default. 
+.PP
+These parts are set using the 
+\fB\-S\fP,
+\fB\-A\fP
+and \fB\-B\fP
+options. 
+.PP
+The programme uses generalised second order Stirling numbers 
+with the library extracted from libstb
+version 1.8 
+released at \fBhttps://github.com/wbuntine/libstb\fP\&.
+This is initialised with predefined bounds on the tables, 
+and these can be modified with the \fB\-N\fP
+option. 
+This should be used for collections with more than 
+20,000 documents, but its best to run first and on 
+error, increase the bounds. 
+.PP
+.SH OPTIONS
+
+.PP
+Options have a single letter followed by a possible 
+single argument. Options are grouped under 
+the following functions: 
+\fIsetting of hyperparameters\fP,
+\fIcontrolling sampling of hyperparameters\fP,
+\fIgeneral control\fP,
+and 
+\fItesting and reports\fP
+.PP
+.SS SETTING OF HYPERPARAMETERS
+.TP
+\fB\-A\fP\fIvalue\fP
+ Use a symmetric Dirichlet prior for alpha 
+with this value
+for each dimension. The value must be a positive float. 
+.TP
+\fB\-A\fP\fItype\fP
+ A second version of the 
+\fB\-A\fP
+option with a string argument. 
+It defines an alpha prior of type
+as follows: 
+.RS
+.TP
+hdp 
+alpha is modelled with a symmetric Dirichlet and 
+theta is modelled with a Dirichlet Process. 
+.TP
+hpdd 
+alpha is modelled with a (truncated) GEM and 
+theta is modelled with a Pitman\-Yor Process. 
+This is the default. 
+.TP
+pdp 
+alpha is uniform and theta is modelled with a Pitman\-Yor Process. 
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-B\fP\fIvalue\fP
+ Use a symmetric Dirichlet prior with 
+this value
+as the total over dimensions, so each dimension 
+gets value/W
+for W being the number of words. 
+The value must be a positive float. 
+.TP
+\fB\-B\fP\fItype\fP
+ Second form of the \fB\-B\fP
+option. 
+Use a beta prior of type
+``hdp\&'' ``hpdd\&'' or ``pdp\&''\&. Similar to the \fB\-A\fP
+option. 
+.RS
+.TP
+hdp 
+beta is modelled with a Dirichlet, 
+by default symmetric, 
+or its mean can be set with the \fB\-u\fP
+option, 
+and phi is modelled with a Dirichlet Process. 
+.TP
+hpdd 
+beta is modelled with a (truncated) GEM and 
+phi is modelled with a Pitman\-Yor Process. 
+This is the default. 
+.TP
+pdp 
+beta is by default uniform, 
+or it can be set with the \fB\-u\fP
+option, 
+and phi is modelled with a Pitman\-Yor Process. 
+This is not hierarchical because beta is constant. 
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-S\fP\fIvar=value\fP
+ Set variable var
+to float value,
+where var
+can be one of: 
+.RS
+.TP
+a 
+discount parameter for the non\-parametric distribution 
+on the theta, topic distribution per document. 
+.TP
+b 
+concentration parameter for the non\-parametric distribution 
+on theta, the topic distribution per document. 
+.TP
+a0 
+discount parameter for the non\-parametric distribution 
+on alpha, the prior for theta. 
+.TP
+b0 
+concentration parameter for the non\-parametric distribution 
+on alpha, the prior for theta. 
+.TP
+aw 
+discount parameter for the non\-parametric distribution 
+on phi, word distribution per topic. 
+.TP
+bw 
+concentration parameter for the non\-parametric distribution 
+on phi, word distribution per topic. 
+.TP
+aw0 
+discount parameter for the non\-parametric distribution 
+on beta, prior for phi. 
+.TP
+bw0 
+concentration parameter for the non\-parametric distribution 
+on beta, prior for phi. 
+.TP
+ad 
+discount parameter for burstiness. 
+.TP
+bdk 
+concentration parameter for burstiness, a constant initially 
+but subsequent sampling will allow a different value per topic. 
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-u\fP\fIfile\fP
+ the value for the beta vector is given by the text file\&.
+It should contain W floats, W being the number of words. 
+.PP
+.SS CONTROLLING SAMPLING OF HYPERPARAMETERS
+.TP
+\fB\-D\fP\fIcycles,start\fP
+ Start sampling alpha
+of the symmetric Dirichlet for alpha after 
+start
+cycles and then repeat every cycles
+cycles. 
+.TP
+\fB\-E\fP\fIcycles,start\fP
+ Start sampling beta
+of the symmetric Dirichlet for beta after 
+start
+cycles and then repeat every cycles
+cycles. 
+.TP
+\fB\-F\fP\fIvar\fP
+ Fix the variable var
+where 
+it takes the value \fBalpha\fP,
+\fBbeta\fP
+or one of the 
+arguments to the \fB\-S\fP
+option. 
+.TP
+\fB\-G\fP\fIvar,cycles,start\fP
+ Sample the variable var
+where 
+it takes the value \fBalpha\fP,
+\fBbeta\fP
+or one of the 
+arguments to the \fB\-S\fP
+option. 
+The start
+and cycles
+integers are used as for 
+the \fB\-D\fP
+option. 
+.PP
+.SS GENERAL CONTROL
+.TP
+\fB\-c\fP\fIcycles\fP
+ Do a checkpoint every this many cycles\&.
+This saves the output statistics and the parameter file 
+adequate to do a restart with \fB\-r\fP\fI0\fP
+option. 
+.TP
+\fB\-C\fP\fIcycles\fP
+ Stop after this many cycles\&.
+Default is 100. 
+.TP
+\fB\-d\fP\fIdots\fP
+ For really big batches of data, print a 
+``.\&'' every dots
+documents within a single cycle. 
+.TP
+\fB\-e\fP
+ Reroute logging to the stderr\&.
+.TP
+\fB\-f\fP\fIformat\fP
+ Read input data from data formatted according to 
+the type format\&.
+Data is expected to come from 
+an input file with name DataStem.Suff
+where 
+Suff
+is an appropriate suffix. 
+These are given with Input Files below. 
+Allowed formats are: 
+ldac,
+witdit,
+docword,
+bag
+and lst\&.
+.TP
+\fB\-K\fP\fItopics\fP
+ Set T the maximum number of topics. 
+Default is 10. 
+.TP
+\fB\-M\fP\fImaxtime\fP
+ Quit early when total training time exceeds this many seconds. 
+.TP
+\fB\-N\fP\fImaxT,maxN\fP
+ Set maximum for the Stirling number tables 
+to count maxN
+and table count maxT\&.
+Default is 1000,10000. 
+On collections with more than 20k documents, can require more. 
+.TP
+\fB\-q\fP\fIthreads\fP
+ If compiled with threading, enables 
+this many threads. Default is 1. 
+.TP
+\fB\-r\fP\fIoffset\fP
+ Restart. Currently must use offset
+equal to ``0\&'' 
+for a normal restart. 
+.TP
+\fB\-r\fP\fIphi\fP
+ Second version of the \fB\-r\fP
+option 
+using the string ``phi\&'' as the argument. 
+Restart but now fix the word by topic matrix 
+to the previous value saved at 
+RepStem.phi,
+and the beta side is held constant and not sampled. 
+Can significantly speed up testing or querying sometimes. 
+.TP
+\fB\-s\fP\fIseed\fP
+ Initialise the random number seed. 
+.TP
+\fB\-v\fP
+ Up verbosity by one increment. 
+Starts at zero and currently understands 0\-3. 
+.TP
+\fB\-x\fP
+ Enable use of exclude topics with \fB\-Q\fP\&.
+.PP
+.SS TESTING AND REPORTS
+.TP
+\fB\-h\fP\fIHold,arg\fP
+ Do document completion testing on the test set. 
+There are three styles of document completion implemented. 
+When Hold
+is the string ``doc\&'', then every arg\-th
+word is held out in estimating the latent variables (like theta) 
+for the document and used instead for testing of perplexity. 
+That is, words at document positions arg\-1,
+2*arg\-1,
+\fIetc.\fP
+When Hold
+is the string ``dict\&'', then every arg\-th
+word in the dictionary is held out in estimating 
+and used for testing. So if a word has dictionary index 
+arg\-1,
+2*arg\-1,
+\fIetc.\fP,
+it is held out. 
+When Hold
+is the string ``fract\&'', 
+then the fract
+proportion at the tail of the document is held out. 
+The initial proportion is used in estimating. 
+.TP
+\fB\-l\fP\fIDiag,cycles,start\fP
+ Do a run\-time estimation of the diagnostic Diag
+starting after the start
+cycle and then taking the 
+estimate every cycles
+cycle. 
+Diagnostics are: 
+.RS
+.TP
+sp 
+Estimate topic sparsity in the theta matrix for the 
+words given in DataStem.smap\&.
+Results placed in RepStem.smap\&.
+The report gives ``topic/weight\&'' for topics including the word. 
+.TP
+prog 
+How often to do the standard diagnostic reports 
+(default is every 5\-th cycle). 
+.TP
+phi 
+Estimate the word probability vector for each topic. 
+Stored in the RepStem.phi
+file. 
+.TP
+testprob 
+Estimate the topic probability vector for each test document. 
+Stored in the RepStem.testprob
+file. 
+.TP
+theta 
+Estimate the topic probability vector for each training document. 
+Stored in the RepStem.theta
+file. 
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-L\fP\fIDiag,cycles,start\fP
+ Do a diagnostic estimate Diag
+after 
+all Gibbs sampling is complete. 
+Sampling of the estimate starts after the start
+cycle 
+and goes for a total of cycles
+cycles 
+(including the starting ones). 
+Diagnostics are: 
+.RS
+.TP
+class 
+Estimate class probabilities with ``true\&'' classes 
+given in DataStem.class
+and then 
+produce confusion matrix for the test data. 
+Output to files 
+DataStem.cnfs
+and DataStem.pcnfs\&.
+.TP
+like 
+Estimate likelihood/perplexity on the test set 
+using the standard (biased) document likelihood, 
+or document completion if the \fB\-h\fP
+option is used. 
+Can also be instigated during run\-time with the 
+\fB\-P\fP
+option. 
+.RE
+.RS
+.PP
+.RE
+.TP
+\fB\-o\fP\fIscore\fP
+ Scoring rule to pick top words for printing. 
+Methods are `count\&', `idf\&', `cost\&' and `phi\&'\&. Default is `idf\&'\&. 
+.TP
+\fB\-O\fP
+ Report log likelihood, not log perplexity. Both 
+are done in base 2. 
+.TP
+\fB\-p\fP
+ Report topic coherency in the log file, and 
+save results in the parameter file. This requires 
+a DataStem.pmi
+or DataStem.pmi.gz
+file exist 
+in the right format. This can be created with the 
+mkmat.pl
+and 
+cooc2pmi.pl
+scripts in the scripts directory of the release. 
+The format is a simple sparse matrix form with lines 
+of the form ``N M PMI\&'' for word indices 
+(offset by 0) N and M and PMI value. 
+.TP
+\fB\-P\fP\fIsecs\fP
+ Calculate test perplexity (using document completion) 
+every interval in secs
+seconds. If Gibbs cycles are long, 
+will report only after the cycle finishes. 
+.TP
+\fB\-Q\fP\fInres,file\fP
+ submit list queries given in the file, and return nres
+results for each. Must use the \fB\-r\fP\fIphi\fP
+option with 
+a pre\-estimated phi matrix (for efficiency). 
+.TP
+\fB\-t\fP\fIsize\fP
+ Specify size of training set. It takes the 
+first size
+entries in the data set. Default is all the 
+set minus the test data. 
+.TP
+\fB\-T\fP\fIsize\fP
+ Specify size of test set. It takes the 
+size
+entries immediately following the training set. 
+Default is zero. 
+.TP
+\fB\-V\fP
+ load the dictionary from the 
+DataStem.tokens
+file for use in reporting. It has one token per line. 
+.TP
+\fB\-X\fP
+ Instigate report on naive Bayes classification 
+using the topic model and classes given in DataStem.class
+file. 
+The report is a confusion matrix to file RepStem.tbyc
+built on 
+the training data. 
+.PP
+.SH INPUT FILES
+
+.PP
+The following files provide details about the dataset. 
+The filenames are constructed by adding a suffix to the data stem. 
+The data (document+word) format itself can be one of four different 
+formats and is specified with the \fB\-f\fP
+option. 
+.TP
+DataStem.class
+ Class index for each document, one per line. 
+Optional file used with some reports instigated by 
+\fB\-X\fP
+or \fB\-L\fP\fIclass\fP
+options. 
+.TP
+DataStem.dit+DataStem.wit
+ Simple document index and word index files, both indices offset by 1, one index per line. 
+Words in the collection are listed by document. The DataStem.dit
+file 
+gives the document index, and the corresponding line in DataStem.wit
+gives the dictionary index. 
+.TP
+DataStem.docword
+ This format appears in some UCI data sets 
+at
+.br\fBhttp://archive.ics.uci.edu/ml/datasets/Bag+of+Words\fP\&.
+Word indices offset by 1. 
+.TP
+DataStem.ldac
+ Standard LdaC format. Word indices to the dictionary are offset by 1. 
+.TP
+DataStem.smap
+ A list of word indices (offset by 0) 
+about which one wants a sparsity report generated. 
+The report is instigated by the 
+\fB\-l\fP\fIsp\fP
+option. 
+.TP
+DataStem.tokens
+ tokens/words in the dictionary, one per line. 
+Optional file used with \fB\-V\fP
+option. 
+.TP
+DataStem.txtbag
+ default bag or list format for \fIlinkBags\fP(1)
+command of DCABags\&.
+Word indices offset by 0. 
+.PP
+The various output files such as 
+RepStem.par
+(Parameter and dimension output file) 
+are also read on restart with the \fB\-r\fP\fI0\fP
+option. 
+.PP
+.SH OUTPUT FILES
+
+.PP
+The following files are output when the system checkpoints 
+or at the end of the run. 
+These are built by adding a suffix to the report stem, 
+RepStem\&.
+The first set of files are: 
+.TP
+RepStem.beta
+ If a constant beta vector is specified 
+using the \fB\-u\fP
+option, this saves 
+the value, for possible use in a restart. 
+.TP
+RepStem.cnfs+RepStem.pcnfs
+ Best prediction and probability vector confusion matrices 
+built on the test data with the 
+\fB\-L\fP\fIclass\fP
+command. 
+.TP
+RepStem.log
+ Log file created if \fB\-e\fP
+option not used. 
+.TP
+RepStem.par
+ Parameter and dimensions file in simple ``var = value\&'' format. These are detailed in the next section. 
+.TP
+RepStem.phi
+ The Phi matrix written as a binary file: 
+first W (dictionary size), T (topics), 
+C (sample size) are written as 32 bit integers and 
+then the full Phi matrix as native floats with W as the minor index. 
+Only generated with appropriate use of the 
+\fB\-l\fP\fIphi\fP
+option. 
+.TP
+RepStem.smap
+ Optional sparsity report on the 
+word indices listed in DataStem.smap\&.
+The report is instigated by the 
+\fB\-l\fP\fIsp\fP
+option. 
+.TP
+RepStem.tbyc
+ Optional confusion matrix printed when 
+the \fB\-X\fP
+option is used. 
+.TP
+RepStem.top
+ A simple text report giving the top word indices 
+for each topic. If a hierarchical model in use, then the 
+``\-1\&'' topic is for the base distribution of words. 
+Word indices are offset from 0. 
+.TP
+RepStem.theta
+ Estimated topic probabilities 
+for each training document 
+written in a simple sparse form. The class index 
+(``\-1\&'' or ``+1\&'' for binary classes, otherwise just the index) 
+is also added if it exists. 
+Topic indices are offset by 0. 
+Only generated with appropriate use of the 
+\fB\-l\fP\fItheta\fP
+option. 
+.TP
+RepStem.testprob
+ Like the \-ltheta
+option but for the test documents. 
+Only generated with appropriate use of the 
+\fB\-l\fP\fItestprob\fP
+option. 
+.PP
+The second set of files gives the actual runtime statistics. 
+Output matrices are in a simple readable sparse vector format 
+the same as the DataStem.docword
+format. 
+.TP
+RepStem.ndt
+ Document by topic counts. 
+.TP
+RepStem.nwt
+ Word by topic counts. 
+.TP
+RepStem.tdt
+ Document by topic table counts if 
+the Alpha side of the model is non\-parametric. 
+.TP
+RepStem.twt
+ Word by topic table counts if 
+the Beta side of the model is non\-parametric. 
+.TP
+RepStem.zt
+ With no burstiness, gives topic 
+index (offset by 0), one per line. 
+With burstiness, gives one ``z,r\&'' per line where ``z\&'' is the 
+topic index (offset by 0) and ``r\&'' is the burst table indicator, 
+which is 1 if the word 
+contributes to standard LDA statistics, and 
+0 if burstiness modelling says the word is a burst 
+so does not contribute to LDA statistics. 
+.PP
+These files along with RepStem.par
+are input 
+on a restart using \fB\-r\fP\fI0\fP\&.
+.PP
+.SH THE PARAMETER FILE
+
+.PP
+The parameter file has the following \fIdimensions\fP:
+.TP
+{N} \-\- number of words in the full collection, 
+summed over all documents. 
+.TP
+{NT} \-\- number of words in the training set, 
+summed over all training documents. 
+.TP
+{W} \-\- number of words in the dictionary. 
+.TP
+{D} \-\- number of documents in total. 
+.TP
+{TRAIN} \-\- number of documents to train on, is always the 
+the first ones in the file. 
+.TP
+{TEST} \-\- number of documents to test on, is always the 
+the last ones in the file. 
+.TP
+{T} \-\- maximum number of topics. 
+.TP
+{ITER} \-\- number of major cycles made last. 
+.PP
+In addition, the float parameters allowed to be specified with the 
+\fB\-F\fP
+and \fB\-G\fP
+options are also given. 
+Finally, the type of model for alpha as specified by the 
+\fB\-A\fP
+option is coded in the 
+PYalpha
+variable. 
+It is 0 if the mode is a symmetric Dirichlet, 
+the LDA default. 
+It is 1 for hdp, 2 for hpdd and 3 for pdp. 
+Likewise for the PYbeta
+variable and the \fB\-B\fP
+option. 
+.PP
+.SH EXAMPLES
+
+.PP
+These examples work as is on late model Linux, Macs and Windows. 
+However, you need to replace the executable, 
+hca,
+by the system dependent one, 
+from the install directory where the data/
+directory is. 
+For instance, on Windows that might be hca/hca.exe\&.
+.PP
+Run basic LDA with parameter fitting on the full dataset and no testing, 
+sending logging to stderr\&.
+.Vb
+hca \-v \-e \-V \-K20 \-C100 data/ch c1
+.Ve
+The parameters as they are sampled will be 
+printed on a line beginning wth ``Par:\&''\&. 
+At the end, the top 20 words will be printed and the 
+final training perplexity printed. This is based on 
+the posterior probability, not word probability 
+estimates. 
+Restart and build a topic probability vector for each document, 
+as well as sparsity mappings for the words in 
+data/ch.smap
+file. 
+.Vb
+hca \-v \-r0 \-e \-lsp,2,1 \-ltheta,2,1 \-C20 data/ch c1
+.Ve
+Now view the sparsity report at c1.smap
+and 
+the topic probabilities at c1.theta,
+and the values saved in the parameter file c1.par\&.
+.PP
+Rerun basic LDA with parameter fitting on the full dataset and testing 
+on the final 100 documents. Logging now to c1.log\&.
+Checkpoint every 20 cycles 
+(note, we usually only do this for cycles taking over 10 minutes each). 
+.Vb
+hca \-v \-V \-K20 \-C100 \-c20 \-T100 data/ch c1
+.Ve
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpML)\&'' 
+Now rerun but use document completion (every 4th word), not the default 
+likelihood calculation. 
+.Vb
+hca \-v \-V \-r0 \-hdoc,4   data/ch c1
+.Ve
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpHold)\&''\&. 
+Note it is also recorded in the parameter file. 
+Restart, no sampling this time using \fB\-C\fP\fI0\fP,
+just record the 
+PMI and the classification details on test data. 
+.Vb
+hca \-v \-V \-r0 \-C0 \-Llike,0,0 \-Lclass,10,1 \-p  data/ch c1
+.Ve
+Note the \fB\-L\fP\fIlike,0,0\fP
+option is used to prevent it 
+doing test likelihood calculations, which are potentially slow 
+on larger data sets. 
+The PMI data has a value printed for each topic as well as a 
+final average. It bases its calcuations on the matrix 
+data/ch/pmi.gz
+created explicitly for this test set. 
+For other datasets, you will need to down load prepared 
+PMI matrices from the project homepage. 
+.PP
+The burstiness version is new. Our best bet, currently is to run 
+with optimisation of the hyperparameters: 
+.Vb
+hca \-v \-e \-V \-K20 \-C100 \-Sbdk=200 \-Sad=0.5 data/ch c1
+.Ve
+So the initial discount for the bursty topics is 
+0.5 and its a shared parameter for all. 
+The concentration we set quite high initially 
+with ``bdk=200\&'', and these will be sampled separately with 
+each topic, so bdk
+is a vector in the 
+parameter file. 
+The hyperparameter sampling slows it down quite a bit but seems to 
+make a significant difference. Unused topics sometimes 
+get a very low concentration. 
+.PP
+.SH ERRORS
+
+.PP
+There is some error reporting on failure. 
+.PP
+If the software quits during a run on larger data with an 
+error message like: 
+.Vb
+    S_V(N,M,A) tagged 'XXX' hit bounds (BN,BM)
+.Ve
+for integers N,M
+and label XXX
+then you 
+need to increase the bounds. 
+If the tag XXX
+is ``SX, docXtopic PYP" 
+then increase the bound BM
+using the option 
+\fB\-N\fP\fIBM\fP
+with an increased BM\&.
+If the tag XXX
+is ``SX, docXtopic PYP" 
+then increase both bounds BN,BM
+using the option 
+\fB\-N\fP\fIBM,BN\fP
+(note the order of the bounds). 
+.PP
+For other errors, please report to the 
+maintainer. 
+.PP
+.SH SEE ALSO
+
+.PP
+The command \fIlinkBags\fP(1)
+is available from \fBhttp://mloss.org\fP
+in 
+the software DCABags\&.
+The extended library libstb,
+parts of which are included, is available 
+individually from \fBhttp://mloss.org\fP\&.
+.PP
+Other supporting software and data sets are available at the project home 
+page at
+.br
+\fBhttps://github.com/wbuntine/topic\-models\fP
+.PP
+.SH VERSION
+
+.PP
+This programme is version 0.4 of 2013/11/25\&.
+This incorporates parts of the library libstb
+version 1.8 
+also of 2013/11/25\&.
+.PP
+.SH LICENSE AND COPYRIGHT
+
+.PP
+.TP
+Copyright 
+(C)2011\-2014, Prof. Wray Buntine, 
+NICTA, Canberra, Australia (to 2013), and Monash 
+University (from 2014)
+.br
+\fBwray.buntine@monash.edu\fP
+Some parts also by Dr.  Jinjin Li (2013) and 
+Mr.  Swapnil Mishra (2013\-2014). 
+.PP
+.TP
+License 
+This Source Code Form is subject to the terms of the Mozilla 
+Public License, v. 2.0. If a copy of the MPL was not 
+distributed with this file, You can obtain one at 
+\fBhttp://mozilla.org/MPL/2.0/\fP\&.
+.PP
+.SH AUTHOR
+
+.PP
+Prof. Wray Buntine 
+.br
+Email: \fBWray.Buntine@monash.edu\fP
+.PP
+Some parts also done by Dr.  Jinjin Li and 
+Mr.  Swapnil Mishra. 
+.PP
+.\" NOTE: This file is generated, DO NOT EDIT.

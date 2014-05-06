@@ -1,0 +1,157 @@
+/*
+ * Deal with the caches and tables
+ * Copyright (C) 2012-2014 Wray Buntine 
+ * All rights reserved.
+ *
+ * This Source Code Form is subject to the terms of the Mozilla 
+ * Public License, v. 2.0. If a copy of the MPL was not
+ * distributed with this file, You can obtain one at
+ *      http://mozilla.org/MPL/2.0/.
+ *
+ * Author: Wray Buntine (wray.buntine@monash.edu)
+ *
+ */
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
+#include <math.h>
+#include <assert.h>
+
+#include "yap.h"
+#include "yaps.h"
+#include "lgamma.h"
+#include "hca.h"
+#include "data.h"
+#include "pctl.h"
+#include "cache.h"
+
+
+#ifdef CACHE_ABTP
+double alphabasetopicprob(int t);
+#endif
+
+void cache_init(int maxM, int maxW) {
+  if ( ddP.bdk!=NULL ) {
+    /*
+     *   clear maximum is number times any given word appears in
+     *   any one doc (max for any word and any doc)
+     */
+    int nmax=ddM.Mi_max+10;
+    ddC.SD = S_make(nmax, nmax, nmax, nmax, ddP.ad, 
+#ifdef H_THREADS
+ 		    S_THREADS|
+#endif
+		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+    S_tag(ddC.SD,"SD, doc PYP");
+  }
+  if ( ddP.PYalpha ) {
+    /*
+     *    clear maximum of N is maximum number of words;
+     *    in a document use the passed in limit for T
+     */
+    int maxD = ddD.NdTmax*1.5;
+#ifdef CACHE_ABTP
+    alphabasetopicprob(-1);
+#endif
+    ddC.SX = S_make(maxD+1, 100, maxD+1, maxM, ddP.apar, 
+#ifdef H_THREADS
+ 		    S_THREADS|
+#endif
+		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+    S_tag(ddC.SX,"SX, docXtopic PYP");
+    gcache_init(&ddC.qda, ddP.apar);
+    gcache_init(&ddC.lgb, ddP.bpar);
+    if ( ddP.apar>0 )
+      gcache_init(&ddC.lgba, ddP.bpar/ddP.apar);
+  } else {
+    gcache_init(&ddC.lgalpha, ddP.alpha);
+    gcache_init(&ddC.lgtotalpha, ddN.T*ddP.alpha);
+  }
+  if ( ddP.PYbeta ) {
+    ddC.SY = S_make(1000, 100, maxW, maxM, ddP.awpar,
+#ifdef H_THREADS
+ 		    S_THREADS|
+#endif
+		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+    S_tag(ddC.SY,"SY, topicXword PYP");
+    gcache_init(&ddC.qdaw, ddP.awpar);
+    gcache_init(&ddC.lgbw, ddP.bwpar);
+    if ( ddP.awpar>0 )
+      gcache_init(&ddC.lgbaw, ddP.bwpar/ddP.awpar);
+  } else {
+    if ( ddP.betac>0 )
+      gcache_init(&ddC.lgbetac, ddP.betac);
+    gcache_init(&ddC.lgbeta, ddP.beta);
+  }
+  /*
+   *   now the libstb library has its own separate error handling,
+   *   so make sure it goes through our yapper
+   */
+  yaps_yapper(yap_va);
+}
+
+void cache_free() {
+#ifdef CACHE_ABTP
+  alphabasetopicprob(-5*ddN.T);
+#endif
+  if ( ddP.PYbeta ) {
+    S_free(ddC.SY);
+  }  
+  if ( ddP.PYalpha ) {
+    S_free(ddC.SX);
+  }
+  if ( ddP.bdk!=NULL ) {
+    S_free(ddC.SD);
+  }
+}
+
+void cache_update(char *par) {
+  if ( ddP.bdk!=NULL ) {
+    if ( strcmp(par,"ad")==0 ) {
+      if ( ddC.SD->a != ddP.ad )
+	S_remake(ddC.SD,ddP.ad);
+    } 
+  }
+  if ( ddP.PYalpha ) {
+    if ( strcmp(par,"b")==0 ) {
+      gcache_init(&ddC.lgb, ddP.bpar);
+      if ( ddP.apar>0 )
+	gcache_init(&ddC.lgba, ddP.bpar/ddP.apar);
+    } else if ( strcmp(par,"a")==0 ) {
+      gcache_init(&ddC.lgba, ddP.bpar/ddP.apar);
+      gcache_init(&ddC.qda, ddP.apar);
+      if ( ddC.SX->a != ddP.apar )
+	S_remake(ddC.SX,ddP.apar);
+    } 
+#ifdef CACHE_ABTP
+    else if ( strcmp(par,"b0")==0 || strcmp(par,"a0")==0 ) {
+      alphabasetopicprob(-(ddN.T+1));
+    }
+#endif
+  } else if ( strcmp(par,"alpha")==0 ) { 
+    gcache_init(&ddC.lgalpha, ddP.alpha);
+    gcache_init(&ddC.lgtotalpha, ddN.T*ddP.alpha);
+  }
+  if ( ddP.PYbeta ) {
+    if ( strcmp(par,"bw")==0 ) { 
+      gcache_init(&ddC.lgbw, ddP.bwpar);
+      if ( ddP.awpar>0 )
+	gcache_init(&ddC.lgbaw, ddP.bwpar/ddP.awpar);
+    } else if ( strcmp(par,"aw")==0 ) { 
+      gcache_init(&ddC.lgbaw, ddP.bwpar/ddP.awpar);
+      gcache_init(&ddC.qdaw, ddP.awpar);
+      if ( ddC.SY->a != ddP.awpar ) 
+	S_remake(ddC.SY, ddP.awpar);
+    } 
+  } else {
+    if ( strcmp(par,"beta")==0 ) {
+      fixbeta(NULL, NULL);
+      if ( ddP.betac>0) {
+	gcache_init(&ddC.lgbeta, ddP.betac);
+      }
+      gcache_init(&ddC.lgbeta, ddP.beta);
+    }
+  }
+}
