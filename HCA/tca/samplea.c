@@ -115,42 +115,37 @@ static double aterms_mu(double mya, void *mydata) {
   return val;
 }
 
+static uint16_t **docstats;
+/*
+ */
 static double aterms_burst(double mya, void *mydata) {
-  int i;
+  double b[ddM.T];
   double val = 0;
-  double la;
-  double lgba;
 #ifdef A_DEBUG
   float save_a = ddC.a_burst->a;
   double like;
 #endif
-  S_remake(ddC.a_burst, mya);
-  la = log(mya);
-  lgba = lgamma(ddP.b_burst/mya);
-  for (i=0; i<ddD.dim_MiT; i++) {
-    val += S_S(ddC.a_burst,ddD.Mi[i],ddS.Si[i]);
-  }
-  for (i=0; i<ddN.DT; i++) {
-    if ( ddD.N_dT[i] ) {
-      int st = ddS.N_dT[i];
-      val += st*la + gammadiff(st,ddP.b_burst/ddP.a_burst,lgba);
-    }
-  }
+  int t;
+  for (t=0; t<ddM.T; t++)
+    b[t] = ddP.b_burst;
+  cache_update("ab");
+  val = dmi_likelihood_aterms(&ddM, docstats,
+			      pctl_gammaprior, mya, b, ddC.a_burst);
   myarms_evals++;
 #ifdef A_DEBUG
-  yap_message("Eval aterms_burst(%lf) = %lf (S had %f)", mya, val, save_a);
-  ddP.a_burst = mya;
-  cache_update("ab");
-  like = likelihood();
+  yap_message("Eval adkterms(%lf) = %lf", mya, val);
+  like = dmi_likelihood(&ddM,pctl_gammaprior,mya,b,ddC.a_burst);
   if ( last_val != 0 ) {
     yap_message(", lp=%lf diffs=%lf vs %lf\n", like, 
 		val-last_val, like-last_like);
-  }
+  } else
+    yap_message("\n");
   last_like = like;
   last_val = val;
 #endif
   return val;
 }
+
 
 static double aterms_phi(double mya, void *mydata) {
   int e, t, v;
@@ -233,13 +228,15 @@ void sample_ab(double *mya) {
 #ifdef A_DEBUG
   last_val = 0;
   last_like = 0;
-#endif
+#endif  
+  docstats = dmi_astore(&ddM);
   if ( verbose>1 )
     yap_message("sample_ab (pre):  a_burst=%lf, lp=%lf\n",
 		*mya, likelihood());
   myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_burst, NULL, mya, "ab");
   ddP.a_burst = *mya;
   cache_update("ab");
+  dmi_freeastore(&ddM, docstats);
   if ( verbose>1 )
     yap_message("sample_ab (post):  a_burst=%lf, lp=%lf\n",
 		*mya, likelihood());

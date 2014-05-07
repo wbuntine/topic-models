@@ -141,19 +141,20 @@ void unfix_tableidtopic(int d, int t, int ind) {
   
   ddS.c_dt[d][t]--;
   ddS.C_dT[d]--;
+#ifndef H_THREADS
   assert(ddS.c_dt[d][t]>=0);
   assert(ddS.c_dt[d][t]>0 || ddS.n_dt[d][t]==0);
-  
-  ddS.C_eDt[e][t]--;
-  ddS.C_e[e]--;
+#endif
+  atomic_decr(ddS.C_eDt[e][t]);
+  atomic_decr(ddS.C_e[e]);
   
   {
     int i;
     int end_e;
     end_e = e-ind;
     for (i = e; i>end_e; i--) {
-      ddS.cp_et[i][t]--; 
-      ddS.Cp_e[i]--;
+      atomic_decr(ddS.cp_et[i][t]); 
+      atomic_decr(ddS.Cp_e[i]);
     }
   }
 }
@@ -168,13 +169,13 @@ void fix_tableidtopic(int d, int t, int ind) {
   ddS.c_dt[d][t]++;
   ddS.C_dT[d]++;
   
-  ddS.C_e[e]++;
-  ddS.C_eDt[e][t]++;
+  atomic_incr(ddS.C_e[e]);
+  atomic_incr(ddS.C_eDt[e][t]);
   
   end_e = e-ind;
   for (i = e; i>end_e; i--) {
-    ddS.cp_et[i][t]++; 
-    ddS.Cp_e[i]++;
+    atomic_incr(ddS.cp_et[i][t]); 
+    atomic_incr(ddS.Cp_e[i]);
   }
 }
 
@@ -184,16 +185,19 @@ void unfix_tableidword(int e, int w, int t, int ind) {
   assert(e-ind+1>=0);
   for (i=e; i>e-ind; i--) {
     assert(i>=0);
-    ddS.s_evt[i][w][t]--;
-    ddS.S_eVt[i][t]--;
+    atomic_decr(ddS.s_evt[i][w][t]);
+    atomic_decr(ddS.S_eVt[i][t]);
     lasti = i;
   }    
   if ( lasti==0 ) {
-    ddS.S_0--;
+    int val;
+    atomic_decr(ddS.S_0);
+#ifndef H_THREADS
     assert(ddS.S_0vT[w]>0);
-    ddS.S_0vT[w]--;
-    if ( ddS.S_0vT[w]==0 ) {
-      ddS.S_0_nz--;    
+#endif
+    val = atomic_decr(ddS.S_0vT[w]);
+    if ( val==0 ) {
+      atomic_decr(ddS.S_0_nz);    
     }
   }
 }
@@ -202,16 +206,17 @@ void fix_tableidword(int e, int w, int t, int ind) {
   int i;
   int lasti = -1;
   for (i=e; i>e-ind; i--) {
-    ddS.s_evt[i][w][t]++;
-    ddS.S_eVt[i][t]++;
+    atomic_incr(ddS.s_evt[i][w][t]);
+    atomic_incr(ddS.S_eVt[i][t]);
     lasti = i;
   } 
   if ( lasti==0 ) {
-    ddS.S_0++;
-    if ( ddS.S_0vT[w]==0 ) {
-      ddS.S_0_nz++;    
+    int val;
+    atomic_incr(ddS.S_0);
+    val = atomic_incr(ddS.S_0vT[w]);
+    if ( val==1 ) {
+      atomic_incr(ddS.S_0_nz);    
     }
-    ddS.S_0vT[w]++;
   }
 }
 
@@ -221,26 +226,31 @@ void fix_tableidword(int e, int w, int t, int ind) {
  */
 static void add_tableidword(int e, int w, int t) { 
   int laste = -1;
+#ifndef H_THREADS
   assert(ddS.s_evt[e][w][t]==0);
+#endif
   for (;  e>=0 && ddS.s_evt[e][w][t]==0; e--) {
-    ddS.s_evt[e][w][t]++;
-    ddS.S_eVt[e][t]++;
+    ???  only increment if zero ... how to do safely
+    atomic_incr(ddS.s_evt[e][w][t]);
+    atomic_incr(ddS.S_eVt[e][t]);
     laste = e;
   }
   if ( laste==0 ) {
+    int val;
     /*   we incremented  ddS.s_evt[0][w][t] */
-    ddS.S_0++;
-    if ( ddS.S_0vT[w]==0 ) {
-      ddS.S_0_nz++;    
+    atomic_incr(ddS.S_0);
+    val = atomic_incr(ddS.S_0vT[w]);
+    if ( val==1 ) {
+       atomic_incr(ddS.S_0_nz);    
     }
-    ddS.S_0vT[w]++;
-  }
+ }
 }
 
 /*
  *    remove affects of document from stats
  */
 int remove_doc(int d, enum GibbsType fix) {
+????????/
   int i, t;
   int e = ddD.e[d];
   for (t=0; t<ddN.T; t++) 

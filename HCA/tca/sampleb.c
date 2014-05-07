@@ -150,32 +150,6 @@ static double bterms_phi1(double b, void *mydata) {
   return val;
 }
 
-static double bterms_burst(double b, void *mydata) {
-  int i;
-  double val = pctl_gammaprior(b);
-  double lgb = lgamma(b);
-  double lgba = 0;
-  double lb = 0;
-  if ( ddP.a_burst>0 )
-    lgba = lgamma(b/ddP.a_burst);
-  else
-    lb = log(b);
-  for (i=0; i<ddN.DT; i++) {
-    if ( ddP.a_burst>0 )
-      val += gammadiff(ddS.N_dT[i],b/ddP.a_burst, lgba);
-    else
-      val += ddS.N_dT[i] * lb;
-    val -= gammadiff(ddD.N_dT[i], b, lgb);
-  }
-  myarms_evals++;
-#ifdef B_DEBUG
-  yap_message("Eval bterms_burst(%lf) = %lf", b, val);
-  ddP.b_burst = b;
-  cache_update("bb");
-  yap_message(", lp=%lf\n", likelihood());
-#endif
-  return val;
-}
 
 void sample_bt(double *b) {
   double startlike;
@@ -197,14 +171,33 @@ void sample_bt(double *b) {
   }
 }
 
+static double bterms_burst(double b, void *mydata) {
+  int t;
+  double val;
+  double bvec[ddM.T];
+  uint16_t **docstats = (uint16_t **)mydata;
+  for (t=0; t<ddN.T; t++) 
+    bvec[t] = b;
+  val = dmi_likelihood_bterms(&ddM, -1, docstats, pctl_gammaprior,
+			      ddP.a_burst, bvec);
+  myarms_evals++;
+#ifdef B_DEBUG
+  yap_message("Eval (from likelihood) bdkterms(%lf) = %lf\n", b, val);
+#endif
+  return val;
+}
+
 void sample_bb(double *b) {
   double startlike;
+  uint16_t **docstats;
   if ( verbose>1 ) {
     startlike = likelihood();
     yap_message("sample_bb (pre): b_burst=%lf, lp=%lf\n",
 		*b, startlike);
   }
-  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_burst, NULL, b, "bb", 1);
+  docstats = dmi_bstore(&ddM);
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_burst, (void*)docstats, 
+	   b, "bb", 1);
   ddP.b_burst = *b;
   cache_update("bb");
   if ( verbose>1 ) {
@@ -215,6 +208,8 @@ void sample_bb(double *b) {
       yap_quit("Sampler failed due to huge decrease!\n");
     }
   }
+  dmi_freebstore(&ddM,docstats);
+  docstats = NULL;
 }
 
 void sample_bm1(double *b) {

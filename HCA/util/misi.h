@@ -127,8 +127,63 @@ void dmi_init(D_DMi_t *ptr,
 void dmi_check(D_DMi_t *pdmi, int i);
 /*  randomise 'r' assignments for these docs */
 void dmi_rand(D_DMi_t *pdmi, int firstdoc, int lastdoc);
+
 /*  compute likelihood  */
 double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
                       double a_burst, double *b_burst, stable_t *SD);
+
+/*
+ *    create data giving stats for a calculation of b's contribution
+ *    to likelihood
+ *
+ *    docstats[d] points to store for doc d
+ *    
+ *    stores blocks per nonzero topic
+ *       [0] = topic
+ *       [1] = total count
+ *       [2] = total tables
+ *
+ *    ending block
+ *       [0] = ddN.T+1
+ */
+uint16_t **dmi_bstore(D_DMi_t *ptr);
+void dmi_freebstore(D_DMi_t *ptr, uint16_t **docstats);
+/*
+ *     same as dmi_likelihood() but:
+ *         only bother with terms in b
+ *         gets stats from those built with dmi_bstore()
+ *
+ *     uset<0     ==>   compute for all t
+ *     otherwise  ==>   compute for just that t
+ */
+double dmi_likelihood_bterms(D_DMi_t *ptr, int uset, uint16_t **docstats,
+			     double (*gammaprior)(double),
+			     double a_burst, double *b_burst);
+
+/*
+ *    create data giving stats for a calculation of a's contribution
+ *    to likelihood
+ *    docstats[d] points to store for doc d
+ *    
+ *    stores blocks per nonzero topic
+ *       [0] = topic
+ *       [1] = total count
+ *       [2] = total tables
+ *       [3] = no. of Mi[] Si[] pairs following with Mi[]>=2
+ *       [4+2w]+[5+2w] = Mi[]+Si[] for w-th word
+ *
+ *    ending block
+ *       [0] = ddN.T+1
+ */
+uint16_t **dmi_astore(D_DMi_t *ptr);
+void dmi_freeastore(D_DMi_t *ptr, uint16_t **docstats);
+/*
+ *     same as dmi_likelihood() but:
+ *         only bother with terms in a
+ *         gets stats from those built with dmi_astore()
+ */
+double dmi_likelihood_aterms(D_DMi_t *ptr, uint16_t **docstats,
+			     double (*gammaprior)(double),
+			     double a_burst, double *b_burst, stable_t *SD);
 
 #endif

@@ -31,6 +31,8 @@
 #include "gibbs.h"
 #include "lgamma.h"
 
+extern int verbose;
+
 // #define MISI_CHECK
 
 static int zero(int l) {
@@ -412,6 +414,13 @@ void dmi_free(D_DMi_t *ptr) {
   free(ptr->MI);
 }
 
+
+/***********************************************************
+ *
+ *   likelihood calculations and parts thereof for
+ *   sampling hyperparameters
+ *
+ ***********************************************************/
 double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
                       double a_burst, double *b_burst, stable_t *SD) {
   D_MiSi_t dD;   
@@ -432,7 +441,7 @@ double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
   /*
    *    do for each document in turn;
    *    have to build the counts and table counts for
-   *    each from the t,r values in ddS.z[]
+   *    each from the t,r values in ptr->z[]
    */
   for (i=0; i<ptr->DT; i++) {
     misi_build(&dD, i, 0);
@@ -476,4 +485,336 @@ double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
   
   misi_free(&dD);
   return likelihood;
+}
+
+/*
+ *     same as dmi_likelihood() but:
+ *         only bother with terms in a
+ *         gets stats from those built with dmi_astore()
+ */
+double dmi_likelihood_aterms(D_DMi_t *ptr, uint16_t **docstats,
+			     double (*gammaprior)(double),
+			     double a_burst, double *b_burst, stable_t *SD) {
+  double *lgabd = dvec(ptr->T);
+  double la;
+  int t, i;
+  double likelihood = 0;
+  la = log(a_burst);
+  for (t=0; t<ptr->T; t++) {
+    lgabd[t] = lgamma(b_burst[t]/a_burst);
+  }
+  for (i=0; i<ptr->DT; i++) {
+    uint16_t *store = docstats[i];
+    int mem3, j;
+    if ( store==NULL ) 
+	continue;
+    while ( store[0]<ptr->T ) {
+      t = store[0];
+      assert(store[1]>0);
+      likelihood += ((int)store[2])*la 
+	+ gammadiff((int)store[2], b_burst[t]/a_burst, lgabd[t]);
+      mem3 = store[3];
+      store += 4;
+      for (j=0; j<mem3; j++) {
+	likelihood += S_S(SD,store[j*2],store[j*2+1]);
+      }
+      store += 2*mem3;
+    }
+    yap_infinite(likelihood);
+  }
+  free(lgabd);
+  return likelihood;
+}
+
+
+/*
+ *     same as dmi_likelihood() but:
+ *         only bother with terms in b
+ *         gets stats from those built with dmi_bstore()
+ *
+ *     uset<0     ==>   compute for all t
+ *     otherwise  ==>   compute for just that t
+ */
+double dmi_likelihood_bterms(D_DMi_t *ptr, int uset, uint16_t **docstats,
+			     double (*gammaprior)(double),
+			     double a_burst, double *b_burst) {
+  double *lgbd = dvec(ptr->T);
+  double *lgabd = dvec(ptr->T);
+  double *lb = dvec(ptr->T);
+  int t, i;
+  double likelihood = 0;
+  if ( uset<0 ) {
+    for (t=0; t<ptr->T; t++) {
+      lgbd[t] = lgamma(b_burst[t]);
+      lgabd[t] = lgamma(b_burst[t]/a_burst);
+      lb[t] = log(b_burst[t]);
+    }
+  } else {
+    lgbd[uset] = lgamma(b_burst[uset]);
+    lgabd[uset] = lgamma(b_burst[uset]/a_burst);
+    lb[uset] = log(b_burst[uset]);
+  }
+  for (i=0; i<ptr->DT; i++) {
+    uint16_t *store = docstats[i];
+    int mem=0;
+    if ( store==NULL )
+	continue;
+    while ( store[mem]<ptr->T ) {
+      t = store[mem];
+      assert(store[mem+1]>0);
+      if ( uset<0 || t==uset ) {
+	if ( a_burst==0 ) {
+	  likelihood += store[mem+2]*lb[t];
+	} else {
+	  likelihood += 
+	    gammadiff(store[mem+2], b_burst[t]/a_burst, lgabd[t]);
+	}
+	likelihood -= gammadiff((int)store[mem+1], b_burst[t], lgbd[t]);
+      }
+      mem += 3;
+    }
+    yap_infinite(likelihood);
+  }
+  if ( uset<0 ) {
+    for (t=0; t<ptr->T; t++)
+      likelihood += gammaprior(b_burst[t]);
+  } else
+    likelihood += gammaprior(b_burst[uset]);
+  free(lgabd);
+  free(lgbd);
+  free(lb);
+  return likelihood;
+}
+
+/*
+ *    docstats[d] points to store for doc d
+ *    
+ *    stores blocks per nonzero topic
+ *       [0] = topic
+ *       [1] = total count
+ *       [2] = total tables
+ *
+ *    ending block
+ *       [0] = ptr->T+1
+ */
+uint16_t **dmi_bstore(D_DMi_t *ptr) {
+  /*
+   *   same logic as likelihood_bdk() but we store stats
+   */  
+  D_MiSi_t dD;   
+  int t, i;
+  int totmemory = 0;
+  uint16_t **docstats;
+
+  misi_init(ptr,&dD);
+  docstats = malloc(sizeof(*docstats)*ptr->DT);
+  totmemory += sizeof(*docstats)*ptr->DT;
+  if ( !docstats )
+    yap_quit("Cannot allocate memory in dmi_bstore()\n");
+
+  /*
+   *    do for each document in turn;
+   *    have to build the counts and table counts for
+   *    each from the t,r values in ptr->z[]
+   */
+  for (i=0; i<ptr->DT; i++) {
+    int docmemory;
+    misi_build(&dD, i, 0);
+    /*
+     *  get memory usage for this doc
+     */
+    docmemory = 1;
+    for (t=0; t<ptr->T; t++) {
+      if ( dD.Mi[t]>0 ) {
+	docmemory += 3;
+      }
+    }
+    if ( docmemory==1 ) {
+      docstats[i] = NULL;
+      continue;
+    }
+    docstats[i] = u16vec(docmemory);
+    totmemory += docmemory*sizeof(docstats[i][0]);
+    {
+      int mem = 0;
+      uint16_t *dstats = docstats[i];
+      for (t=0; t<ptr->T; t++) {
+	if ( dD.Mi[t]>0 ) {
+	  dstats[mem] = t;
+	  dstats[mem+1] = dD.Mi[t];
+	  dstats[mem+2] = dD.Si[t];
+	  mem += 3;
+	}
+      }
+      dstats[mem] = ptr->T+1;
+      assert(mem+1==docmemory);
+    }
+    misi_unbuild(&dD, i, 0);
+  }
+  misi_free(&dD);
+  if ( verbose>1 )
+    yap_message("dmi_bstore:  built B stats in %d bytes\n", totmemory);
+  return docstats;
+}
+
+void dmi_freebstore(D_DMi_t *ptr, uint16_t **docstats) {
+  int i;
+  for (i=0; i<ptr->DT; i++) 
+    if ( docstats[i]!=NULL )
+      free(docstats[i]);
+  free(docstats);
+}
+
+/*
+ *    create data giving stats for a calculation of a's contribution
+ *    to likelihood
+ *    docstats[d] points to store for doc d
+ *    
+ *    stores blocks per nonzero topic
+ *       [0] = topic
+ *       [1] = total count
+ *       [2] = total tables
+ *       [3] = no. of Mi[] Si[] pairs following with Mi[]>=2
+ *       [4+2w]+[5+2w] = Mi[]+Si[] for w-th word
+ *
+ *    ending block
+ *       [0] = ptr->T+1
+ */
+uint16_t **dmi_astore(D_DMi_t *ptr) {
+/*
+ *   same logic as likelihood_bdk() but we store stats
+ */
+  D_MiSi_t dD;
+  int mi, l, t, i;
+  uint16_t **docstats;
+#define MAXW 10
+  /*
+   *    store[t][0] = #words with Mi[word][t]>1
+   *    store[t][1+2w] = Mi[word][t]
+   *    store[t][2+2w] = Si[word][t]
+   */
+  uint16_t **store;
+  uint16_t **overflow;
+  int totmemory = 0;
+
+  misi_init(ptr,&dD);
+  store = u16mat(ptr->T,MAXW*2+1);
+  overflow = malloc(ptr->T*sizeof(overflow));
+  docstats = malloc(sizeof(*docstats)*ptr->DT);
+  totmemory += sizeof(*docstats)*ptr->DT;
+  if ( !docstats  || !overflow)
+    yap_quit("Cannot allocate memory in bdk_store()\n");
+  for (t=0; t<ptr->T; t++) 
+    overflow[t] = NULL;
+
+  /*
+   *    do for each document in turn;
+   *    have to build the counts and table counts for
+   *    each from the t,r values in ptr->z[]
+   */
+
+  for (i=0; i<ptr->DT; i++) {
+    int docmemory;
+    misi_build(&dD, i, 0);
+
+    /*  compute likelihood and zero too*/
+    mi = ptr->MI[i];      
+    for (l=ptr->NdTcum[i]; l< ptr->NdTcum[i+1]; l++) {
+      if ( misi_multi(ptr,l) ) {
+	int mii = ptr->multiind[mi] - dD.mi_base;
+	t = Z_t(ptr->z[l]);
+	if ( dD.Mik[mii][t]>0 ) {
+	  if ( dD.Mik[mii][t]>1 ) {
+	    int scnt = store[t][0];
+	    /*
+	     *    save greater than 2 counts in store+overflow
+	     */
+	    if ( scnt>=MAXW ) {
+	      if ( scnt==MAXW ) {
+		assert(overflow[t]==NULL);
+		overflow[t] = malloc(2*MAXW*sizeof(overflow[t][0]));
+	      } else if ( scnt%MAXW == 0 ) {
+		int mysize = ((scnt-MAXW)/MAXW) + 1;
+		overflow[t] = realloc(overflow[t],
+				      2*mysize*MAXW*sizeof(overflow[t][0]));
+	      }
+	      if ( !overflow[t] )
+		yap_quit("Cannot allocate memory in bdk_store()\n");
+	      overflow[t][2*(scnt-MAXW)] = dD.Mik[mii][t];
+	      overflow[t][1+2*(scnt-MAXW)] = dD.Sik[mii][t];
+	    } else {
+	      store[t][1+2*scnt] = dD.Mik[mii][t];
+	      store[t][2+2*scnt] = dD.Sik[mii][t];
+	    }
+	    store[t][0]++;
+	  }
+	  /*  zero these now so don't double count later */
+	  dD.Mik[mii][t] = 0;
+	  dD.Sik[mii][t] = 0;
+	}
+	mi++;
+      }
+    }
+
+    /*
+     *  get memory usage for this doc
+     */
+    docmemory = 1;
+    for (t=0; t<ptr->T; t++) {
+      if ( dD.Mi[t]>0 ) {
+        docmemory += 4 + store[t][0]*2;
+      }
+    }
+    if ( docmemory==1 ) {
+      docstats[i] = NULL;
+      continue;
+    }
+    docstats[i] = u16vec(docmemory);
+    totmemory += docmemory*sizeof(docstats[i][0]);
+    {
+      int mem = 0, j;
+      uint16_t *dstats = docstats[i];
+      for (t=0; t<ptr->T; t++) {
+	if ( dD.Mi[t]>0 ) {
+	  dstats[mem] = t;
+	  dstats[mem+1] = dD.Mi[t];
+	  dstats[mem+2] = dD.Si[t];
+	  dstats[mem+3] = store[t][0];
+	  mem += 4;
+	  for (j=0; j<store[t][0] && j<MAXW; j++) {
+	    dstats[mem+2*j] = store[t][1+2*j];
+	    dstats[mem+2*j+1] = store[t][2+2*j];
+	    store[t][1+2*j] = 0;
+	    store[t][2+2*j] = 0;
+	  }
+	  for ( ; j<store[t][0]; j++) {
+	    dstats[mem+2*j] = overflow[t][2*(j-MAXW)];
+	    dstats[mem+2*j+1] = overflow[t][1+2*(j-MAXW)];
+	  }
+	  mem += store[t][0]*2;
+	  if ( overflow[t] )
+	    free(overflow[t]);
+	  overflow[t] = NULL;
+	  store[t][0] = 0;
+        }
+      }
+      dstats[mem] = ptr->T+1;
+      assert(mem+1==docmemory);
+    }
+    misi_unbuild(&dD, i, 0);
+  }
+  misi_free(&dD);
+  free(overflow);
+  free(store[0]);  free(store);
+  if ( verbose>1 )
+    yap_message("dmi_astore:  built doc stats in %d bytes\n", totmemory);
+  return docstats;
+}
+ 
+void dmi_freeastore(D_DMi_t *ptr, uint16_t **docstats) {
+  int i;
+  for (i=0; i<ptr->DT; i++)
+    if ( docstats[i]!=NULL )
+      free(docstats[i]);
+  free(docstats);
 }
