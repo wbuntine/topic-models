@@ -170,8 +170,11 @@ void pctl_init() {
   ddP.Tfree = -1;
   
   ddP.window = 0;
-  ddP.window_start = 0;
-
+  ddP.window_cycle = 10;
+  ddP.window_incr = 0;
+  ddP.window_left = 0;
+  ddP.window_right = 0;
+ 
   ddP.hold_every = 0;
   ddP.hold_dict = 0;
   ddP.hold_fraction = 0;
@@ -312,6 +315,12 @@ void pctl_dims() {
       ddP.beta = DIR_MAX*ddN.W/2.0;
     if ( ddP.beta>DIR_TOTAL_MAX )
       ddP.beta = DIR_TOTAL_MAX/2.0;
+  }
+  if ( ddP.window>0 ) {
+    if ( ddP.window>=ddN.DT )
+      ddP.window = 0;
+    ddP.window_left = 0;
+    ddP.window_right = ddP.window;
   }
 }
 

@@ -24,6 +24,7 @@
 typedef struct D_pargs_s {
   enum GibbsType fix;
   int Tmax;
+  int window;
   double thislp;
   int thisNd;
   int dots;

@@ -443,7 +443,7 @@ void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts) {
     }
     
     for (r=0; r<ddP.queryiter; r++) {
-      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD);
+      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD, 0);
       query_docprob(i, mimap, fact, &dD, topcnt_buf, topwordscore_buf);
     }  
     /*

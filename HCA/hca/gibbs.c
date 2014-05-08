@@ -38,8 +38,15 @@
  *   this is indicated by setting wid<0
  *
  *   return non-zero if fails due to constraints
+ *
+ *   if incremental<0, we must remove regardless
+ *   so force constraints to work
+ *
+ *   if wid<0, the data was bursty so no contribution to
+ *   beta side
  */
-int remove_topic(int i, int did, int wid, int t, int mi, int *Td_, D_MiSi_t *dD) {
+int remove_topic(int i, int did, int wid, int t, int mi, int *Td_, 
+		 D_MiSi_t *dD, int incremental) {
   char ud = 0;       /*  indicator for docXtopic's */
   char uw = 0;       /*  indicator for docXwords's */
   /*
@@ -54,23 +61,31 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_, D_MiSi_t *dD)
        ((ddS.Nwt[wid][t]==1) ||
 	ddS.Twt[wid][t]>ddS.Nwt[wid][t]*rng_unit(rngp) ) )
     uw = 1;
-  if ( (ud==1                    //  no changes to table counts
-	&& ddS.Ndt[did][t]>1    //  both n and t zero, so safe
-	&& ddS.Tdt[did][t]==1 )    //  t>1 so safe to decrease
-       ||
-       (uw==1                   //  no changes to table counts
-	&& ddS.Nwt[wid][t]>1    // etc.
-	&& ddS.Twt[wid][t]==1) ) 
-    return 1;
-  
-  if ( PCTL_BURSTY() && misi_blocked(dD, i, mi, t) )
+  if ( ud==1                   //  changes to table counts
+       && ddS.Ndt[did][t]>1    //  other data included too
+       && ddS.Tdt[did][t]==1   //  but only this one is table head
+       ) {
+    if ( incremental<0 )
+      ud = 0;
+    else
+      return 1;
+  }
+  if ( uw==1                  
+       && ddS.Nwt[wid][t]>1  
+       && ddS.Twt[wid][t]==1 ) {
+    if ( incremental<0 )
+      uw = 0;
+    else
+      return 1;
+  }
+
+  if ( PCTL_BURSTY() && incremental>=0 && misi_blocked(dD, i, mi, t) )
     return 1;
  
   /*
    *  OK to change this topic since will leave
    *  Ndt[did][t] & Tdt[did][t] constraints OK when we remove
    */
-
   if ( PCTL_BURSTY() )
     misi_decr(dD, i, mi, t, wid);
   
@@ -164,7 +179,8 @@ double gibbs_lda(/*
 		 int did,    //  document index
 		 int words,  //  do this many
 		 float *p,    //  temp store, at least 4*T
-		 D_MiSi_t *dD
+		 D_MiSi_t *dD,
+		 int  incremental  // 1=adding, -1=subtracting
 		 ) {
   int Td_ = 0;
   int i, wid, t, mi;
@@ -175,6 +191,7 @@ double gibbs_lda(/*
   float *wtip = NULL;
   float *ttip = NULL;
   float *dtip = NULL;
+  int logdocwarn = 0;
 
   /*
    *   some of the latent variables are not sampled
@@ -213,7 +230,7 @@ double gibbs_lda(/*
     wid=ddD.w[i]; 
     if ( ddS.TDTnz>=Tmax )
       zerod = 0;
-    {
+    if ( incremental <=0 ) {
       /*******************
        *   first we remove affects of this word on the stats
        *******************/
@@ -227,7 +244,8 @@ double gibbs_lda(/*
 #endif
 	if ( remove_topic(i, did, 
 			  (ddP.bdk==NULL||Z_issetr(ddS.z[i]))?wid:-1,
-			  t, mi, &Td_, dD) ) {
+			  t, mi, &Td_, dD, incremental) ) {
+	  assert(incremental>=0);
 	  /*
 	   *   not allowed, so no stats altered
 	   *   so abandon this word, but still keep diagnostics
@@ -252,6 +270,8 @@ double gibbs_lda(/*
 	}
       }
     }
+    if ( incremental<0 )
+      goto endword;
 #ifdef TRACE_WT
     if ( wid==TR_W && t==TR_T)
       yap_message("after remove_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
@@ -303,7 +323,11 @@ double gibbs_lda(/*
     }
     if ( fix!=GibbsHold || fix_doc==GibbsHold )
       logdoc += log(Z/tot);
-    yap_infinite(logdoc);
+    if ( !finite(logdoc) && logdocwarn==0 ) {
+      yap_message("!(%d)", i-StartWord);
+      logdocwarn++;
+    }
+    // yap_infinite(logdoc);
     
     /*******************
      *   now sample t using p[] and install affects of this on the stats;

@@ -62,7 +62,7 @@ extern D_DMi_t ddM;
 
 #define M_multi(l)  misi_multi(&ddM,l)
 
-double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd);
+double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental);
 
 /*
  *    steps inside Gibbs to add/remove effects of one word on all stats
@@ -70,7 +70,7 @@ double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_M
 void update_topic(int i, int did, int wid, int t, int mi, int *Td_, 
 		  D_MiSi_t *Dd, float ttip, float wtip, float dtip);
 int remove_topic(int i, int did, int wid, int t, int mi, int *Td_, 
-		 D_MiSi_t *Dd);
+		 D_MiSi_t *Dd, int incremental);
 
 /*
  *    allocation, deallocation, read/write on ddS.z[]
@@ -79,7 +79,8 @@ void hca_free();
 void hca_alloc();
 void hca_rand_z(int Tinit, int firstdoc, int lastdoc);
 void hca_read_z(char *resstem, int firstdoc, int lastdoc);
-void hca_reset_stats(char *resstem, int restart, int zero);
+void hca_reset_stats(char *resstem, int restart, int zero,
+		     int firstdoc, int lastdoc);
 void hca_write_z(char *resstem);
 void hca_report(char *resstem, char *stem, int ITER, int procs,
 		enum GibbsType fix, int dopmi, int showlike, int nopar);

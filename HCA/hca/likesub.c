@@ -219,6 +219,12 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
       *tip = 1.0;
     } else {
       double uone, uzero;
+#ifndef NDEBUG
+      if ( ddS.Ndt[d][t]==0 ) {
+	check_Ndt(d);
+	assert(ddS.Ndt[d][t]>0);
+      }
+#endif      
       doctableindicatorprob(d, t, Ttot, &uone, &uzero);
       p = uone + uzero;
       *tip = uone/(uone + uzero);

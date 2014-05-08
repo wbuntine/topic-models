@@ -92,8 +92,11 @@ typedef struct D_pars_s {
   /*
    *     window control ... only work on this much data at once
    */
-  int window;
-  int window_start;
+  int window;               //  size
+  int window_incr;          //  change by this much each cycle
+  int window_cycle;         //  cycle to begin moving
+  int window_left;          //  bounds, is treated modulo
+  int window_right;
   /*
    *  special control for sampling P.bdk[]
    */

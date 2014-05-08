@@ -34,13 +34,13 @@
  *   Allow experimental stuff ... only for developers since
  *   they mostly don't work
  */
-// #define EXPERIMENTAL
+#define EXPERIMENTAL
 
 /*
  *   Switch on to allow threading
  *   if off some vestiges remain but wont call threads
  */
-#define H_THREADS
+//  #define H_THREADS
 
 /*
  *   define this to set up the cache in alphabasetopicprob()

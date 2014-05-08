@@ -260,7 +260,13 @@ void hca_write_z(char *resstem)
  *    zero everything and rebuild entirely from z[] (both t and r)
  *    but only for training docs
  */
-void hca_reset_stats(char *resstem, int restart, int zero) {
+void hca_reset_stats(char *resstem, 
+		     int restart,  // restarting, read stats from file
+		     int zero,     // just zero and return
+		     int firstdoc, 
+		     int lastdoc  // may be greater the ddN.DT, 
+		                  // so mod before use
+		     ) {
   int i, t;
   /*
    *  reset data counts, N??, first,
@@ -285,7 +291,7 @@ void hca_reset_stats(char *resstem, int restart, int zero) {
     memset((void*)ddS.Tlife, 0, sizeof(ddS.Tlife[0])*ddN.T);
     for (i=0; i<ddN.D; i++)
       /*   ddS.Tdt not allocated monolithically  */
-      memset((void*)ddS.Tdt[0], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
+      memset((void*)ddS.Tdt[i], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
   }
   ddS.TWT = 0;
   ddS.TWTnz = 0;
@@ -297,17 +303,20 @@ void hca_reset_stats(char *resstem, int restart, int zero) {
   /*
    *  do data counts, N??, first,
    */  
-  for (i=0; i<ddN.NT; i++) {
-    t = Z_t(ddS.z[i]);
-    if ( ( ddP.bdk==NULL ) || Z_issetr(ddS.z[i]) ) {
-      if ( ddP.phi==NULL ) {
-        ddS.Nwt[ddD.w[i]][t]++;
-        ddS.NWt[t]++;
+  for (i=firstdoc; i<lastdoc; i++) {
+    int l;
+    int usei = (i+ddN.DT) % ddN.DT;
+    for (l=ddD.NdTcum[usei]; l<ddD.NdTcum[usei+1]; l++) {
+      t = Z_t(ddS.z[l]);
+      if ( ( ddP.bdk==NULL ) || Z_issetr(ddS.z[l]) ) {
+	if ( ddP.phi==NULL ) {
+	  ddS.Nwt[ddD.w[l]][t]++;
+	  ddS.NWt[t]++;
+	}
       }
+      ddS.Ndt[usei][t]++;
+      ddS.NdT[usei]++;
     }
-    ddS.Ndt[ddD.d[i]][t]++;
-    ddS.NdT[ddD.d[i]]++;
-    assert(ddD.d[i]<ddN.DT);
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {
@@ -362,27 +371,30 @@ void hca_reset_stats(char *resstem, int restart, int zero) {
       /*  
        *  check consistency
        */
-      for (i=0; i<ddN.DT; i++) {
+      for (i=firstdoc; i<lastdoc; i++) {
+	int usei = (i+ddN.DT) % ddN.DT;
 	for (t=0; t<ddN.T; t++) {
-	  if ( ((ddS.Ndt[i][t]>0) ^ (ddS.Tdt[i][t]>0)) ||
-	       (ddS.Tdt[i][t]>ddS.Ndt[i][t])) 
+	  if ( ((ddS.Ndt[usei][t]>0) ^ (ddS.Tdt[usei][t]>0)) ||
+	       (ddS.Tdt[usei][t]>ddS.Ndt[usei][t])) 
 	    yap_quit("Inconsistency:  ddS.Ndt[%d][%d]=%d, ddS.Tdt[%d][%d]=%d\n",
-		     i, t, (int)ddS.Ndt[i][t], i, t, (int)ddS.Tdt[i][t]);
+		     usei, t, (int)ddS.Ndt[usei][t], usei, t, (int)ddS.Tdt[usei][t]);
 	}
       }
     } else {
-      for (i=0; i<ddN.DT; i++) {
+      for (i=firstdoc; i<lastdoc; i++) {
+	int usei = (i+ddN.DT) % ddN.DT;
 	for (t=0; t<ddN.T; t++) {
-	  if ( ddS.Ndt[i][t]>0 ) {
-	    ddS.Tdt[i][t] = 1;
+	  if ( ddS.Ndt[usei][t]>0 ) {
+	    ddS.Tdt[usei][t] = 1;
 	  }
 	}
       }
     }
-    for (i=0; i<ddN.DT; i++) {
+    for (i=firstdoc; i<lastdoc; i++) {
+      int usei = (i+ddN.DT) % ddN.DT;
       for (t=0; t<ddN.T; t++) {
-        if ( ddS.Ndt[i][t]>0 ) {
-          ddS.Tdt[i][t] = 1;
+        if ( ddS.Ndt[usei][t]>0 ) {
+          ddS.Tdt[usei][t] = 1;
           ddS.TDt[t]++;
         }
       }

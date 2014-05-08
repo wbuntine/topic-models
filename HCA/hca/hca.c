@@ -163,8 +163,10 @@ static void usage() {
           "                  #    from 'mode-word-assignments.dat' file\n"
           "   -s seed        #  random number seed, default is a time value\n"
 	  "   -v             #  up the verbosity by one\n"
-	  "   -w size,start  #  use a data window this big, \n"
-	  "                  #     drift after start cycles\n"
+#ifdef EXPERIMENTAL
+	  "   -w size,incr,start  #  use a data window this big, \n"
+	  "                  #     drift by incr after start cycles\n"
+#endif
 	  "   -W W           #  make max W larger\n"
 	  "   -x             #  enable use of exclude topics for -Q\n"
 	  "  testing and reports:\n"
@@ -203,27 +205,52 @@ void *sampling_p(void *pargs)
 {
   int i;
   float *p = fvec(ddN.T * 4);
-  D_MiSi_t dD;
-  D_pargs_p *par =(D_pargs_p *) pargs;
+  D_MiSi_t dD;  D_pargs_p *par =(D_pargs_p *) pargs;
   int procs = par->procs;
   clock_t t1 = clock();
+  int start;
+  int end;
+
+  if ( par->window>0 ) {
+     start = ddP.window_left - ddP.window_incr;
+     end = ddP.window_right;
+  } else {
+    start = 0;
+    if ( ddP.window )
+      end = ddP.window;
+    else
+      end = ddN.DT;
+  }
   
   if ( ddP.bdk!=NULL ) 
     misi_init(&ddM,&dD);
-  /*
+
+   /*
    *  sampling
    */
   par->thislp = 0;
   par->thisNd = 0;
-  for (i=par->processid; i<ddN.DT; i+=procs) {    
-    if ( ddP.bdk!=NULL ) 
-      misi_build(&dD,i,0);
-    par->thislp += gibbs_lda(GibbsNone, par->Tmax, i, ddD.NdT[i], p, &dD);
-    par->thisNd += ddD.NdT[i];
-    if ( par->dots>0 && i>0 && (i%par->dots==0) ) 
-      yap_message(".");
-    if ( ddP.bdk!=NULL ) 
-      misi_unbuild(&dD,i,0);
+  for (i=start+par->processid; i<end; i+=procs) {   
+    int incremental;
+    int usei = i % ddN.DT;
+    if ( usei<0 ) usei += ddN.DT;
+    if ( ddP.bdk!=NULL )  //WRAY ???
+      misi_build(&dD,usei,0); 
+    incremental = 0;
+#ifdef EXPERIMENTAL
+    if ( par->window ) {
+      if ( i<ddP.window_left )
+	incremental = -1;
+      else if ( i>=ddP.window_right-ddP.window_incr )
+	incremental = 1;
+    }
+#endif
+    par->thislp += gibbs_lda(GibbsNone, par->Tmax, usei, ddD.NdT[usei], p, 
+			     &dD, incremental);
+    par->thisNd += ddD.NdT[usei];
+    if ( par->dots>0 && i>0 && (i%par->dots==0) ) yap_message(".");
+    if ( ddP.bdk!=NULL )   //WRAY ???
+      misi_unbuild(&dD,usei,0); 
   }
   free(p);
   if ( ddP.bdk!=NULL ) 
@@ -256,7 +283,7 @@ void *testing_p(void *pargs)
       continue;
     }
     if ( ddP.bdk!=NULL ) misi_build(&dD,i,0);
-    par->thislp += gibbs_lda(fix, par->Tmax, i, ddD.NdT[i], p, &dD);
+    par->thislp += gibbs_lda(fix, par->Tmax, i, ddD.NdT[i], p, &dD, 0);
     par->thisNd += ddD.NdT[i];
     remove_doc(i, fix);
     if ( par->dots>0 && i>0 && (i%par->dots==0) ) 
@@ -652,9 +679,12 @@ int main(int argc, char* argv[])
     case 'V':
       load_vocab = 1;
       break;
+#ifdef EXPERIMENTAL
     case 'w':
-      if ( !optarg || sscanf(optarg,"%d,%d",&ddP.window, &ddP.window_start)<1 )
+      if ( !optarg || sscanf(optarg,"%d,%d,%d",&ddP.window, 
+			     &ddP.window_incr, &ddP.window_cycle)<2 )
 	yap_quit("Need a valid 'w' argument\n");
+#endif
       break;
     case 'W':
       if ( !optarg || sscanf(optarg,"%d",&maxW)<1 )
@@ -796,15 +826,18 @@ int main(int argc, char* argv[])
      }
    }
    
-  if ( ddP.tprobiter>0 && ddN.TEST==0 )
-    yap_quit("Option '-ltestprob,...' must have test data\n");
-
-  if ( ddP.tprobiter>0 && fix_hold==GibbsHold  )
-    /*
-     *  the loop to do the test probs is done using usual
-     *  test handling, which includes the hold-out handling
-     */
-    yap_quit("Option '-ltestprob,...' must not do hold out testing\n");
+   if ( ddP.window && loadhdp )
+     yap_quit("Option '-w' must not be used with loadhdp\n");
+   
+   if ( ddP.tprobiter>0 && ddN.TEST==0 )
+     yap_quit("Option '-ltestprob,...' must have test data\n");
+   
+   if ( ddP.tprobiter>0 && fix_hold==GibbsHold  )
+     /*
+      *  the loop to do the test probs is done using usual
+      *  test handling, which includes the hold-out handling
+      */
+     yap_quit("Option '-ltestprob,...' must not do hold out testing\n");
 	
   /*
    *   all data structures
@@ -894,7 +927,7 @@ int main(int argc, char* argv[])
    *  load/init topic assignments and prepare statistics
    */
   if ( loadhdp ) {
-    hca_reset_stats(resstem, 0, 1);
+    hca_reset_stats(resstem, 0, 1, 0, ddN.DT);
     hca_load_hdp(resstem);
   } else {
     if ( restart ) {
@@ -903,7 +936,7 @@ int main(int argc, char* argv[])
     } else {
       hca_rand_z(ddP.Tinit, 0, ddN.D);
     }
-    hca_reset_stats(resstem, restart, 0);
+    hca_reset_stats(resstem, restart, 0, 0, ddP.window?ddP.window:ddN.DT);
   }
   if ( ddP.PYalpha )
     yap_message("Initialised with %d classes\n", ddS.TDTnz);
@@ -957,6 +990,18 @@ int main(int argc, char* argv[])
       ddG.doprob = 0;
 #endif
     
+#ifdef EXPERIMENTAL
+    if ( ddP.window>0 && iter>=ddP.window_cycle ) {
+      ddP.window_left += ddP.window_incr;
+      ddP.window_right += ddP.window_incr;
+      if ( ddP.window_left>= ddN.DT ) {
+	ddP.window_left -= ddN.DT;
+	ddP.window_right -= ddN.DT;
+      }
+    }
+    //  yap_message("[ %d ... %d]\n", ddP.window_left,ddP.window_right);
+#endif
+    
     /*
      *  sampling
      */
@@ -976,6 +1021,7 @@ int main(int argc, char* argv[])
       parg[pro].dots=dots;
       parg[pro].processid=pro;
       parg[pro].procs=procs;
+      parg[pro].window = (iter>=ddP.window_cycle)?ddP.window:0;
 #ifndef H_THREADS
       sampling_p(&parg[pro]);
 #else
@@ -1085,7 +1131,11 @@ int main(int argc, char* argv[])
 	double logprob;
 	char *teststr = fix_hold==GibbsHold?"Hold":"ML";
 	t1 = clock();
-	logprob = lp_test_ML(fix_hold, procs);
+	if ( ddP.window ) 
+	  hca_reset_stats(resstem, 0, 0, 0, ddN.DT);
+ 	logprob = lp_test_ML(fix_hold, procs);
+	if ( ddP.window ) 
+	  hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
 	t2 = clock();
 	yap_message("\nTest: tot train/test time = %.4lf(s)/ %.4lf(s), "
                     "cycle = %d, log_2(test perp%s) = %.4f\n",
@@ -1098,6 +1148,8 @@ int main(int argc, char* argv[])
      *   progress reports
      */
     if ( ( iter>ddP.progburn && (iter%ddP.progiter)==0 ) || iter+1>=ITER ) {
+      if ( ddP.window ) 
+	hca_reset_stats(resstem, 0, 0, 0, ddN.DT);
       yap_message(" %d\nlog_2(perp)=%.4lf,%.4lf", iter, 
 		  likelihood() * (showlike?1:-M_LOG2E/ddN.NT), thislp * (showlike?1:-M_LOG2E/thisNd));
       if ( ddP.tprobiter>0 ) 
@@ -1114,6 +1166,8 @@ int main(int argc, char* argv[])
 	  sparsemap_report(resstem,0.5);
 	displayed++;
       }
+      if ( ddP.window ) 
+	hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
       if ( iter+1<ITER ) {
 	yap_report("cycles: ");
       }
@@ -1139,6 +1193,9 @@ int main(int argc, char* argv[])
 
   } // over iter
   
+  if ( ddP.window ) 
+    hca_reset_stats(resstem, 0, 0, 0, ddN.DT);
+
   if ( ITER ) 
       yap_report("Finished after %d cycles on average of %lf+%lf(s) per cycle\n",
 	     iter,  (tot_time-psample_time)/iter, psample_time/iter);
