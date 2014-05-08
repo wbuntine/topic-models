@@ -152,7 +152,11 @@ static double mu_one_fact(int e, int t) {
   double fact = 1;
   if ( n>0 ) {
     int c = ddS.cp_et[e][t];
-    fact = S_UV(ddC.a_mu, n, c+1) * (c+1.0)/(n+1);
+#ifndef H_THREADS
+    assert(c>0);
+#endif
+    if ( c>0 )
+      fact = S_UV(ddC.a_mu, n, c+1) * (c+1.0)/(n+1);
   }
   return fact 
     * (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]) 
@@ -164,6 +168,10 @@ static double mu_zero_fact(int e, int t) {
   if ( n==0 )
     return 0;
   c = ddS.cp_et[e][t];
+#ifdef H_THREADS
+  if ( c==0 )
+    return 0;
+#endif
   assert(c>0);
   return S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
@@ -176,7 +184,11 @@ static double phi_one_fact(int e, int v, int t) {
   double fact = 1;
   if ( n>0 ) {
     int c = ddS.s_evt[e][v][t];
-    fact = S_UV(ddC.a_phi, n, c+1) * (c+1.0)/(n+1);
+#ifndef H_THREADS
+    assert(c>0);
+#endif
+    if ( c>0 )    
+      fact = S_UV(ddC.a_phi, n, c+1) * (c+1.0)/(n+1);
   }
   return fact
     * (ddP.b_phi[e][t] + ddP.a_phi * ddS.S_eVt[e][t])
@@ -188,6 +200,10 @@ static double phi_zero_fact(int e, int v, int t) {
   if ( n==0 )
     return 0;
   c = ddS.s_evt[e][v][t];
+#ifdef H_THREADS
+  if ( c==0 )
+    return 0;
+#endif  
   assert(c>0);
   return S_U(ddC.a_phi, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));

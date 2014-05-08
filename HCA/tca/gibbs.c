@@ -238,6 +238,7 @@ double gibbs_lda(/*
   int e;
   double Z, tot;
   double logdoc = 0;
+  int logdocinf = 0;
   int StartWord = ddD.N_dTcum[did];
   int EndWord = StartWord + words;
   float dtip[ddN.T];
@@ -317,8 +318,12 @@ double gibbs_lda(/*
     }
     if ( fix!=GibbsHold || fix_doc==GibbsHold )
       logdoc += log(Z/tot);
-    yap_infinite(logdoc);
-    
+    if ( logdocinf==0 ) 
+      if ( !finite(logdoc) ) {
+	logdocinf++;
+	yap_infinite(logdoc);
+      }
+
     /*******************
      *   now sample t using p[] and install affects of this on the stats;
      *   but note this needs indicator to be set!

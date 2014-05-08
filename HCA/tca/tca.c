@@ -102,9 +102,7 @@ static void usage() {
 	  "   -N maxN,maxM   #  maximum counts for Stirling number tables\n"
 	  "                  #     maxM is max #tables for all\n"
 	  "                  #     maxN is max count for a_mu and a_phi\n"
-#ifdef H_THREADS
 	  "   -q threads     #  set number of threads, default 1\n"
-#endif
 	  "   -r             #  restart using data saved\n"
 	  "   -R             #  restart from hca\n"
           "   -s seed        #  random number seed, default is a time value\n"
@@ -313,12 +311,10 @@ int main(int argc, char* argv[])
           yap_quit("Need a valid parameter for 'o' argument\n");
       }
       break;
-#ifdef H_THREADS
    case 'q':
       if(!optarg || sscanf(optarg, "%d", &procs) != 1)
 	yap_quit("Need a valid 'q' argument\n");
       break;
-#endif
     case 'r':
       restart++;
       break;
@@ -605,9 +601,9 @@ int main(int argc, char* argv[])
       thisNd +=  parg[pro].thisNd;
       tot_time += parg[pro].tot_time;
     }
-#if defined(NONATOMIC)
+#ifdef H_THREADS
     if ( procs>1 )
-      tca_correct_twt();
+      tca_reset_stats(NULL,1);
 #endif
 
 #ifdef IND_STATS

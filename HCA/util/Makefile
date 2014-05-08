@@ -1,7 +1,7 @@
 #
 #   CFLAGS and LDFLAGS should be in environment vars
 
-SRC = beta.c coher.c csparse.c myarms.c tokens.c util.c yap.c pmi.c dread.c misi.c
+SRC = beta.c coher.c csparse.c myarms.c tokens.c util.c yap.c pmi.c dread.c misi.c 
 HFILES = myarms.h util.h yap.h dread.h misi.h
 OBJ = $(SRC:.c=.o)
 LIBRARY = libddca.a

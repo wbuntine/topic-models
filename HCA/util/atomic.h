@@ -18,6 +18,8 @@
 #ifndef __ATOMIC_H
 #define __ATOMIC_H
 
+extern long atomic_zero;
+
 /*
  *   define to make things non-atomic
  */
@@ -25,6 +27,10 @@
 
 #ifdef NONATOMIC
 #define atomic_incr(inttype) ++(inttype)
+/*
+ *   if its zero, incr. and return true, else do nothing and return false
+ */
+#define atomic_incr_zero(inttype) ((inttype==0)?(inttype)++:0)
 #define atomic_decr(inttype) --(inttype)
 #define atomic_add(inttype,val) (inttype += val)
 #define atomic_sub(inttype,val) (inttype -= val)
@@ -32,12 +38,14 @@
 /* Test for GCC == 4.8.2 */
 #if (__GNUC__==4 && __GNUC_MINOR__==8 && \
      ( __GNUC_PATCHLEVEL__<=2 && __GNUC_PATCHLEVEL__>=1) )
+#define atomic_incr_zero(inttype)  ((inttype==0)?atomic_incr(inttype):0)
 #define atomic_incr(inttype) __atomic_add_fetch(&(inttype),1, __ATOMIC_RELAXED)
 #define atomic_decr(inttype) __atomic_sub_fetch(&(inttype),1, __ATOMIC_RELAXED)
 #define atomic_add(inttype,val) __atomic_add_fetch(&(inttype),val, __ATOMIC_RELAXED)
 #define atomic_sub(inttype,val) __atomic_sub_fetch(&(inttype),val, __ATOMIC_RELAXED)
 #else
 #if (__GNUC__==4 && __GNUC_MINOR__==1 &&__GNUC_PATCHLEVEL__==2  )
+#define atomic_incr_zero(inttype) ???
 #define atomic_incr(inttype) __sync_add_and_fetch(&(inttype),1)
 #define atomic_decr(inttype) __sync_sub_and_fetch(&(inttype),1)
 #define atomic_add(inttype,val) __sync_add_and_fetch(&(inttype),val)
@@ -46,6 +54,7 @@
 /*
  *  leave undefined to force non compile
  */
+#define atomic_incr_zero(inttype) ???
 #define atomic_incr(inttype) ???
 #define atomic_decr(inttype) ???
 #define atomic_add(inttype,val) ???

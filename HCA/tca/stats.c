@@ -145,15 +145,23 @@ void unfix_tableidtopic(int d, int t, int ind) {
   assert(ddS.c_dt[d][t]>=0);
   assert(ddS.c_dt[d][t]>0 || ddS.n_dt[d][t]==0);
 #endif
+  //   always safe since its associated with ddS.c_dt[d][t]
   atomic_decr(ddS.C_eDt[e][t]);
-  atomic_decr(ddS.C_e[e]);
-  
+  atomic_decr(ddS.C_e[e]);  
   {
     int i;
     int end_e;
     end_e = e-ind;
     for (i = e; i>end_e; i--) {
-      atomic_decr(ddS.cp_et[i][t]); 
+      if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
+	/*
+	 *    this may decrement below zero if two independently set ind
+	 *    so we catch it here
+	 */
+	yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
+	atomic_incr(ddS.cp_et[i][t]);
+	break;
+      }           
       atomic_decr(ddS.Cp_e[i]);
     }
   }
@@ -185,20 +193,25 @@ void unfix_tableidword(int e, int w, int t, int ind) {
   assert(e-ind+1>=0);
   for (i=e; i>e-ind; i--) {
     assert(i>=0);
-    atomic_decr(ddS.s_evt[i][w][t]);
+    if ( atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40 ) {
+      /*
+       *    this may decrement below zero if two independently set ind
+       *    so we catch it here
+       */
+      yap_message("Whoops atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40\n");
+      atomic_incr(ddS.s_evt[i][w][t]);
+      break;
+    } 
     atomic_decr(ddS.S_eVt[i][t]);
     lasti = i;
   }    
   if ( lasti==0 ) {
-    int val;
     atomic_decr(ddS.S_0);
 #ifndef H_THREADS
     assert(ddS.S_0vT[w]>0);
 #endif
-    val = atomic_decr(ddS.S_0vT[w]);
-    if ( val==0 ) {
-      atomic_decr(ddS.S_0_nz);    
-    }
+    atomic_decr(ddS.S_0vT[w]);
+    atomic_decr(ddS.S_0_nz);    
   }
 }
 
@@ -230,10 +243,12 @@ static void add_tableidword(int e, int w, int t) {
   assert(ddS.s_evt[e][w][t]==0);
 #endif
   for (;  e>=0 && ddS.s_evt[e][w][t]==0; e--) {
-    ???  only increment if zero ... how to do safely
-    atomic_incr(ddS.s_evt[e][w][t]);
-    atomic_incr(ddS.S_eVt[e][t]);
-    laste = e;
+    //WRAY ???  only increment if zero ... how to do safely
+    if ( atomic_incr_zero(ddS.s_evt[e][w][t]) ) {
+      atomic_incr(ddS.S_eVt[e][t]);
+      laste = e;
+    } else
+      break;
   }
   if ( laste==0 ) {
     int val;
@@ -250,7 +265,6 @@ static void add_tableidword(int e, int w, int t) {
  *    remove affects of document from stats
  */
 int remove_doc(int d, enum GibbsType fix) {
-????????/
   int i, t;
   int e = ddD.e[d];
   for (t=0; t<ddN.T; t++) 
@@ -476,6 +490,12 @@ void tca_write_z(char *resstem)
 /*
  *    zero everything and rebuild entirely from z[] (both t and r)
  *    but only for training docs
+ *    
+ *    restart!=0, resstem!+NULL:  set to stem for results to read
+ *    OR
+ *    restart!=0, resstem==NULL:   recompute from memory
+ *    OR
+ *    restart==0:  recompute and set table stats to 1 or minimum
  */
 void tca_reset_stats(char *resstem, int restart) {  
   int e, i, t;
@@ -526,9 +546,11 @@ void tca_reset_stats(char *resstem, int restart) {
   }
 
   if ( restart ) {
-    char *fname = yap_makename(resstem,".sevt");
-    read_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_evt,fname);
-    free(fname);
+    if ( resstem ) {
+      char *fname = yap_makename(resstem,".sevt");
+      read_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_evt,fname);
+      free(fname);
+    }
     /*  
      *  check and fix consistency,
      *  note have to work backwards because need ddS.s_evt[e+1][i][t]
@@ -589,9 +611,11 @@ void tca_reset_stats(char *resstem, int restart) {
    *     alpha part
    */
   if ( restart ) {
-    char *fname = yap_makename(resstem,".cdt");
-    read_u16sparse(ddN.DT,ddN.T,ddS.c_dt,fname);
-    free(fname);
+    if ( resstem ) {
+      char *fname = yap_makename(resstem,".cdt");
+      read_u16sparse(ddN.DT,ddN.T,ddS.c_dt,fname);
+      free(fname);
+    }
     /*  
      *  check consistency
      *    NB.  writing doesn't record c_dt[i][t]==1, makes it 0,
@@ -630,9 +654,11 @@ void tca_reset_stats(char *resstem, int restart) {
     for (t=0; t<ddN.T; t++)
       ddS.C_e[e] += ddS.C_eDt[e][t];
   if ( restart ) {
-    char *fname = yap_makename(resstem,".cpet");
-    read_u32sparse(ddN.E,ddN.T,ddS.cp_et,fname);
-    free(fname);
+    if ( resstem ) {
+      char *fname = yap_makename(resstem,".cpet");
+      read_u32sparse(ddN.E,ddN.T,ddS.cp_et,fname);
+      free(fname);
+    }
     /*  
      *  check and fix consistency
      *    NB.  writing doesn't record cp_et[e][t]==1, makes it 0,

@@ -54,6 +54,7 @@ double lp_test_ML(/*
   int StartTestDoc=ddN.D-ddN.TEST, EndTestDoc=ddN.D;
   double lik=0.0;
   int totw=0;
+  D_MiSi_t dD;
 
   /*
    *  must account for other totals over docs
@@ -66,7 +67,8 @@ double lp_test_ML(/*
    *   but stats not added elsewhere
    */
   // check_m_evt(0);
-  
+  if ( PCTL_BURSTY() ) misi_init(&ddM,&dD);
+
   /*
    *   now run sampler on all test docs
    */
@@ -88,15 +90,17 @@ double lp_test_ML(/*
 #endif
       continue;
     }
+    if ( PCTL_BURSTY() ) misi_build(&dD,i,0);
     for (r=0; r<ddP.mltburn; r++) 
-      gibbs_lda(fix, i, ddD.N_dT[i], fact);
+      gibbs_lda(fix, i, ddD.N_dT[i], fact, &dD);
     /*
      *   record harmonic mean of last (samples-burnin)
      */
     for (; r<ddP.mltiter; r++) 
-      hmean = logadd(hmean,-gibbs_lda(fix, i, ddD.N_dT[i], fact));
+      hmean = logadd(hmean,-gibbs_lda(fix, i, ddD.N_dT[i], fact, &dD));
     lik += log(ddP.mltiter-ddP.mltburn) - hmean;
     totw += thisw;
+    if ( PCTL_BURSTY() ) misi_unbuild(&dD,i,0);
 #ifdef TRACE_WT
     yap_message("remove_doc(d=%d,N=%d,T=%d) end loop\n",
 		i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
@@ -110,6 +114,7 @@ double lp_test_ML(/*
     // check_m_evt(ddD.e[i]);
   }
   free(fact);
+  if ( PCTL_BURSTY() ) misi_free(&dD);
   if ( totw==0 )
     return 0;
   return lik/totw;
