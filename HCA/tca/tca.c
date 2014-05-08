@@ -602,7 +602,7 @@ int main(int argc, char* argv[])
       tot_time += parg[pro].tot_time;
     }
 #ifdef H_THREADS
-    if ( procs>1 )
+    if ( 0 && procs>1 )
       tca_reset_stats(NULL,1);
 #endif
 

@@ -53,7 +53,7 @@ void pctl_init() {
     ddT[par].sampler = NULL;
     ddT[par].name = NULL;
     ddT[par].ptr = NULL;
-    ddT[par].fix = 0;
+    ddT[par].fix = 0;           
     ddT[par].start = 10;
     ddT[par].cycles = 0;
     ddT[par].offset = 0;
@@ -100,7 +100,9 @@ void pctl_init() {
   ddT[ParB0P].fix = 1;
   ddT[ParB0M].fix = 1;
   ddT[ParBP0].fix = 1;
-  // ddT[ParBM0].fix = 1;
+  //WRAY  sampling BM0 causes weird memory bugs
+  ddT[ParBM0].fix = 1;
+  ddT[ParAP].fix = 1;
 
   ddP.a_mu = APAR;
   ddP.a_theta = APAR;

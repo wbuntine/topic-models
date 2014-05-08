@@ -95,7 +95,7 @@ static double bterms_mu1(double b, void *mydata) {
 static double bterms_mu0(double b, void *mydata) {
   double val = pctl_gammaprior(b);
   val += poch(b, ddP.a_mu, ddS.Cp_e[0]);
-  val -= gammadiff(ddS.C_e[0]+(ddN.E>1)?ddS.Cp_e[1]:0, b, 0);
+  val -= gammadiff((ddS.C_e[0]+(ddN.E>1)?ddS.Cp_e[1]:0), b, 0);
   myarms_evals++;
 #ifdef B_DEBUG
   yap_message("Eval bterms_mu0(%lf) = %lf", b, val);
@@ -283,15 +283,16 @@ void sample_bp0(double *b) {
 }
 void sample_bm0(double *b) {
   double startlike;
-  if ( verbose>1 ) {
+  if ( verbose>0 ) {
     startlike = likelihood();
     yap_message("sample_bm0 (pre): b_mu[0]=%lf, lp=%lf\n",
 		*b, startlike);
   }
+  //WRAY  commenting this out stops sample_bm0() crashing!
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_mu0, NULL, b, "bm0", 1);
   ddP.b_mu[0] = *b;
   cache_update("bm0");
-  if ( verbose>1 ) {
+  if ( verbose>0 ) {
     double endlike = likelihood();
     yap_message("sample_bm0 (post): b_mu[0]=%lf, lp=%lf\n",
 		*b, endlike);

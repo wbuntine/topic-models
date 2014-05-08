@@ -139,32 +139,42 @@ uint16_t comp_Td(int did) {
 void unfix_tableidtopic(int d, int t, int ind) { 
   int e = ddD.e[d];
   
+  //   always safe since its associated with ddS.c_dt[d][t]
+  if ( atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40 ) {
+    /*
+     *    this may decrement below zero if two independently set ind
+     *    so we catch it here
+     */
+    yap_message("Whoops atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40\n");
+    atomic_incr(ddS.C_eDt[e][t]);
+  } else {          
+    if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
+      yap_message("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
+    {
+      int i;
+      int end_e;
+      end_e = e-ind;
+      for (i = e; i>end_e; i--) {
+	if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
+	  /*
+	   *    this may decrement below zero if two independently set ind
+	   *    so we catch it here
+	   */
+	  yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
+	  atomic_incr(ddS.cp_et[i][t]);
+	  break;
+	}           
+	if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
+	  yap_message("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
+      }
+    }
+  }
   ddS.c_dt[d][t]--;
   ddS.C_dT[d]--;
 #ifndef H_THREADS
   assert(ddS.c_dt[d][t]>=0);
   assert(ddS.c_dt[d][t]>0 || ddS.n_dt[d][t]==0);
 #endif
-  //   always safe since its associated with ddS.c_dt[d][t]
-  atomic_decr(ddS.C_eDt[e][t]);
-  atomic_decr(ddS.C_e[e]);  
-  {
-    int i;
-    int end_e;
-    end_e = e-ind;
-    for (i = e; i>end_e; i--) {
-      if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
-	/*
-	 *    this may decrement below zero if two independently set ind
-	 *    so we catch it here
-	 */
-	yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
-	atomic_incr(ddS.cp_et[i][t]);
-	break;
-      }           
-      atomic_decr(ddS.Cp_e[i]);
-    }
-  }
 }
 
 void fix_tableidtopic(int d, int t, int ind) {
@@ -174,16 +184,16 @@ void fix_tableidtopic(int d, int t, int ind) {
   
   assert(e>=0 && e<ddN.E);
 
-  ddS.c_dt[d][t]++;
   ddS.C_dT[d]++;
+  ddS.c_dt[d][t]++;
   
   atomic_incr(ddS.C_e[e]);
   atomic_incr(ddS.C_eDt[e][t]);
   
   end_e = e-ind;
   for (i = e; i>end_e; i--) {
-    atomic_incr(ddS.cp_et[i][t]); 
     atomic_incr(ddS.Cp_e[i]);
+    atomic_incr(ddS.cp_et[i][t]); 
   }
 }
 
@@ -193,25 +203,36 @@ void unfix_tableidword(int e, int w, int t, int ind) {
   assert(e-ind+1>=0);
   for (i=e; i>e-ind; i--) {
     assert(i>=0);
-    if ( atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40 ) {
+    if ( (atomic_decr(ddS.s_evt[i][w][t]))>=UINT32_MAX-40 ) {
       /*
        *    this may decrement below zero if two independently set ind
        *    so we catch it here
        */
+      //WRAY   this tapped!!
       yap_message("Whoops atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40\n");
       atomic_incr(ddS.s_evt[i][w][t]);
-      break;
+      return;
     } 
-    atomic_decr(ddS.S_eVt[i][t]);
+    if ( atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX-40 )
+      yap_message("Whoops atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX\n");
     lasti = i;
   }    
   if ( lasti==0 ) {
-    atomic_decr(ddS.S_0);
+    int val;
 #ifndef H_THREADS
     assert(ddS.S_0vT[w]>0);
 #endif
-    atomic_decr(ddS.S_0vT[w]);
-    atomic_decr(ddS.S_0_nz);    
+    if ( (val=atomic_decr(ddS.S_0vT[w]))>=UINT32_MAX-40 ) {
+      yap_message("Whoops atomic_decr(ddS.S_0vT[w])>=UINT32_MAX\n");
+      atomic_incr(ddS.S_0vT[w]);
+      return;
+    }
+    if ( atomic_decr(ddS.S_0)>=UINT32_MAX-40 )
+      yap_message("Whoops atomic_decr(ddS.S_0)>=UINT32_MAX %u\n", ddS.S_0);
+    if ( val==0 ) {
+      if ( atomic_decr(ddS.S_0_nz)>=UINT32_MAX-40 )    
+	yap_message("Whoops atomic_decr(ddS.S_0_nz)>=UINT32_MAX %u\n", ddS.S_0_nz);
+    }
   }
 }
 
@@ -219,8 +240,8 @@ void fix_tableidword(int e, int w, int t, int ind) {
   int i;
   int lasti = -1;
   for (i=e; i>e-ind; i--) {
-    atomic_incr(ddS.s_evt[i][w][t]);
     atomic_incr(ddS.S_eVt[i][t]);
+    atomic_incr(ddS.s_evt[i][w][t]);
     lasti = i;
   } 
   if ( lasti==0 ) {

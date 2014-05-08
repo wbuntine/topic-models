@@ -137,34 +137,36 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
   /*
    *    remove from doc stats
    */
-  ddS.N_dT[did]--;
-#ifndef H_THREADS
-  assert(ddS.n_dt[did][t]>0);
-#endif
-  ddS.n_dt[did][t]--;
   if ( rd>=0 ) {
     /*
      *    subtract affect of table indicator for topic PYP
      */
     unfix_tableidtopic(did,t,rd);
   }
+#ifndef H_THREADS
+  assert(ddS.n_dt[did][t]>0);
+#endif
+  ddS.n_dt[did][t]--;
+  ddS.N_dT[did]--;
   /*
    *  remove from topicXword stats
    */
   if ( wid>=0 ) {
-    atomic_decr(ddS.M_eVt[e][t]);
-#ifndef H_THREADS
-    if ( ddS.m_evt[e][wid][t]==0 )
-      yap_message("Decrementing ddS.m_evt[e][%d][%d]\n", e, wid, t);
-    assert(ddS.m_evt[e][wid][t]>0);
-#endif
-    atomic_decr(ddS.m_evt[e][wid][t]);
     if ( rw>=1 ) {
       /*
        *    subtract affect of table indicator for word PYP
        */
       unfix_tableidword(e,wid,t,rw);
     }
+#ifndef H_THREADS
+    if ( ddS.m_evt[e][wid][t]==0 )
+      yap_message("Decrementing ddS.m_evt[e][%d][%d]\n", e, wid, t);
+    assert(ddS.m_evt[e][wid][t]>0);
+#endif
+    if ( atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40 ) 
+      yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
+    if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
+      yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
   }
   return 0;
 }
@@ -182,8 +184,8 @@ void update_topic(int i, int did, int wid, int t, int mi,
    *   fix up doc side
    */
   rd = doc_side_ind(did, t);
-  ddS.n_dt[did][t]++;
   ddS.N_dT[did]++;
+  ddS.n_dt[did][t]++;
   if ( PCTL_BURSTY() ) 
     // set wid negative if the word is bursty
     wid = misi_incr(dD, i, mi, t, wid, dtip);
