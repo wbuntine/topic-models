@@ -72,6 +72,10 @@ if ( $#epoch+1 != $N ) {
     print STDERR "Doc count in epoch file doesnt match\n";
     exit(1);
 }
+if ( $TRAIN>$N-2*$E ) {
+    print STDERR "Training set size too large\n";
+    exit(1);
+}
 
 # make a hash giving the training set
 my @rlist = List::Util::shuffle(0 .. ($N-1));
