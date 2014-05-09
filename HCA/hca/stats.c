@@ -37,6 +37,7 @@ double report_pmi(char *topfile,   /* name of topics file */
 		  char *pmifile,  /* name of PMI file */
 		  int T,          /* total topics */
 		  int W,          /* total words */
+		  int E,
 		  int topk,
 		  double *tp);
 
@@ -94,7 +95,7 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
       topfile=yap_makename(resstem,".top");
       pmifile=yap_makename(stem,".pmi");
       get_probs(tp);
-      coh = report_pmi(topfile, pmifile, ddN.T, ddN.W, 10, tp);
+      coh = report_pmi(topfile, pmifile, ddN.T, ddN.W, 1, 10, tp);
       free(topfile);
       free(pmifile);
       if ( fp )

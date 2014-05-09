@@ -185,7 +185,7 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   if ( scoretype != ST_count && scoretype != ST_phi ) {
     NwK = u32vec(ddN.W);
     if ( !NwK )
-      yap_quit("Out of memory in cca_displaytopics()\n");
+      yap_quit("Out of memory in hca_displaytopics()\n");
     for (w=0; w<ddN.W; w++) {
       NwK[w] = 0;
     }

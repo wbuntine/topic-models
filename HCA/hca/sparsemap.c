@@ -40,7 +40,7 @@ void sparsemap_init(FILE *fp) {
       dim+=10;
       ddG.words = realloc(ddG.words, dim*sizeof(*ddG.words));
       if ( !ddG.words )
-	yap_quit("Out of memory in cca_displaytopics()\n");
+	yap_quit("Out of memory in sparsemap_init()\n");
     }
     ddG.words[n++] = w;
   }

@@ -118,6 +118,7 @@ static void usage() {
           "   -L DIAG,cycles,burn #  cycles for diagnostic calculations\n"
 	  "                  #  DIAG is one of 'like'\n"
           "   -o SC          #  SC=score type, 'count', 'idf', 'cost', 'Q'\n"
+	  "   -p             #  report coherency via PMI of topics\n"
           "   -t traindocs   #  train documents, at start, default all-test\n"
           "   -T testdocs    #  test documents, at end, default 0\n"
           "   -V             #  load vocab file to allow printing terms\n"
@@ -175,6 +176,7 @@ int main(int argc, char* argv[])
   int load_vocab = 0;
   int checkpoint = 0;
   int restart = 0;
+  int dopmi = 0;
   int restart_hca = 0;
   int procs = 1;
   int maxW = 0;
@@ -195,7 +197,7 @@ int main(int argc, char* argv[])
 
   pctl_init();
 
-  while ( (c=getopt(argc, argv,"c:C:d:ef:F:G:h:K:l:L:N:o:P:q:vrRs:S:t:T:vVW:"))>=0 ) {
+  while ( (c=getopt(argc, argv,"c:C:d:ef:F:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
     switch ( c ) {
     case 'c':
       if ( !optarg || sscanf(optarg,"%d",&checkpoint)!=1 )
@@ -311,6 +313,9 @@ int main(int argc, char* argv[])
           yap_quit("Need a valid parameter for 'o' argument\n");
       }
       break;
+   case 'p':
+      dopmi++;
+      break;
    case 'q':
       if(!optarg || sscanf(optarg, "%d", &procs) != 1)
 	yap_quit("Need a valid 'q' argument\n");
@@ -395,6 +400,9 @@ int main(int argc, char* argv[])
   }
   stem = strdup(argv[optind++]);
   resstem = strdup(argv[optind++]);
+
+  if ( dopmi )
+    load_vocab = 1;
 
   if ( noerrorlog==0 ) {
     char *wname = yap_makename(resstem, ".log");
@@ -512,11 +520,11 @@ int main(int argc, char* argv[])
    *   all data structures
    */
   data_alloc();
+  tca_alloc();
   if ( PCTL_BURSTY() ) 
     dmi_init(&ddM, ddS.z, ddD.w, ddD.N_dTcum,
              ddN.T, ddN.N, ddN.W, ddN.D, ddN.DT,
 	     (fix_hold==GibbsHold)?pctl_hold:NULL);
-  tca_alloc();
   if ( load_vocab ) {
     data_vocab(stem);
   }
@@ -655,9 +663,10 @@ int main(int argc, char* argv[])
       if ( verbose && iter%10==0 )
 	yap_probs();
       if ( iter>0 && verbose>1 ) {
-	if ( ddN.tokens )
-            tca_displaytopics(resstem,20,score);
-	displayed++;
+	if ( ddN.tokens ) {
+	  tca_displaytopics(resstem,20,score);
+	  displayed++;
+	}
       }
       if ( iter+1<ITER ) {
 	// yap_message("\n");
@@ -671,7 +680,8 @@ int main(int argc, char* argv[])
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");
-      tca_report(resstem, stem, ITER, procs, fix_hold);
+      tca_report(resstem, stem, ITER, procs, fix_hold, 
+		 (dopmi&&displayed>0)?1:0);
     }
 
   } // over iter
@@ -681,9 +691,10 @@ int main(int argc, char* argv[])
 	     iter,  (tot_time-psample_time)/iter, psample_time/iter);
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
-    displayed++;
-    if ( ddN.tokens )
+    if ( ddN.tokens ) {
        tca_displaytopics(resstem,20,score);
+       displayed++;
+    }
   }
 
   yap_probs();
@@ -691,7 +702,7 @@ int main(int argc, char* argv[])
   if ( ITER>0 ) 
 	data_checkpoint(resstem, stem, ITER);
  
-  tca_report(resstem, stem, ITER, procs, fix_hold);
+  tca_report(resstem, stem, ITER, procs, fix_hold, (dopmi&&displayed>0)?1:0);
 
   /*
    *  free

@@ -63,34 +63,33 @@ double report_pmi(char *topfile,   /* name of topics file */
 		  char *pmifile,  /* name of PMI file */
 		  int T,          /* total topics */
 		  int W,          /* total words */
+		  int E,          /*  number of epochs */
 		  int topk,
 		  double *tp)
 {
   int lineno = 0;
-  int i,k;
-  double coherency;
+  int i,k, thee;
   /*
    *   mapping from local index to actual word index
    */
-  uint32_t *wind = u32vec(topk*T);
+  uint32_t *wind = u32vec(topk*T*E);
   int n_wind = 0;
   /*
    *   boolean vector ... is word used
    */
   uint32_t *wuse = u32vec(W/32+1);
   /*
-   *   topic words for each topic, using local indices
-   */
-  uint32_t **topics = u32mat(T,topk);
-  /*
    *  PMI's by local index
    */
+  uint32_t *topic = u32vec(topk);
+  float *coherency = fvec(E);
   double **pmi;
+  float ave = 0;
 
   char *line;
   size_t n_line;
   FILE *fr;
-  if ( !wind || !wuse || !topics )
+  if ( !wind || !wuse )
     yap_quit("Out of memory in report_pmi()\n");
 
   /*
@@ -102,23 +101,31 @@ double report_pmi(char *topfile,   /* name of topics file */
   
   line = NULL;
   n_line = 0;
+  lineno = 0;
   while ( getline(&line, &n_line, fr)>0 ) {
     char *buf = line;
     unsigned j;
+    int e = 0;
     lineno ++;
     buf += strspn(buf," \t\n");    //   skip space
-    if ( sscanf(buf, "%d: ", &k) <1 )
-      yap_quit("Cannot read topic in topic line %d from file '%s'\n", lineno, topfile);
+    if ( (E==1 && sscanf(buf, "%d: ", &k)<1) || 
+	 (E>1 && sscanf(buf, "%d,%d: ", &e, &k)<2) ) 
+      yap_quit("Cannot read topic in topic line %d from file '%s'\n", 
+	       lineno, topfile);
     if ( k<0 || k>=T )
+      continue;
+    if ( e<0 || e>=E )
       continue;
     for (i = 0; i<topk && *buf; i++) {
       buf = strpbrk(buf," \t\n");    //   skip to next space
       if ( sscanf(buf, " %u", &j) <1 ) {
-	yap_message("Cannot read word %d in topic line %d from file '%s'\n", i+1, lineno, topfile);
+	yap_message("Cannot read word %d in topic line %d from file '%s'\n", 
+		    i+1, lineno, topfile);
 	break;
       }
       if ( j>=W) {
-	yap_quit("Bad word %d in topic line %d from file '%s'\n", i+1, lineno, topfile);
+	yap_quit("Bad word %d in topic line %d from file '%s'\n", 
+		 i+1, lineno, topfile);
       }
       buf += strspn(buf," \t\n");    //   skip space
       /*
@@ -131,20 +138,18 @@ double report_pmi(char *topfile,   /* name of topics file */
 	  if ( wind[ii]==j )
 	    break;
 	if ( ii>=n_wind )
-	  yap_quit("Lookup of word %d failed at line %d in report_pmi()\n", lineno, (int)j);
-	topics[k][i] = ii;
+	  yap_quit("Lookup of word %d failed at line %d in report_pmi()\n", 
+		   (int)j, lineno);
       } else {
 	// no, so add it
 	wuse[j/32U] |= (1U<<(j%32U));
 	wind[n_wind] = j;	
-	topics[k][i] = n_wind;
 	n_wind++;
       }
     }
     free(line);
     line = NULL;
     n_line = 0;
-    if ( i<topk ) topics[k][i] = W;   //  terminator
   }
   fclose(fr);
 
@@ -174,6 +179,12 @@ double report_pmi(char *topfile,   /* name of topics file */
        *    try to zcat it
        */
       char *cmd = malloc(strlen(pmifile)+20);
+      sprintf(cmd,"%s.gz", pmifile);
+      fr = fopen(cmd,"r");
+      if ( !fr ) 
+	yap_sysquit("Cannot open pmifile '%s' in report_pmi()\n", 
+		    pmifile);
+      fclose(fr);
       sprintf(cmd,"gunzip -c %s", pmifile);
       fr = popen(cmd,"r");
       if ( !fr )
@@ -206,30 +217,89 @@ double report_pmi(char *topfile,   /* name of topics file */
    *    compute PMI score for each topic
    */
 
-  yap_message("PMI: ");
-  coherency = 0;
-  for (k=0; k<T; k++) {
-    double coh = 0;
+  fr = fopen(topfile,"r");
+  if ( !fr ) 
+    yap_sysquit("Topic file '%s' not read\n", topfile);
+  line = NULL;
+  n_line = 0;
+  thee = 0;
+  lineno = 0;
+  if ( E>1 ) 
+    yap_message("PMI %d:: ", 0);
+  else
+    yap_message("PMI :: ");
+
+  while ( getline(&line, &n_line, fr)>0 ) {
+    /*
+     *  repeat logic above to read topic file again
+     */
+    char *buf = line;
+    unsigned j;
     int cnt = 0;
-    int j;
-    for (i=0; i<topk && topics[k][i]<W; i++) {
-      for (j=i+1; j<topk && topics[k][j]<W; j++) {
-	coh += pmi[topics[k][i]][topics[k][j]];
+    int e = 0;
+    double coh = 0;
+    buf += strspn(buf," \t\n");    //   skip space
+    if ( (E==1 && sscanf(buf, "%d: ", &k)<1) || 
+	 (E>1 && sscanf(buf, "%d,%d: ", &e, &k)<2) ) 
+      yap_quit("Cannot read topic in topic line %d from file '%s'\n", 
+	       lineno, topfile);
+    if ( k<0 || k>=T )
+      continue;
+    if ( e<0 || e>=E )
+      continue;
+    if ( e!=thee ) {
+      thee = e;
+      yap_message("\nPMI %d:: ", e);
+    }
+    for (i = 0; i<topk && *buf; i++) {
+      buf = strpbrk(buf," \t\n");    //   skip to next space
+      if ( sscanf(buf, " %u", &j) <1 ) {
+	yap_message("Cannot read word %d in topic line %d from file '%s'\n", i+1, lineno, topfile);
+	break;
+      }
+      if ( j>=W) {
+	yap_quit("Bad word %d in topic line %d from file '%s'\n", i+1, lineno, topfile);
+      }
+      buf += strspn(buf," \t\n");    //   skip space
+      topic[i] = findw(j,wind);
+    }
+    if ( i<topk )
+      topic[i] = W;
+    /*
+     *  topics now read 
+     */
+    for (i=0; i<topk && topic[i]<W; i++) {
+      for (j=i+1; j<topk && topic[j]<W; j++) {
+	coh += pmi[topic[i]][topic[j]];
 	cnt ++;
       }
     }
     if ( cnt>0 ) coh /= cnt;
-    coherency += coh * tp[k];
+    coherency[e] += coh * tp[k];
     yap_message(" %d:%.3lf", k, coh);
   }
-  yap_message(" -> %.3lf\n", coherency);
-  
+  fclose(fr);
+  yap_message("\nPMI =");
+  if ( E==1 ) {
+    yap_message(" %.3lf\n", coherency[0]);
+    ave = coherency[0];
+  } else {
+    int e;
+    for (e=0; e<E; e++) {
+      ave += coherency[e];
+      yap_message(" %.3lf", coherency[e]);
+    }
+    ave /= E;
+    yap_message(" -> %.3lf\n", ave);
+  }
+      
   free(wind);
+  free(coherency);
   free(wuse);
-  free(topics[0]); free(topics);
+  free(topic);
   free(pmi[0]); free(pmi);
   free(hashtab);
   hashtab = NULL;
   hashsize = 0;
-  return coherency;
+  return ave;
 }

@@ -711,8 +711,8 @@ int main(int argc, char* argv[])
   stem = strdup(argv[optind++]);
   resstem = strdup(argv[optind++]);
 
-  if ( dopmi && load_vocab==0 ) 
-    yap_quit("If using -p, should include -V\n");
+  if ( dopmi )
+    load_vocab = 1;
 
   if ( loadalpha && loadphi==0 ) 
     yap_quit("If using -ralpha/-Falpha, should use -rphi/-Fphi\n");
@@ -1160,11 +1160,12 @@ int main(int argc, char* argv[])
       if ( verbose && iter%10==0 )
 	yap_probs();
       if ( iter>0 && verbose>1 ) {
-	if ( ddN.tokens )
+	if ( ddN.tokens ) {
             hca_displaytopics(resstem,20,score);
+	    displayed++;
+	}
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5);
-	displayed++;
       }
       if ( ddP.window ) 
 	hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
@@ -1179,7 +1180,8 @@ int main(int argc, char* argv[])
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");
-      hca_report(resstem, stem, ITER, procs, fix_hold, dopmi, showlike, nosave);
+      hca_report(resstem, stem, ITER, procs, fix_hold, 
+		 (dopmi&&displayed>0)?1:0, showlike, nosave);
     }
     if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
       phi_update();
@@ -1201,9 +1203,10 @@ int main(int argc, char* argv[])
 	     iter,  (tot_time-psample_time)/iter, psample_time/iter);
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
-    displayed++;
-    if ( ddN.tokens )
+    if ( ddN.tokens ) {
        hca_displaytopics(resstem,20,score);
+       displayed++;
+    }
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5);
   }

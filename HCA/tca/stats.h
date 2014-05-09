@@ -81,7 +81,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD);
 
 void get_probs(double *vp);
 
-void tca_report(char *resstem, char *stem, int ITER, int procs, enum GibbsType fix);
+void tca_report(char *resstem, char *stem, int ITER, int procs, enum GibbsType fix, int dopmi);
 
 void tca_free();
 void tca_alloc();
@@ -112,15 +112,6 @@ double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
 double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
 
 /*
- *  posterior sampling of table id for doc
- */
-int tableidtopic(int d, int t, int tot);
-void fix_tableidtopic(int d, int t, int ind);
-void fix_tableidword(int e, int w, int t, int ind);
-void unfix_tableidtopic(int d, int t, int ind);
-void unfix_tableidword(int e, int w, int t, int ind);
-
-/*
  *    during Gibbs estimate proportion
  *    of topics for all documents
  */
@@ -130,15 +121,6 @@ void tprob_free();
 void tprob_report(char *resstem, double epsilon);
 
 /*
- *  adjusting some stats
- */
-uint16_t comp_Td(int did);
-int nonzero_n_dt(int t);
-int nonzero_m_evt(int e, int t);
-int remove_doc(int did, enum GibbsType fix);
-int add_doc(int did, enum GibbsType fix);
-
-/*
  *  checks
  */
 void check_n_dt(int d);
@@ -146,4 +128,5 @@ void tca_checkO();
 void tca_checkO_A(int t);
 void check_m_evt(int e);
 
+#include "change.h"
 #endif

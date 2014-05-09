@@ -7,7 +7,7 @@ STB_HOME := /home/wbuntine/
 # MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE 
 MYDEBUG=-g
 #  add "-g" for debugging libraries
-MYLIB=-g
+MYLIB=
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)
 CFLAGS = -Wall 
 LDFLAGS = -L../util -L$(STB_HOME)/lib -lddca -lstb$(MYLIB)  -lm -pthread

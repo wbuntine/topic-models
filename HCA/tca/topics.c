@@ -179,7 +179,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 		  );   
      yap_message("ws=%.1lf%%,", 100*(1-spw));
       yap_message("ds=%.1lf%%", 100*(1-spd) );
-      fprintf(fp,"%d,%d,%d: ", (int)tscoree, (int)tscoree, (int)k);
+      fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);
       yap_message(") words =");
       for (w=0; w<topword && w<cnt; w++) {
 	fprintf(fp," %d", (int)indk[w]);

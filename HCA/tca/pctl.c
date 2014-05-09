@@ -78,7 +78,7 @@ void pctl_init() {
   ddT[ParB0P].ptr = &ddP.b_phi0;
   ddT[ParB0M].ptr = &ddP.b_mu0;
   ddT[ParBT].ptr = &ddP.b_theta;
-  ddT[ParBB].ptr = NULL;
+  ddT[ParBB].ptr = &ddP.b_burst;
   ddT[ParBM0].ptr = NULL;
   ddT[ParBM1].ptr = NULL;
   ddT[ParBP0].ptr = NULL;
