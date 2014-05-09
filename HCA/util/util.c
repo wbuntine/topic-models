@@ -159,6 +159,7 @@ uint32_t ***u32tri(int ns, int nr, int nc) //
   long int nsr = ns*(long)nr;
   uint32_t ***x  = (uint32_t***)calloc(ns,sizeof(uint32_t**));
   unsigned r, s;
+  assert(nsrc>0);
   memallocd += nsrc*sizeof(uint32_t) + (nsr*sizeof(uint32_t*))
     + (ns*sizeof(uint32_t**));
   if ( !x)
