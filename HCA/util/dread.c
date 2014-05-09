@@ -89,7 +89,7 @@ static D_bag_t *data_read_ldac(char *stem) {
     for (i=0; i<ln; i++) {
       if ( fscanf(fp," %u:%u", &n1, &n2) != 2 )
 	yap_sysquit("Cannot read %d-th data line from '%s'\n", ln, wname);
-      n1--;
+      //  n1--;
       if ( win<n1 )
 	win = n1;
       nw += n2;
@@ -111,7 +111,7 @@ static D_bag_t *data_read_ldac(char *stem) {
       if ( fscanf(fp," %u:%u", &n1, &n2) != 2 )
 	yap_sysquit("Cannot read %d-th entry %d-th data line from '%s'\n", 
 		    ln, din, wname);
-      n1--;
+      // n1--;
       for ( ; n2>0; n2-- ) {
 	dbp->d[nw] = din;
 	dbp->w[nw++] = n1;
