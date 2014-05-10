@@ -59,12 +59,16 @@ static int sampleindicator(int n, int t, char *ind) {
  *    sample doc side indicator for doc and topic
  *    return 0 if OK and set *rd
  *    return 1 if bad constraints
+ *
+ *    *rw is number of epochs back to take count
+ *        0==none,  e+1==all the way to root
+ *    max of #rw si ddP.back
  */
 static int resample_doc_side_ind(int d, int t, int *rd) {
   int  e = ddD.e[d];
   char  ud;
   if ( sampleindicator(ddS.n_dt[d][t],ddS.c_dt[d][t],&ud) )
-    // cant sample, abondon
+    // cant sample, abandon
     return 1;
   if ( ud ) {
     int ee;
@@ -76,7 +80,7 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
 	sec_part=ddS.cp_et[ee+1][t];
       if (sampleindicator(ddS.C_eDt[ee][t]+sec_part,ddS.cp_et[ee][t],&ud)) 
 	return 1;
-      if (ud) {
+      if (ee>e-ddP.back && ud) {
 	(*rd)++;
       } else {
 	break;
@@ -91,6 +95,11 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
  *    sample word side indicator for epoch, word and topic
  *    return 0 if OK and set *rw
  *    return 1 if bad constraints
+ *
+ *    *rw==-1  =>  not table up to alpha
+ *    else     =>  number of epochs in alpha table goes back
+ *                 0==none,  e+1==all the way to root)
+ *    max of #rw si ddP.back
  */
 static int resample_word_side_ind(int e,  int v, int t, int *rw) {
   int ee;
@@ -104,7 +113,7 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
     if (sampleindicator(ddS.m_evt[ee][v][t]+sec_part,
 			ddS.s_evt[ee][v][t],&uw)) 
       return 1;
-    if (uw) {
+    if (ee>e-ddP.back && uw) {
       (*rw)++;
     } else {
       break;

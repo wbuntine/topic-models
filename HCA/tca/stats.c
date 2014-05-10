@@ -225,9 +225,9 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
      *   build the basic stats from z
      */
     memset((void*)ddS.N_dT, 0, sizeof(ddS.N_dT[i])*ddN.D);
-    memset((void*)ddS.n_dt, 0, sizeof(ddS.n_dt[i][t])*ddN.D*ddN.T);
-    memset((void*)ddS.m_evt, 0, sizeof(ddS.m_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
-    memset((void*)ddS.M_eVt, 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
+    memset((void*)ddS.n_dt[0], 0, sizeof(ddS.n_dt[i][t])*ddN.D*ddN.T);
+    memset((void*)ddS.m_evt[0][0], 0, sizeof(ddS.m_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
+    memset((void*)ddS.M_eVt[0], 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
     for (i=0; i<ddN.NT; i++) { 
       int d = ddD.d[i];
       t = Z_t(ddS.z[i]);
@@ -245,11 +245,11 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
   memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
   memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
   memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
-  memset((void*)ddS.c_dt, 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
-  memset((void*)ddS.S_eVt, 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.C_eDt, 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.cp_et, 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.s_evt, 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
+  memset((void*)ddS.c_dt[0], 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
+  memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.cp_et[0], 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.s_evt[0][0], 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
   ddS.S_0 = 0;
   ddS.S_0_nz = 0;
 

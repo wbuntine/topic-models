@@ -21,6 +21,7 @@
 #define BETA 100
 #define APAR 0.0
 #define BPAR 10
+#define B0PAR 10
 #define AWPAR 0.5
 #define BWPAR 5000
 #define ACYCLES 11      //  by default update a's
@@ -59,7 +60,8 @@ typedef struct D_pars_s {
   double a_mu;             //  
   double *b_mu;            //   indexed by e
   double b_mu0;            //  
-  double a_phi;            //  
+  double a_phi0;            //  for phi at epoch 0
+  double a_phi1;            //  for phi at others
   double **b_phi;          //   indexed by e, t
   double b_phi0;           //   one for the prior \phi_0
   double a_theta;          // for mu->Document step (mid)
@@ -77,7 +79,11 @@ typedef struct D_pars_s {
   /*
    *  special control for sampling P.b_burst[]
    */
-  int bdkbatch;
+  int bbatch;
+  /*
+   *  bound controlling how far back a table can go
+   */
+  int back;
   /*
    *   bounds for Stirling number tables
    */
@@ -109,7 +115,7 @@ typedef struct D_pars_s {
 enum ParType { ParNone=0,
 	       ParAM, ParBM0, ParBM1, /*   for a_mu, b_mu[] */
 	       ParB0M,                /*   for b_mu0 */
-	       ParAP, ParBP0, ParBP1, /*   for a_phi, b_phi[][] */
+	       ParAP0, ParAP1, ParBP0, ParBP1, /*   for a_phi, b_phi[][] */
 	       ParB0P,                /*   for b_phi0 */
 	       ParAT, ParBT,          /*   for a_theta, b_theta */
 	       ParAB, ParBB           /*   for a_burst, b_burst */

@@ -184,10 +184,10 @@ static double phi_one_fact(int e, int v, int t) {
     int c = ddS.s_evt[e][v][t];
     if ( c<=0 )
       c = 1;
-    fact = S_UV(ddC.a_phi, n, c+1) * (c+1.0)/(n+1);
+    fact = S_UV(ddC.a_phi1, n, c+1) * (c+1.0)/(n+1);
   }
   return fact
-    * (ddP.b_phi[e][t] + ddP.a_phi * ddS.S_eVt[e][t])
+    * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
 static double phi_zero_fact(int e, int v, int t) {
@@ -198,17 +198,17 @@ static double phi_zero_fact(int e, int v, int t) {
   c = ddS.s_evt[e][v][t];
   if ( c<=0 )
     c = 1;
-  return S_U(ddC.a_phi, n, c) * (n-c+1.0)/(n+1) 
+  return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
 double phi0_prob(int v, int t) {
   double term;
   if ( ddS.S_0vT[v]==0 )
     /*   spread the zero weight over all zero */
-    term = (ddP.b_phi0 + ddP.a_phi*ddS.S_0_nz)
+    term = (ddP.b_phi0 + ddP.a_phi0*ddS.S_0_nz)
       /(ddN.W-ddS.S_0_nz);
   else
-    term = ddS.S_0vT[v] - ddP.a_phi;
+    term = ddS.S_0vT[v] - ddP.a_phi0;
   return term/(ddP.b_phi0 + ddS.S_0);
 }
 
@@ -239,8 +239,8 @@ double word_side_prob(int e, int v, int t) {
   else
     prob = word_side_prob(e-1,v,t);
   return ( (ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0)
-	    - ddP.a_phi * ddS.s_evt[e][v][t])
-	   + (ddP.b_phi[e][t] + ddP.a_phi * ddS.S_eVt[e][t])*prob )
+	    - ddP.a_phi1 * ddS.s_evt[e][v][t])
+	   + (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])*prob )
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));					    
 }
 
@@ -251,6 +251,17 @@ double doc_side_prob(int d, int t) {
 	  + (ddP.b_theta + ddP.a_theta * ddS.C_dT[d])*prob);
 }
 
+/*
+ *   return count to place table back:
+ *     -1 = no contribution to current alpha stats
+ *     0 = no table back, just to current alpha
+ *     1 = back to previous time
+ *     e = back to initial epoch
+ *   e+1 = back to root
+ *
+ *   cuts short if ddP.back in order, so
+ *   return is >= ddP.back
+ */
 int doc_side_ind(int d, int t) {  
   double Z = 0;
   int e = ddD.e[d];
@@ -262,14 +273,18 @@ int doc_side_ind(int d, int t) {
     Z += Y * mu_zero_fact(i, t);
     Y *= mu_one_fact(i, t);
     Ze[i+1] = Z;
+    if ( i<=e-ddP.back ) break;
   }
-  Z += Y * mu0_prob(t);
-  Ze[0] = Z;
+  if ( i<0 ) {
+    Z += Y * mu0_prob(t);
+    Ze[0] = Z;
+  }
   Z += theta_zero_fact(d,t)/theta_one_fact(d,t);
   Z *= rng_unit(rngp);
-  if ( Z>Ze[0] )
+  if ( Z>Ze[i+1] )
     return -1;
-  for (i=0; i<=e; i++) {
+  i++;
+  for ( ; i<=e; i++) {
     if ( Z>Ze[i+1] )
       return e-i+1;
   }
@@ -289,7 +304,16 @@ double doc_side_fact (int d, int t) {
   Z += Y * mu0_prob(t);
   return theta_zero_fact(d,t) + theta_one_fact(d,t) * Z;
 }
-
+/*
+ *   return count to place table back:
+ *     0 = no table back
+ *     1 = back to previous time
+ *     e = back to initial epoch
+ *   e+1 = back to root
+ *
+ *   cuts short if ddP.back in order, so
+ *   return is >= ddP.back
+ */
 int word_side_ind ( int e, int v, int t) {
   double Z = 0;
   double Y = 1;
@@ -300,12 +324,14 @@ int word_side_ind ( int e, int v, int t) {
     Z += Y * phi_zero_fact(i, v, t);
     Y *= phi_one_fact(i, v, t);
     Ze[i] = Z;
+    if ( i<=e-ddP.back ) break;
   }
-  Z += Y * phi0_prob(v, t);
+  if ( i<0 ) {
+    Z += Y * phi0_prob(v, t);
+  }
+  i++;
   Z *= rng_unit(rngp);
-  if ( Z>Ze[0] )
-    return e+1;
-  for (i=1; i<=e; i++) {
+  for ( ; i<=e; i++) {
     if ( Z>Ze[i] )
       return e-i+1;
   }

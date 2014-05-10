@@ -61,7 +61,8 @@ void pctl_init() {
   ddT[ParAM].name = "am";
   ddT[ParAT].name = "at";
   ddT[ParAB].name = "ab";
-  ddT[ParAP].name = "ap";
+  ddT[ParAP0].name = "ap0";
+  ddT[ParAP1].name = "ap1";
   ddT[ParBM0].name = "bm0";
   ddT[ParBM1].name = "bm1";
   ddT[ParBT].name = "bt";
@@ -74,7 +75,8 @@ void pctl_init() {
   ddT[ParAT].ptr = &ddP.a_theta;
   ddT[ParAM].ptr = &ddP.a_mu;
   ddT[ParAB].ptr = &ddP.a_burst;
-  ddT[ParAP].ptr = &ddP.a_phi;
+  ddT[ParAP0].ptr = &ddP.a_phi0;
+  ddT[ParAP1].ptr = &ddP.a_phi1;
   ddT[ParB0P].ptr = &ddP.b_phi0;
   ddT[ParB0M].ptr = &ddP.b_mu0;
   ddT[ParBT].ptr = &ddP.b_theta;
@@ -87,7 +89,8 @@ void pctl_init() {
   ddT[ParAT].sampler = &sample_at;
   ddT[ParAM].sampler = &sample_am;
   ddT[ParAB].sampler = &sample_ab;
-  ddT[ParAP].sampler = &sample_ap;
+  ddT[ParAP0].sampler = &sample_ap0;
+  ddT[ParAP1].sampler = &sample_ap1;
   ddT[ParB0P].sampler = NULL;
   ddT[ParB0M].sampler = NULL;
   ddT[ParBM0].sampler = &sample_bm0;
@@ -99,21 +102,23 @@ void pctl_init() {
 
   ddT[ParB0P].fix = 1;
   ddT[ParB0M].fix = 1;
-  ddT[ParBP0].fix = 1;
+  // ddT[ParBP0].fix = 1;
   //WRAY  sampling BM0 causes weird memory bugs
   ddT[ParBM0].fix = 1;
-  ddT[ParAP].fix = 1;
+  ddT[ParAP0].fix = 1;
+  ddT[ParAP1].fix = 1;
 
   ddP.a_mu = APAR;
   ddP.a_theta = APAR;
-  ddP.a_phi = AWPAR;
+  ddP.a_phi0 = APAR;
+  ddP.a_phi1 = AWPAR;
   ddP.a_burst = AWPAR;
   ddP.b_mu = NULL;
-  ddP.b_mu0 = 1.0;
+  ddP.b_mu0 = B0PAR;
   ddP.b_theta = BPAR;
   ddP.b_burst = 0;
   ddP.b_phi = NULL;
-  ddP.b_phi0 = BWPAR;
+  ddP.b_phi0 = B0PAR;
 
   ddT[ParBM0].cycles = BCYCLES;
   ddT[ParBM1].cycles = BCYCLES;
@@ -128,10 +133,12 @@ void pctl_init() {
   ddT[ParAT].cycles = ACYCLES;
   ddT[ParAB].cycles = ACYCLES;
   ddT[ParAM].cycles = ACYCLES;
-  ddT[ParAP].cycles = ACYCLES;
+  ddT[ParAP0].cycles = ACYCLES;
+  ddT[ParAP1].cycles = ACYCLES;
   ddT[ParAB].offset = 1%ACYCLES;
   ddT[ParAM].offset = 2%ACYCLES;
-  ddT[ParAP].offset = 3%ACYCLES;
+  ddT[ParAP0].offset = 3%ACYCLES;
+  ddT[ParAP1].offset = 3%ACYCLES;
 
   ddP.progiter = 2;
   ddP.progburn = 1;
@@ -140,8 +147,9 @@ void pctl_init() {
   ddP.cofile = NULL;
   ddP.teststem = NULL;
   ddP.training = 0;
+  ddP.back = UINT32_MAX;
   
-  ddP.maxN = 10000;
+  ddP.maxN = 20000;
   ddP.maxM = 1000;
 
   ddP.hold_every = 0;
@@ -188,7 +196,8 @@ void pctl_read(char *resstem, char *buf) {
   mystem = resstem;
   ddP.a_mu = readf("am");
   ddP.a_theta = readf("at");
-  ddP.a_phi = readf("ap");
+  ddP.a_phi0 = readf("ap0");
+  ddP.a_phi1 = readf("ap1");
   ddP.a_burst = readf("ab");
   ddP.b_mu = (double*)malloc(sizeof(*ddP.b_mu)*ddN.E);
   ddP.b_mu[0] = readf("bm0");  
@@ -197,14 +206,17 @@ void pctl_read(char *resstem, char *buf) {
     for (i=2; i<ddN.E; i++)
       ddP.b_mu[i] = ddP.b_mu[1];
   }
-  ddP.b_phi0 = readf("b0m");
+  ddP.b_mu0 = readf("b0m");
   ddP.b_theta = readf("bt");
   ddP.b_burst = readf("bb");
   ddP.b_phi0 = readf("b0p");
   ddP.b_phi = (double**)malloc(sizeof(*ddP.b_phi)*ddN.E);
-  if ( !ddP.b_phi )
+  ddP.b_phi[0] = (double*)malloc(sizeof(*ddP.b_phi[0])*ddN.T);
+  if ( !ddP.b_phi || !ddP.b_phi[0] )
     yap_quit("Out of memory in pctl_read()\n");
-  ddP.b_phi[0] = readfv("bp0", ddN.T);
+  ddP.b_phi[0][0] = readf("bp0");
+  for (i=1; i<ddN.T; i++)
+      ddP.b_phi[0][i] = ddP.b_phi[0][0];
   if ( ddN.E>1 ) {
     ddP.b_phi[1] = readfv("bp1", ddN.T);
     for (i=2; i<ddN.E; i++)
@@ -228,8 +240,10 @@ void pctl_fix(int ITER) {
     ddT[ParAM].fix = 1;
   if ( ddP.a_theta==0 )
     ddT[ParAT].fix = 1;
-  if ( ddP.a_phi==0 )
-    ddT[ParAP].fix = 1;
+  if ( ddP.a_phi0==0 )
+    ddT[ParAP0].fix = 1;
+  if ( ddP.a_phi1==0 )
+    ddT[ParAP1].fix = 1;
   if ( ddP.b_burst==0 ) {
     ddT[ParAB].fix = 1;
     ddT[ParBB].fix = 1;
@@ -252,6 +266,8 @@ void pctl_fix(int ITER) {
         ddP.b_phi[i] = ddP.b_phi[1];
     }
   }
+  if ( ddP.back==UINT32_MAX )
+    ddP.back = ddN.E+1;
   if ( ddN.E==1 ) {
     ddT[ParBP1].fix = 1;
     ddT[ParBM1].fix = 1;
@@ -299,10 +315,9 @@ void pctl_report() {
   yap_message("at = %lf\n", ddP.a_theta);
   yap_message("bt = %lf\n", ddP.b_theta);
   yap_message("b0p = %lf\n", ddP.b_phi0);
-  yap_message("ap = %lf\n", ddP.a_phi);
-  yap_message("bp0 = ");
-  for (i=0; i<ddN.T; i++)
-    yap_message("%lf,", ddP.b_phi[0][i]);
+  yap_message("ap0 = %lf\n", ddP.a_phi0);
+  yap_message("ap1 = %lf\n", ddP.a_phi1);
+  yap_message("bp0 = %lf", ddP.b_phi[0][0]);
   if ( ddN.E>1 ) {
     yap_message("\nbp1 = ");
     for (i=0; i<ddN.T; i++)
@@ -390,15 +405,13 @@ void pctl_print(FILE *fp) {
   printpar(fp,ParBT);
   printpar(fp,ParAB);
   printpar(fp,ParBB);
-  printpar(fp,ParAP);
+  printpar(fp,ParAP0);
+  printpar(fp,ParAP1);
   printpar(fp,ParB0P);
   if ( !ddT[ParBP0].fix ) 
     fprintf(fp, "#  %s was sampled every %d major cycles\n", 
 	    ddT[ParBP0].name, ddT[ParBP0].cycles);
-  fprintf(fp, "bp0 = ");
-  for (i=0; i<ddN.T; i++)
-    fprintf(fp, "%lf,", ddP.b_phi[0][i]);
-  fprintf(fp, "\n");
+  fprintf(fp, "bp0 = %lf\n", ddP.b_phi[0][0]);
   if ( !ddT[ParBP1].fix ) 
     fprintf(fp, "#  %s was sampled every %d major cycles\n", 
 	    ddT[ParBP1].name, ddT[ParBP1].cycles);

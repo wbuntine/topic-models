@@ -67,9 +67,11 @@ extern int verbose;
  */
 typedef struct D_cache_s {
   stable_t *a_mu;
-  stable_t *a_phi;
+  stable_t *a_phi0;
+  stable_t *a_phi1;
   stable_t *a_theta;
   stable_t *a_burst;
+  stable_t *a_zero;
 } D_cache_t;
 
 extern D_cache_t ddC;

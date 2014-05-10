@@ -108,11 +108,10 @@ static double bterms_mu0(double b, void *mydata) {
 
 static double bterms_phi0(double b, void *mydata) {
   int t;
-  double val = 0;
+  double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   for (t=0; t<ddN.T; t++) {
-    val += pctl_gammaprior(b);
-    val += poch(b, ddP.a_phi, ddS.S_eVt[0][t]);
+    val += poch(b, ddP.a_phi1, ddS.S_eVt[0][t]);
     val -= gammadiff(ddS.M_eVt[0][t] + (ddN.E>1)?ddS.S_eVt[1][t]:0, 
                      b, lgb);
   }
@@ -132,8 +131,10 @@ static double bterms_phi1(double b, void *mydata) {
   int k = *(int*)mydata;
   double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
-  for (e=0; e<ddN.E; e++) {
-    val += poch(b, ddP.a_phi, ddS.S_eVt[e][k]);
+  for (e=1; e<ddN.E; e++) {
+    if ( ddS.S_eVt[e][k]==0 ) 
+      continue;
+    val += poch(b, ddP.a_phi1, ddS.S_eVt[e][k]);
     if (e<ddN.E-1) {
       val -= gammadiff(ddS.M_eVt[e][k] + ddS.S_eVt[e+1][k], b, lgb);
     } else {

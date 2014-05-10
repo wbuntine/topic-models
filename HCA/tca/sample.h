@@ -11,7 +11,8 @@ void sample_bt(double *b);
 void sample_bb(double *b);
 void sample_at(double *a);
 void sample_am(double *a);
-void sample_ap(double *a);
+void sample_ap0(double *a);
+void sample_ap1(double *a);
 void sample_ab(double *a);
 
 

@@ -87,12 +87,13 @@ static void usage() {
   fprintf(stderr,
           "  OPTION is choice of:\n"
 	  "  setting hyperparameters:\n"
-          "   -S var=value   #  initialise var=aX,bXN for X=M,P and N=0,1\n"
-	  "                  #          or var=aX,bX for X=T,B\n"
+          "   -S var=value   #  initialise var=am,apN,bXN for X=m,p and N=0,1\n"
+	  "                  #          or var=aX,bX for X=t,b\n"
 	  "  sampling hyperparameters:\n"
 	  "   -F var        #  fix var, var as in -S\n"
 	  "   -G var,cycles,start #  sample var is same as -S\n"
 	  "  control:\n"
+          "   -b back        #  tables only go back this far\n"
           "   -c chkpnt      #  checkpoint z and pars every so many cycles\n"
           "   -C cycles      #  major Gibbs cycles\n"
 	  "   -d dots        #  print a dot after this many docs\n"
@@ -107,7 +108,7 @@ static void usage() {
 	  "   -R             #  restart from hca\n"
           "   -s seed        #  random number seed, default is a time value\n"
 	  "   -v             #  up the verbosity by one\n"
-	  "   -W W           #  make max W larger\n"
+	  "   -W W           #  change max W\n"
 	  "  testing and reports:\n"
 	  "   -h HOLD,arg    #  use document completion in '-l' testing\n"
           "                  #  HOLD=dict, hold out words w with (w%%arg)==0\n"
@@ -197,8 +198,13 @@ int main(int argc, char* argv[])
 
   pctl_init();
 
-  while ( (c=getopt(argc, argv,"c:C:d:ef:F:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
+  while ( (c=getopt(argc, argv,"b:c:C:d:ef:F:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
     switch ( c ) {
+    case 'b':
+      if ( !optarg || sscanf(optarg,"%d",&ddP.back)!=1 )
+        yap_quit("Need a valid 'b' argument\n");
+      yap_quit("'b' option not debugged!!!\n");
+      break;
     case 'c':
       if ( !optarg || sscanf(optarg,"%d",&checkpoint)!=1 )
         yap_quit("Need a valid 'c' argument\n");
@@ -465,13 +471,17 @@ int main(int argc, char* argv[])
       data_append(dbp, dbpt);
       free(dbpt->w);  free(dbpt->d); free(dbpt);
     }
+    if ( maxW>0 ) {
+      if ( dbp->W <= maxW ) 
+        dbp->W = maxW;
+      if ( dbp->W > maxW )
+        data_vocabshrink(dbp, maxW);
+    }
     /*
      *  transfer into system
      */
     ddN.D = dbp->D;
-    ddN.W = dbp->W;
-    if ( ddN.W< maxW ) 
-      ddN.W = maxW;
+    ddN.W = dbp->W;    
     ddN.N = dbp->N;
     ddN.NT = dbp->N;
     ddN.DT = training;

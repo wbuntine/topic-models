@@ -147,40 +147,24 @@ static double aterms_burst(double mya, void *mydata) {
 }
 
 
-static double aterms_phi(double mya, void *mydata) {
-  int e, t, v;
+static double aterms_phi0(double mya, void *mydata) {
+  int v;
   double val = 0;
 #ifdef A_DEBUG
-  float save_a = ddC.a_phi->a;
+  float save_a = ddC.a_phi0->a;
   double like;
 #endif
-  S_remake(ddC.a_phi, mya);
+  S_remake(ddC.a_phi0, mya);
   val += poch(ddP.b_phi0, mya, ddS.S_0_nz);
   for (v=0; v<ddN.W; v++) {
     if ( ddS.S_0vT[v]>1 )
-      val += S_S(ddC.a_phi, ddS.S_0vT[v], 1);
-  }
-  for (e=0; e<ddN.E; e++) {
-    for (t=0; t<ddN.T; t++) {
-      if ( ddS.S_eVt[e][t]==0 )
-	continue;
-      val += poch(ddP.b_phi[e][t], mya, ddS.S_eVt[e][t]);
-      for (v=0; v<ddN.W; v++) {
-	if ( ddS.s_evt[e][v][t]==0 )
-	  continue;
-	if (e<ddN.E-1) {
-	  val += S_S(ddC.a_phi, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
-	} else {
-	  val += S_S(ddC.a_phi, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
-	}
-      }
-    }
+      val += S_S(ddC.a_phi0, ddS.S_0vT[v], 1);
   }
   myarms_evals++;
 #ifdef A_DEBUG
-  yap_message("Eval aterms_phi(%lf) = %lf (S had %f)", mya, val, save_a);
-  ddP.a_phi = mya;
-  cache_update("ap");
+  yap_message("Eval aterms_phi0(%lf) = %lf (S had %f)", mya, val, save_a);
+  ddP.a_phi0 = mya;
+  cache_update("ap0");
   like = likelihood();
   if ( last_val != 0 ) {
     yap_message(", lp=%lf diffs=%lf vs %lf\n", like, 
@@ -191,6 +175,46 @@ static double aterms_phi(double mya, void *mydata) {
 #endif
   return val;
 }
+static double aterms_phi1(double mya, void *mydata) {
+  int e, t, v;
+  double val = 0;
+#ifdef A_DEBUG
+  float save_a = ddC.a_phi1->a;
+  double like;
+#endif
+  S_remake(ddC.a_phi1, mya);
+  for (e=0; e<ddN.E; e++) {
+    for (t=0; t<ddN.T; t++) {
+      if ( ddS.S_eVt[e][t]==0 )
+	continue;
+      val += poch(ddP.b_phi[e][t], mya, ddS.S_eVt[e][t]);
+      for (v=0; v<ddN.W; v++) {
+	if ( ddS.s_evt[e][v][t]==0 )
+	  continue;
+	if (e<ddN.E-1) {
+	  val += S_S(ddC.a_phi1, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
+	} else {
+	  val += S_S(ddC.a_phi1, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
+	}
+      }
+    }
+  }
+  myarms_evals++;
+#ifdef A_DEBUG
+  yap_message("Eval aterms_phi1(%lf) = %lf (S had %f)", mya, val, save_a);
+  ddP.a_phi1 = mya;
+  cache_update("ap"1);
+  like = likelihood();
+  if ( last_val != 0 ) {
+    yap_message(", lp=%lf diffs=%lf vs %lf\n", like, 
+		val-last_val, like-last_like);
+  }
+  last_like = like;
+  last_val = val;
+#endif
+  return val;
+}
+
 
 void sample_at(double *mya) {
 #ifdef A_DEBUG
@@ -242,19 +266,34 @@ void sample_ab(double *mya) {
 		*mya, likelihood());
 }
 
-void sample_ap(double *mya) {
+void sample_ap1(double *mya) {
 #ifdef A_DEBUG
   last_val = 0;
   last_like = 0;
 #endif
   if ( verbose>1 )
-    yap_message("sample_ap (pre):  a_phi=%lf, lp=%lf\n",
+    yap_message("sample_ap1 (pre):  a_phi1=%lf, lp=%lf\n",
 		*mya, likelihood());
-  myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_phi, NULL, mya, "ap");
-  ddP.a_phi = *mya;
-  cache_update("ap");
+  myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_phi1, NULL, mya, "ap1");
+  ddP.a_phi1 = *mya;
+  cache_update("ap1");
   if ( verbose>1 )
-    yap_message("sample_ap (post):  a_phi=%lf, lp=%lf\n",
+    yap_message("sample_ap1 (post):  a_phi1=%lf, lp=%lf\n",
+		*mya, likelihood());
+}
+void sample_ap0(double *mya) {
+#ifdef A_DEBUG
+  last_val = 0;
+  last_like = 0;
+#endif
+  if ( verbose>1 )
+    yap_message("sample_ap0 (pre):  a_phi0=%lf, lp=%lf\n",
+		*mya, likelihood());
+  myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_phi0, NULL, mya, "ap0");
+  ddP.a_phi0 = *mya;
+  cache_update("ap0");
+  if ( verbose>1 )
+    yap_message("sample_ap0 (post):  a_phi0=%lf, lp=%lf\n",
 		*mya, likelihood());
 }
 

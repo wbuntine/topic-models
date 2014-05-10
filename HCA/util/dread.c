@@ -292,6 +292,27 @@ D_bag_t *data_read(char *stem, enum dataType data) {
   return dbp;
 }
 
+void data_vocabshrink(D_bag_t *dbp, int maxword) {
+  int n, tn;
+  if ( dbp->W<=maxword )
+    return;
+  for (tn=n=0; n<dbp->N; n++) {
+    if ( dbp->w[n]<maxword ) {
+      dbp->w[tn] = dbp->w[n];
+      dbp->d[tn] = dbp->d[n];
+      tn++;
+    }
+  }
+  dbp->W = maxword;
+  if ( n==tn )
+    return;
+  if ( tn==0 )
+    yap_quit("Shrinking data set to empty!\n");
+  dbp->N = tn;
+  dbp->d = realloc(dbp->d,sizeof(dbp->d[0])*tn);
+  dbp->w = realloc(dbp->w,sizeof(dbp->w[0])*tn);
+}
+
 void data_shrink(D_bag_t *dbp, int size) {
   int n;
   if ( size>=dbp->D )

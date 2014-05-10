@@ -99,11 +99,24 @@ void diag_alloc();
  */
 double word_side_fact(int e, int j, int t);
 double word_side_prob(int e, int j, int t);
+/*
+ *   return count to place table back:
+ *     0 = no table back
+ *     1 = back to previous time
+ *     e = back to initial epoch
+ *   e+1 = back to root
+ *
+ *   cuts short if ddP.back in order, so
+ *   return is >= ddP.back
+ */
 int word_side_ind ( int e, int v, int t);
+
 double phi0_prob(int v, int t);
 
 double doc_side_fact(int d, int t);
 double doc_side_prob(int d, int t);
+
+
 int doc_side_ind(int d, int t);
 
 double topicnorm(int d);

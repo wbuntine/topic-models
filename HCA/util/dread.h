@@ -29,5 +29,6 @@ D_bag_t *data_read(char *stem, enum dataType data);
 void data_shrink(D_bag_t *dbp, int size);
 void data_append(D_bag_t *dbp, D_bag_t *dbp2);
 char *data_name(char *stem, enum dataType data);
+void data_vocabshrink(D_bag_t *dbp, int maxword);
 
 #endif

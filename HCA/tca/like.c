@@ -129,11 +129,11 @@ double likelihood_PYbeta() {
   //  note we dont sample a_phi and b_phi0
   
   // phi0 part
-  likelihood += poch(ddP.b_phi0, ddP.a_phi, ddS.S_0_nz);
+  likelihood += poch(ddP.b_phi0, ddP.a_phi0, ddS.S_0_nz);
   likelihood -= gammadiff(ddS.S_0, ddP.b_phi0, 0);
   for (v=0; v<ddN.W; v++) {
     if ( ddS.S_0vT[v]>0 )
-      likelihood += S_S(ddC.a_phi, ddS.S_0vT[v], 1);
+      likelihood += S_S(ddC.a_phi0, ddS.S_0vT[v], 1);
   }
   yap_infinite(likelihood);
 
@@ -142,7 +142,7 @@ double likelihood_PYbeta() {
     for (t=0; t<ddN.T; t++) {
       if ( ddS.S_eVt[e][t]==0 )
 	continue;
-      likelihood += poch(ddP.b_phi[e][t], ddP.a_phi, ddS.S_eVt[e][t]);
+      likelihood += poch(ddP.b_phi[e][t], ddP.a_phi1, ddS.S_eVt[e][t]);
       if (e<ddN.E-1) {
 	likelihood -=
 	  gammadiff(ddS.M_eVt[e][t] + ddS.S_eVt[e+1][t], ddP.b_phi[e][t], 0);
@@ -154,9 +154,9 @@ double likelihood_PYbeta() {
 	if ( ddS.s_evt[e][v][t]==0 )
 	  continue;
 	if (e<ddN.E-1) {
-	  likelihood += S_S(ddC.a_phi, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
+	  likelihood += S_S(ddC.a_phi1, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
 	} else {
-	  likelihood += S_S(ddC.a_phi, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
+	  likelihood += S_S(ddC.a_phi1, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
 	}
       }
       yap_infinite(likelihood);
