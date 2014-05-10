@@ -87,7 +87,7 @@ void tca_free();
 void tca_alloc();
 void tca_rand_z(int Tinit, int firstdoc, int lastdoc);
 void tca_read_z(char *resstem, int firstdoc, int lastdoc);
-void tca_reset_stats(char *resstem, int restart);
+void tca_reset_stats(char *resstem, int restart, int warm);
 void tca_write_z(char *resstem);
 
 double poch(double b, double a, int N);

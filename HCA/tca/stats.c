@@ -212,54 +212,46 @@ void tca_write_z(char *resstem)
  *    restart!=0, resstem==NULL:   recompute from memory
  *    OR
  *    restart==0:  recompute and set table stats to 1 or minimum
+ *
+ *    warm=1  then leave N_dt, N_dT, m_evt and M_eVt alone too
  */
-void tca_reset_stats(char *resstem, int restart) {  
+void tca_reset_stats(char *resstem, int restart, int warm) {  
   int e, i, t;
   /*
    *  initialisation *not* done for test docs
    */
-  for (i=0; i<ddN.D; i++) {
-    ddS.C_dT[i]=0;
-    ddS.N_dT[i]=0;
-  }
-  for (i=0; i<ddN.W; i++) {
-    ddS.S_0vT[i]=0;
-  }
-  for (e=0; e<ddN.E; e++) {
-    ddS.C_e[e] = 0;
-    ddS.Cp_e[e] = 0;
-  }
-  for (t=0; t<ddN.T; t++) {
-    for (i=0; i<ddN.D; i++) {
-      ddS.n_dt[i][t]=0;
-      ddS.c_dt[i][t]=0;
-    }
-    for (e=0; e<ddN.E; e++) {
-      ddS.M_eVt[e][t]=0;
-      ddS.S_eVt[e][t]=0;
-      for (i=0; i<ddN.W; i++) {
-	ddS.m_evt[e][i][t]=0;
-	ddS.s_evt[e][i][t]=0;
-      }
-      ddS.C_eDt[e][t] = 0;
-      ddS.cp_et[e][t] = 0;
-    }
-  }    
-  ddS.S_0 = 0;
-  ddS.S_0_nz = 0;
-  
-  for (i=0; i<ddN.NT; i++) { 
-    t = Z_t(ddS.z[i]);
-    if ( !PCTL_BURSTY() || Z_issetr(ddS.z[i]) ) {
+  if ( warm==0 ) {
+    /*
+     *   build the basic stats from z
+     */
+    memset((void*)ddS.N_dT, 0, sizeof(ddS.N_dT[i])*ddN.D);
+    memset((void*)ddS.n_dt, 0, sizeof(ddS.n_dt[i][t])*ddN.D*ddN.T);
+    memset((void*)ddS.m_evt, 0, sizeof(ddS.m_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
+    memset((void*)ddS.M_eVt, 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
+    for (i=0; i<ddN.NT; i++) { 
       int d = ddD.d[i];
-      e = ddD.e[d];
-      ddS.m_evt[e][ddD.w[i]][t]++; 
-      ddS.M_eVt[e][t]++; 
+      t = Z_t(ddS.z[i]);
       ddS.n_dt[d][t]++; 
       ddS.N_dT[d]++; 
+      if ( !PCTL_BURSTY() || Z_issetr(ddS.z[i]) ) {
+	e = ddD.e[d];
+	ddS.m_evt[e][ddD.w[i]][t]++; 
+	ddS.M_eVt[e][t]++; 
+      }
+      assert(ddD.d[i]<ddN.DT);
     }
-    assert(ddD.d[i]<ddN.DT);
   }
+  memset((void*)ddS.C_dT, 0, sizeof(ddS.C_dT[i])*ddN.D);
+  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
+  memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
+  memset((void*)ddS.c_dt, 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
+  memset((void*)ddS.S_eVt, 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.C_eDt, 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.cp_et, 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.s_evt, 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
+  ddS.S_0 = 0;
+  ddS.S_0_nz = 0;
 
   if ( restart ) {
     if ( resstem ) {
@@ -281,11 +273,17 @@ void tca_reset_stats(char *resstem, int restart) {
 	  if ( (thism>0) && (ddS.s_evt[e][i][t]==0) )
 	    ddS.s_evt[e][i][t] = 1;
 	  else if ( ((thism>0) ^ (ddS.s_evt[e][i][t]>0)) ||
-		    thism<ddS.s_evt[e][i][t] ) 
-	    yap_quit("Inconsistency:  ddS.m_evt[%d][%d][%d]=%d, "
-		     "ddS.s_evt[%d][%d][%d]=%d\n",
-		     e, i, t, (int)thism,
+		    (thism<ddS.s_evt[e][i][t]) ) {
+	    if ( restart )
+	      yap_quit("Inconsistency:  ddS.m_evt[%d][%d][%d]=%d, "
+		       "ddS.s_evt[%d][%d][%d]=%d\n",
+		       e, i, t, (int)thism,
 		     e, i, t, (int)ddS.s_evt[e][i][t]);
+	    else {
+	      if ( ddS.s_evt[e][i][t]>thism )
+		ddS.s_evt[e][i][t] = thism;
+	    }
+	  }
 	}
       }
   } else {
@@ -339,12 +337,19 @@ void tca_reset_stats(char *resstem, int restart) {
      */
     for (i=0; i<ddN.DT; i++) {
       for (t=0; t<ddN.T; t++) {
-	if ( (ddS.n_dt[i][t]>0) && (ddS.c_dt[i][t]==0) ) 
+	int n = ddS.n_dt[i][t];
+	if ( (n>0) && (ddS.c_dt[i][t]==0) ) 
 	  ddS.c_dt[i][t] = 1;
-	else if ( ((ddS.n_dt[i][t]>0) ^ (ddS.c_dt[i][t]>0)) ||
-		  (ddS.c_dt[i][t]>ddS.n_dt[i][t])) 
-	  yap_quit("Inconsistency:  ddS.n_dt[%d][%d]=%d, ddS.c_dt[%d][%d]=%d\n",
-		   i, t, (int)ddS.n_dt[i][t], i, t, (int)ddS.c_dt[i][t]);
+	else if ( ((n>0) ^ (ddS.c_dt[i][t]>0)) ||
+		  (ddS.c_dt[i][t]>n)) { 
+	  if ( restart ) 
+	    yap_quit("Inconsistency:  ddS.n_dt[%d][%d]=%d, ddS.c_dt[%d][%d]=%d\n",
+		     i, t, (int)n, i, t, (int)ddS.c_dt[i][t]);
+	  else {
+	    if ( ddS.c_dt[i][t]>n )
+	      ddS.c_dt[i][t] = n;
+	  }
+	}
       }
     }
   } else {
@@ -389,10 +394,16 @@ void tca_reset_stats(char *resstem, int restart) {
 	if ( (thisc>0) && (ddS.cp_et[e][t]==0) ) 
 	  ddS.cp_et[e][t] = 1;
 	else if ( ((thisc>0) ^ (ddS.cp_et[e][t]>0)) ||
-		  (ddS.cp_et[e][t]>thisc)) 
-	  yap_quit("Inconsistency:  ddS.C_eDt[%d][%d]=%d, "
-		   "ddS.cp_et[%d][%d]=%d\n",
-		   e, t, (int)ddS.C_eDt[e][t], e, t, (int)ddS.cp_et[e][t]);
+		  (ddS.cp_et[e][t]>thisc) ) {
+	  if ( restart )
+	    yap_quit("Inconsistency:  ddS.C_eDt[%d][%d]=%d, "
+		     "ddS.cp_et[%d][%d]=%d\n",
+		     e, t, (int)thisc, e, t, (int)ddS.cp_et[e][t]);
+	  else {
+	    if ( ddS.cp_et[e][t]>thisc )
+	      ddS.cp_et[e][t] = thisc;
+	  }
+	}
       }
     }
   } else {

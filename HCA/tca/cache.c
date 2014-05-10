@@ -27,7 +27,7 @@
 #include "pctl.h"
 
 void cache_init() {
-  ddC.a_mu = S_make(ddP.maxN/10, 100, ddP.maxN+1, ddP.maxM, ddP.a_mu, 
+  ddC.a_mu = S_make(ddP.maxN/5, 100, ddP.maxN+1, ddP.maxM, ddP.a_mu, 
 #ifdef H_THREADS
  		    S_THREADS|
 #endif

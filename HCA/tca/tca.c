@@ -546,7 +546,7 @@ int main(int argc, char* argv[])
   } else {
     tca_rand_z(ddN.T, 0, ddN.D);
   }
-  tca_reset_stats(resstem, restart);
+  tca_reset_stats(resstem, restart, 0);
 
   if ( (restart || restart_hca ) && ITER ) 
       yap_message("Initial log_2(perp)=%lf\n", -M_LOG2E * likelihood()/ddN.NT);
@@ -610,8 +610,8 @@ int main(int argc, char* argv[])
       tot_time += parg[pro].tot_time;
     }
 #ifdef H_THREADS
-    if ( 0 && procs>1 )
-      tca_reset_stats(NULL,1);
+    if ( procs>1 )
+      tca_reset_stats(NULL,1,1);
 #endif
 
 #ifdef IND_STATS

@@ -67,43 +67,74 @@ uint16_t comp_Td(int did) {
 
 void unfix_tableidtopic(int d, int t, int ind) { 
   int e = ddD.e[d];
-  
-  //   always safe since its associated with ddS.c_dt[d][t]
-  if ( atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40 ) {
-    /*
-     *    this may decrement below zero if two independently set ind
-     *    so we catch it here
-     */
-    yap_message("Whoops atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40\n");
-    atomic_incr(ddS.C_eDt[e][t]);
-  } else {          
+  int decr_dt = 0;
+#ifndef H_THREADS
+  assert(ddS.c_dt[d][t]>0);
+#endif
+  if ( ddS.c_dt[d][t]==1 ) {
+    ddS.c_dt[d][t] = 0;
+    //   should be safe since its associated with ddS.c_dt[d][t]
+    if ( atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40 ) {
+      /*
+       *    shouldn't happen as its a total
+       */
+      yap_quit("Whoops atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40\n");
+    }
+    ddS.C_dT[d]--;
     if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
-      yap_message("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
-    {
-      int i;
-      int end_e;
-      end_e = e-ind;
-      for (i = e; i>end_e; i--) {
-	if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
-	  /*
-	   *    this may decrement below zero if two independently set ind
-	   *    so we catch it here
-	   */
-	  yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
-	  atomic_incr(ddS.cp_et[i][t]);
-	  break;
-	}           
-	if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
-	  yap_message("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
-      }
+      yap_quit("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
+    decr_dt = 1;
+    
+  } 
+  if ( decr_dt ) {          
+    /*   decrementing up */
+    int i;
+    int end_e;
+    end_e = e-ind;
+    for (i = e; i>end_e; i--) {
+      int one = 1;
+      if ( !atomic_decr_val(ddS.cp_et[i][t],one) ) {
+	/*   result  nonzero, so break here  */
+	ind -= (e-i);
+	e = i;
+	break;
+      }           
+      if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
+	yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
+    }
+  } 
+  {
+    /*   decrementing down */
+    int i;
+    int end_e;
+    end_e = e-ind;
+    for (i=end_e+1; i<=e; i++) {
+      if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
+	/*
+	 *    this may decrement below zero if two independently set ind
+	 *    so we catch it here
+	 */
+	yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
+	atomic_incr(ddS.cp_et[i][t]);
+	break;
+      }           
+      if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
+	yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
     }
   }
-  ddS.c_dt[d][t]--;
-  ddS.C_dT[d]--;
-#if 0
-  assert(ddS.c_dt[d][t]>=0);
-  assert(ddS.c_dt[d][t]>0 || ddS.n_dt[d][t]==0);
-#endif
+  if ( decr_dt==0 ) {
+    ddS.c_dt[d][t]--;
+    //   always safe since its associated with ddS.c_dt[d][t]
+    if ( atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40 ) {
+      /*
+       *    shouldn't happen as its a total
+       */
+      yap_quit("Whoops atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40\n");
+    }
+    ddS.C_dT[d]--;
+    if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
+      yap_quit("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
+  }
 }
 
 void fix_tableidtopic(int d, int t, int ind) {
@@ -135,7 +166,7 @@ void unfix_tableidword(int e, int w, int t, int ind) {
     if ( (atomic_decr(ddS.s_evt[i][w][t]))>=UINT32_MAX-40 ) {
       /*
        *    this may decrement below zero if two independently set ind
-       *    so we catch it here
+       *    so we catch it here, and quit early
        */
       //WRAY   this tapped!!
       yap_message("Whoops atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40\n");
