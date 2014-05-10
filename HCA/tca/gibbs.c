@@ -36,6 +36,15 @@ void checkm_evt(int w, int var);
  *    return 1 if bad constraints
  */
 static int sampleindicator(int n, int t, char *ind) {
+  if ( n==0 ) {
+    /*    
+     *   shouldn't happen, but may due to inconsistency;
+     *   since its sampling up, its zero but should have been
+     *   one,, so assume its one
+     */
+    *ind = 1;
+    return 0;
+  }
   *ind = 0;
   if ( ((n==1) ||
 	t>n*rng_unit(rngp) ) ) {
@@ -118,6 +127,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
    */
   // check_n_dt(did);
 
+  if ( PCTL_BURSTY() && misi_blocked(dD, i, mi, t) )
+    return 1;
+
   if ( resample_doc_side_ind(did, t, &rd) )
     return 1;
   assert(rd>=-1 && rd<=e+1);
@@ -126,10 +138,10 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
     return 1;
   assert(wid<0 || (rw>=0 && rw<=e+1));
   
-  if ( PCTL_BURSTY() && misi_blocked(dD, i, mi, t) )
-    return 1;
   /*
-   *  OK to change this topic 
+   *  OK to change this topic.
+   *  NB.  all misi stats are local document so unaffected
+   *       by other threads
    */
   if ( PCTL_BURSTY() )
     misi_decr(dD, i, mi, t, wid);
@@ -137,36 +149,61 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
   /*
    *    remove from doc stats
    */
-  if ( rd>=0 ) {
-    /*
-     *    subtract affect of table indicator for topic PYP
-     */
-    unfix_tableidtopic(did,t,rd);
+  {
+    int n = ddS.n_dt[did][t];
+    assert(n>0);
+    if ( n==1 ) {
+      /*
+       *   chains going to zero work up
+       */
+      ddS.n_dt[did][t] = 0;
+      ddS.N_dT[did]--;
+    }
+    if ( rd>=0 ) {
+      /*
+       *    subtract affect of table indicator for topic PYP
+       */
+      unfix_tableidtopic(did,t,rd);
+    }
+    if ( n>1 ) {
+     /*
+      *   chains not going to zero work down
+      */
+      ddS.n_dt[did][t] = n-1;
+      ddS.N_dT[did]--;
+    }
   }
-#ifndef H_THREADS
-  assert(ddS.n_dt[did][t]>0);
-#endif
-  ddS.n_dt[did][t]--;
-  ddS.N_dT[did]--;
+
   /*
    *  remove from topicXword stats
    */
   if ( wid>=0 ) {
+    int decr = 0;
+    if ( e==ddN.E-1 || ddS.s_evt[e+1][wid][t]==0 ) {
+      int one = 1;
+      /*  no data inherited from later epoch */
+      if ( atomic_decr_val(ddS.m_evt[e][wid][t],one) ) {
+	/*   m_evt[e][wid][t] was decremented to zero */
+	if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
+	  yap_message("Whoops atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40\n");
+	decr = 1;
+      }
+    }      
     if ( rw>=1 ) {
       /*
        *    subtract affect of table indicator for word PYP
        */
       unfix_tableidword(e,wid,t,rw);
     }
+    if ( decr==0 ) {
 #ifndef H_THREADS
-    if ( ddS.m_evt[e][wid][t]==0 )
-      yap_message("Decrementing ddS.m_evt[e][%d][%d]\n", e, wid, t);
-    assert(ddS.m_evt[e][wid][t]>0);
+      assert(ddS.m_evt[e][wid][t]>0);
 #endif
-    if ( atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40 ) 
-      yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
-    if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
-      yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
+      if ( atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40 ) 
+	yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
+      if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
+	yap_message("Whoops atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40\n");
+    }
   }
   return 0;
 }

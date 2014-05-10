@@ -193,8 +193,9 @@ static void add_tableidword(int e, int w, int t) {
   assert(ddS.s_evt[e][w][t]==0);
 #endif
   for (;  e>=0 && ddS.s_evt[e][w][t]==0; e--) {
+    int zero = 0;
     //WRAY ???  only increment if zero ... how to do safely
-    if ( atomic_incr_zero(ddS.s_evt[e][w][t]) ) {
+    if ( atomic_incr_val(ddS.s_evt[e][w][t],zero) ) {
       atomic_incr(ddS.S_eVt[e][t]);
       laste = e;
     } else
