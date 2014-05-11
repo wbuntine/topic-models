@@ -29,7 +29,12 @@
 #include "sample.h"
 #include "stats.h"
 
+/*
+ *  debugging uses static memory, so only allow without threads
+ */
+#ifndef H_THREADS
 // #define A_DEBUG
+#endif
 
 #ifdef A_DEBUG
   static double last_val = 0;
@@ -115,12 +120,12 @@ static double aterms_mu(double mya, void *mydata) {
   return val;
 }
 
-static uint16_t **docstats;
 /*
  */
 static double aterms_burst(double mya, void *mydata) {
   double b[ddM.T];
   double val = 0;
+  uint16_t **docstats = (uint16_t **)mydata;
 #ifdef A_DEBUG
   float save_a = ddC.a_burst->a;
   double like;
@@ -221,15 +226,9 @@ void sample_at(double *mya) {
   last_val = 0;
   last_like = 0;
 #endif
-  if ( verbose>1 )
-    yap_message("sample_at (pre):  a_theta=%lf, lp=%lf\n",
-		*mya, likelihood());
   myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_theta, NULL, mya, "at");
   ddP.a_theta = *mya;
   cache_update("at");
-  if ( verbose>1 )
-    yap_message("sample_at (post):  a_theta=%lf, lp=%lf\n",
-		*mya, likelihood());
 }
 
 void sample_am(double *mya) {
@@ -237,33 +236,22 @@ void sample_am(double *mya) {
   last_val = 0;
   last_like = 0;
 #endif
-  if ( verbose>1 )
-    yap_message("sample_am (pre):  a_mu=%lf, lp=%lf\n",
-		ddP.a_mu, likelihood());
   myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_mu, NULL, mya, "am");
   ddP.a_mu = *mya;
   cache_update("am");
-  if ( verbose>1 )
-    yap_message("sample_am (post):  a_mu=%lf, lp=%lf\n",
-		ddP.a_mu, likelihood());
  }
 
 void sample_ab(double *mya) {
+  uint16_t **docstats;
 #ifdef A_DEBUG
   last_val = 0;
   last_like = 0;
 #endif  
   docstats = dmi_astore(&ddM);
-  if ( verbose>1 )
-    yap_message("sample_ab (pre):  a_burst=%lf, lp=%lf\n",
-		*mya, likelihood());
-  myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_burst, NULL, mya, "ab");
+  myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_burst, docstats, mya, "ab");
   ddP.a_burst = *mya;
   cache_update("ab");
   dmi_freeastore(&ddM, docstats);
-  if ( verbose>1 )
-    yap_message("sample_ab (post):  a_burst=%lf, lp=%lf\n",
-		*mya, likelihood());
 }
 
 void sample_ap1(double *mya) {
@@ -271,30 +259,18 @@ void sample_ap1(double *mya) {
   last_val = 0;
   last_like = 0;
 #endif
-  if ( verbose>1 )
-    yap_message("sample_ap1 (pre):  a_phi1=%lf, lp=%lf\n",
-		*mya, likelihood());
   myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_phi1, NULL, mya, "ap1");
   ddP.a_phi1 = *mya;
   cache_update("ap1");
-  if ( verbose>1 )
-    yap_message("sample_ap1 (post):  a_phi1=%lf, lp=%lf\n",
-		*mya, likelihood());
 }
 void sample_ap0(double *mya) {
 #ifdef A_DEBUG
   last_val = 0;
   last_like = 0;
 #endif
-  if ( verbose>1 )
-    yap_message("sample_ap0 (pre):  a_phi0=%lf, lp=%lf\n",
-		*mya, likelihood());
   myarms(PYP_DISC_MIN, PYP_DISC_MAX, &aterms_phi0, NULL, mya, "ap0");
   ddP.a_phi0 = *mya;
   cache_update("ap0");
-  if ( verbose>1 )
-    yap_message("sample_ap0 (post):  a_phi0=%lf, lp=%lf\n",
-		*mya, likelihood());
 }
 
 

@@ -77,9 +77,9 @@ typedef struct D_pars_s {
   int training;             //  suggested training set size
   char *teststem;           //  stem for the test data, only if different
   /*
-   *  special control for sampling P.b_burst[]
+   *  special control for sampling batches of pars
    */
-  int bbatch;
+  int kbatch;
   /*
    *  bound controlling how far back a table can go
    */
@@ -129,6 +129,7 @@ typedef struct D_pctl_s {
   int offset;
   int cycles;
   void (*sampler)(double *x);
+  void (*samplerk)(double *x, int k);
 } D_pctl_t;
 
 extern D_pars_t ddP;
@@ -138,7 +139,7 @@ void pctl_init();
 void pctl_read(char *resstem, char *buf);
 void pctl_fix(int ITER);
 void pctl_report();
-void pctl_sample(int iter);
+void pctl_sample(int iter, int procs);
 void pctl_update(int iter);
 void pctl_print(FILE *fp);
 void pctl_samplereport();

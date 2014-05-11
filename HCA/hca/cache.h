@@ -38,6 +38,8 @@ typedef struct D_cache_s {
   struct gcache_s lgalpha, lgtotalpha;  
   struct gcache_s lgbetac, lgbeta;
   stable_t *SD;  
+  /*  used if one/some have a=0 */
+  stable_t *S0;
 } D_cache_t;
 
 extern D_cache_t ddC;

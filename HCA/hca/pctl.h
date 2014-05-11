@@ -19,9 +19,9 @@
 #include "gibbs.h"
 
 #define BETA 100
-#define APAR 0.5
+#define APAR 0.0
 #define BPAR 10
-#define A0PAR 0.5
+#define A0PAR 0.0
 #define B0PAR 10
 #define AWPAR 0.5
 #define BWPAR 100
@@ -100,7 +100,8 @@ typedef struct D_pars_s {
   /*
    *  special control for sampling P.bdk[]
    */
-  int bdkbatch;
+  int kbatch;
+  uint16_t **docstats;
   /*
    *  querying, multiple queries stored in single vector
    */
@@ -150,6 +151,7 @@ typedef struct D_pctl_s {
   int offset;
   int cycles;
   void (*sampler)(double *x);
+  void (*samplerk)(double *x, int k);
 } D_pctl_t;
 
 #define Q_excludetopic(k) (ddP.bits_et[(k)/32U] & (1U << (((unsigned)k)%32U)))
@@ -161,7 +163,7 @@ void pctl_init();
 void pctl_read(char *resstem, char *buf);
 void pctl_fix(char *betafile, int ITER);
 void pctl_report();
-void pctl_sample(int iter);
+void pctl_sample(int iter, int procs);
 void pctl_update(int iter);
 void pctl_print(FILE *fp);
 void pctl_samplereport();

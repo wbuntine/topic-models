@@ -27,13 +27,70 @@
 #include "pctl.h"
 #include "cache.h"
 
+#define mymax(A,B) ((A>B)?(A):(B))
 
 #ifdef CACHE_ABTP
 double alphabasetopicprob(int t);
 #endif
 
 void cache_init(int maxM, int maxW) {
-  if ( ddP.bdk!=NULL ) {
+  /*
+   *   now the libstb library has its own separate error handling,
+   *   so make sure it goes through our yapper
+   */
+  yaps_yapper(yap_va);
+
+  /*
+   *   we'll share tables for all those with a==0,
+   *   since it never changes
+   */
+  {
+    char tag[200];
+    int mN=0, mM=0, sN=0, sM=0;
+    ddC.S0 = NULL;
+    tag[0] = 0;
+    if ( ddP.apar==0 ) {
+      int maxD = ddD.NdTmax*1.5;
+      mM = mymax(mM,maxM);
+      mN = mymax(mN,maxD+1);
+      sM = mymax(sM,100);
+      sN = mymax(sN,maxD+1);
+      strcat(tag, "a, ");
+    }
+    if ( ddP.ad==0 ) {
+      int nmax=ddM.Mi_max+10;
+      mM = mymax(mM,nmax);
+      mN = mymax(mN,nmax);
+      sM = mymax(sM,nmax);
+      sN = mymax(sN,nmax);
+      strcat(tag, "ad, ");
+    }
+    if ( ddP.awpar==0 ) {
+      mM = mymax(mM,maxM);
+      mN = mymax(mN,maxW);
+      sM = mymax(sM,1000);
+      sN = mymax(sN,100);
+      strcat(tag, "aw, ");
+    }
+    if ( mM>0 ) {
+      ddC.S0 = S_make(sN, sM, mN, mM, 0,
+#ifdef H_THREADS
+                      S_THREADS|
+#endif
+                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+      if ( ddP.apar==0 ) 
+        ddC.SX = ddC.S0;
+      if ( ddP.awpar==0 )
+        ddC.SY = ddC.S0;
+      if ( PCTL_BURSTY() && ddP.ad==0 ) 
+        ddC.SD = ddC.S0;
+      strcat(tag, " all zero PYP");
+      S_tag(ddC.S0, tag);
+      if ( verbose ) 
+        S_report(ddC.S0,NULL);
+    }
+  }
+  if ( ddP.bdk!=NULL && ddP.ad!=0 ) {
     /*
      *   clear maximum is number times any given word appears in
      *   any one doc (max for any word and any doc)
@@ -45,6 +102,7 @@ void cache_init(int maxM, int maxW) {
 #endif
 		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
     S_tag(ddC.SD,"SD, doc PYP");
+    if ( verbose ) S_report(ddC.SX,NULL);
   }
   if ( ddP.PYalpha ) {
     /*
@@ -55,12 +113,15 @@ void cache_init(int maxM, int maxW) {
 #ifdef CACHE_ABTP
     alphabasetopicprob(-1);
 #endif
-    ddC.SX = S_make(maxD+1, 100, maxD+1, maxM, ddP.apar, 
+    if ( ddP.apar!=0 ) {
+      ddC.SX = S_make(maxD+1, 100, maxD+1, maxM, ddP.apar, 
 #ifdef H_THREADS
- 		    S_THREADS|
+                      S_THREADS|
 #endif
-		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
-    S_tag(ddC.SX,"SX, docXtopic PYP");
+                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+      S_tag(ddC.SX,"SX, docXtopic PYP");
+      if ( verbose ) S_report(ddC.SX,NULL);
+    }
     gcache_init(&ddC.qda, ddP.apar);
     gcache_init(&ddC.lgb, ddP.bpar);
     if ( ddP.apar>0 )
@@ -70,12 +131,15 @@ void cache_init(int maxM, int maxW) {
     gcache_init(&ddC.lgtotalpha, ddN.T*ddP.alpha);
   }
   if ( ddP.PYbeta ) {
-    ddC.SY = S_make(1000, 100, maxW, maxM, ddP.awpar,
+    if ( ddP.awpar!=0 ) {
+      ddC.SY = S_make(1000, 100, maxW, maxM, ddP.awpar,
 #ifdef H_THREADS
- 		    S_THREADS|
+                      S_THREADS|
 #endif
-		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
-    S_tag(ddC.SY,"SY, topicXword PYP");
+                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+      S_tag(ddC.SY,"SY, topicXword PYP");
+      if ( verbose ) S_report(ddC.SY,NULL);
+    }
     gcache_init(&ddC.qdaw, ddP.awpar);
     gcache_init(&ddC.lgbw, ddP.bwpar);
     if ( ddP.awpar>0 )
@@ -85,24 +149,19 @@ void cache_init(int maxM, int maxW) {
       gcache_init(&ddC.lgbetac, ddP.betac);
     gcache_init(&ddC.lgbeta, ddP.beta);
   }
-  /*
-   *   now the libstb library has its own separate error handling,
-   *   so make sure it goes through our yapper
-   */
-  yaps_yapper(yap_va);
 }
 
 void cache_free() {
 #ifdef CACHE_ABTP
   alphabasetopicprob(-5*ddN.T);
 #endif
-  if ( ddP.PYbeta ) {
+  if ( ddP.PYbeta &&  ddP.awpar!=0 ) {
     S_free(ddC.SY);
   }  
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha &&  ddP.apar!=0 ) {
     S_free(ddC.SX);
   }
-  if ( ddP.bdk!=NULL ) {
+  if ( ddP.bdk!=NULL && ddP.ad!=0 ) {
     S_free(ddC.SD);
   }
 }

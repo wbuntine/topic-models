@@ -6,7 +6,7 @@
 void sample_bm0(double *b);
 void sample_bm1(double *b);
 void sample_bp0(double *b);
-void sample_bp1(double *b);
+void sample_bp1(double *b, int k);
 void sample_bt(double *b);
 void sample_bb(double *b);
 void sample_at(double *a);

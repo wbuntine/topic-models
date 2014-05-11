@@ -17,7 +17,7 @@ void sample_beta(double *mytbeta);
 void sample_ad(double *ad);
 void sample_adk(double *ad);
 void sample_bd(double *bd);
-void sample_bdk(double *bdk);
+void sample_bdk(double *bdk, int k);
 
 extern int verbose;
 double likelihood();

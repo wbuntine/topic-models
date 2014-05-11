@@ -90,7 +90,8 @@ static void usage() {
           "   -S var=value   #  initialise var=am,apN,bXN for X=m,p and N=0,1\n"
 	  "                  #          or var=aX,bX for X=t,b\n"
 	  "  sampling hyperparameters:\n"
-	  "   -F var        #  fix var, var as in -S\n"
+	  "   -F var         #  fix var, var as in -S\n"
+	  "   -g var,cnt     #  extra integer parameter for sampling var\n"
 	  "   -G var,cycles,start #  sample var is same as -S\n"
 	  "  control:\n"
           "   -b back        #  tables only go back this far\n"
@@ -132,7 +133,6 @@ void *sampling_p(void *pargs)
   float *p = fvec(ddN.T * 4);
   D_MiSi_t dD;
   D_pargs_p *par =(D_pargs_p *) pargs;
-  int procs = par->procs;
   clock_t t1 = clock();
   
   if ( PCTL_BURSTY() )
@@ -142,7 +142,7 @@ void *sampling_p(void *pargs)
    */
   par->thislp = 0;
   par->thisNd = 0;
-  for (i=par->processid; i<ddN.DT; i+=procs) {    
+  while ( (i=atomic_incr(*par->doc)-1)<ddN.DT ) {
     if ( PCTL_BURSTY() )
       misi_build(&dD,i,0);
     par->thislp += gibbs_lda(GibbsNone, i, ddD.N_dT[i], p, &dD);
@@ -198,7 +198,7 @@ int main(int argc, char* argv[])
 
   pctl_init();
 
-  while ( (c=getopt(argc, argv,"b:c:C:d:ef:F:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
+  while ( (c=getopt(argc, argv,"b:c:C:d:ef:F:g:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
     switch ( c ) {
     case 'b':
       if ( !optarg || sscanf(optarg,"%d",&ddP.back)!=1 )
@@ -245,6 +245,19 @@ int main(int argc, char* argv[])
 	ddT[par].fix = 1;
       }
       break;
+    case 'g':
+	{
+	  char var[100];
+	  int st=0;
+	  if ( !optarg || sscanf(optarg,"%[^, ],%d", &var[0], &st)<1  )
+            yap_quit("Need a valid 'g' argument\n");
+          par = findpar(var);
+          if ( par==ParBP1 )
+            ddP.kbatch = st;
+          else
+            yap_quit("Illegal var for -g\n");
+        }
+        break;      
     case 'G':
       {
 	char var[100];
@@ -568,6 +581,7 @@ int main(int argc, char* argv[])
     int  pro;
     double thislp = 0;
     int   thisNd = 0;
+    int doc;
 #ifdef H_THREADS
     pthread_t thread[procs];
 #endif
@@ -593,10 +607,11 @@ int main(int argc, char* argv[])
 #endif
 
    /*  a bit complex if no threads!  */
+    doc = 0;
     for (pro = 0 ; pro < procs ; pro++){
       parg[pro].dots=dots;
-      parg[pro].processid=pro;
       parg[pro].procs=procs;
+      parg[pro].doc = &doc;
 #ifndef H_THREADS
       sampling_p(&parg[pro]);
 #else
@@ -655,7 +670,7 @@ int main(int argc, char* argv[])
      *   sample hyperparameters
      */
     t3 = clock();
-    pctl_sample(iter);
+    pctl_sample(iter, procs);
    
     /*
      *   do time calcs here to remove diagnostics+reporting

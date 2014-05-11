@@ -24,6 +24,10 @@
 #include "yap.h"
 #include "sample.h"
 #include "data.h"
+#ifdef H_THREADS
+#include <pthread.h>
+#endif
+#include "atomic.h"
 
 enum ParType findpar(char *name) {
   enum ParType p;
@@ -58,6 +62,8 @@ void pctl_init() {
   ddP.phi = NULL;
   ddP.fixalpha = NULL;
   for (par=0; par<=ParBeta; par++) {
+    ddT[par].samplerk = NULL;
+    ddT[par].sampler = NULL;
     ddT[par].name = NULL;
     ddT[par].ptr = NULL;
     ddT[par].fix = 0;
@@ -101,7 +107,7 @@ void pctl_init() {
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
   ddT[ParAD].sampler = &sample_adk;
-  ddT[ParBDK].sampler = &sample_bdk;
+  ddT[ParBDK].samplerk = &sample_bdk;
 
   ddP.alpha = 1;
   ddP.betapr = NULL;
@@ -119,7 +125,7 @@ void pctl_init() {
   ddP.bw0 = BW0PAR;  
   ddP.ad = APAR;
   ddP.bdk = NULL;  
-  ddP.bdkbatch = 0;
+  ddP.kbatch = 0;
   ddT[ParAlpha].cycles = DIRCYCLES;
   ddT[ParBeta].cycles = DIRCYCLES;
   ddT[ParB].cycles = BCYCLES;
@@ -178,6 +184,7 @@ void pctl_init() {
   ddP.hold_every = 0;
   ddP.hold_dict = 0;
   ddP.hold_fraction = 0;
+  ddP.docstats = NULL;
 }
 
 static char *mystem;
@@ -332,14 +339,14 @@ void pctl_fix(char *betafile, int ITER) {
   }
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
-    if ( ddT[ParBDK].fix==0 && ddP.bdkbatch==0 ) {
-	if ( ddN.T>=10 )
-      		ddP.bdkbatch = ddN.T/5;
+    if ( ddT[ParBDK].fix==0 && ddP.kbatch==0 ) {
+	if ( ddN.T>=20 )
+      		ddP.kbatch = ddN.T/5;
 	else
-		ddP.bdkbatch = ddN.T/2;
+		ddP.kbatch = ddN.T/2;
     }
-    if (  ddP.bdkbatch > ddN.T )
-      ddP.bdkbatch = ddN.T;
+    if (  ddP.kbatch > ddN.T )
+      ddP.kbatch = ddN.T;
   } else {
     ddT[ParBDK].fix = 1;   
   } 
@@ -571,13 +578,121 @@ double pctl_gammaprior(double x) {
   return -x/PYP_CONC_PSCALE/ddN.W + (PYP_CONC_PSHAPE-1)*log(x);
 }
 
-void pctl_sample(int iter) {
-  enum ParType par;
-  for (par=ParA; par<=ParBeta; par++) {
-    if (  !ddT[par].fix && iter>ddT[par].start
-	  && iter%ddT[par].cycles==ddT[par].offset ) {
-      (*ddT[par].sampler)(ddT[par].ptr);
+/*
+ *   generate parameter corresponding to index
+ *   and return in *par and *k 
+ *        note bdk has K values bdk[k]
+ *        all other pars are single valued
+ *   return 1 if found OK, else return 0 if no more
+ */
+int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
+  enum ParType p;
+  for (p=ParA; p<=ParBeta; p++) {
+    if (  !ddT[p].fix && ddT[p].ptr
+          && iter>ddT[p].start
+	  && iter%ddT[p].cycles==ddT[p].offset ) {
+      if ( p==ParBDK ) {
+        if ( index<ddP.kbatch ) {
+          *par = p;
+          *k = (iter*ddP.kbatch+index)%ddN.T;
+          return 1;
+        }
+        index -= ddN.T;
+      } else {
+        if ( index==0 ) {
+          *par = p;
+          *k = -1;
+          return 1;
+        }
+        index--;
+      }
     }
+  }
+  return 0;
+}
+
+struct pst_data {
+  int iter;
+  int *index;  /*  shared location to get index */
+};
+static void *pctl_sample_thread(void *pin) {
+  struct pst_data *pd=(struct pst_data *)pin;
+  double startlike;
+  int k, index;
+  enum ParType par;
+  while ( 1 ) {
+    index = atomic_incr(*pd->index) - 1;
+    if ( pctl_par_iter(index, pd->iter, &par, &k) ) {
+      if ( verbose>1 ) {
+        startlike = likelihood();
+        if ( k<0 )
+          yap_message("sample_%s", ddT[par].name);
+        else
+          yap_message("sample_%s[%d]", ddT[par].name, k);
+        yap_message(" (pre): %s=%lf, lp=%lf\n",
+                    ddT[par].name, ddT[par].ptr[k<0?0:k], startlike);
+      }
+      if ( k<0 )
+        (*ddT[par].sampler)(ddT[par].ptr);
+      else
+        (*ddT[par].samplerk)(ddT[par].ptr,k);
+      if ( verbose>1 ) {
+        double endlike = likelihood();
+        if ( k<0 )
+          yap_message("sample_%s", ddT[par].name);
+        else
+          yap_message("sample_%s[%d]", ddT[par].name, k);
+        yap_message(" (pre): %s=%lf, lp=%lf\n",
+                    ddT[par].name, ddT[par].ptr[k<0?0:k], endlike);
+        if ( pd->iter>50 && (endlike-startlike)/ddN.NT>1 ) {
+          yap_quit("Sampler failed iter=%d due to huge decrease of %lf!\n",
+                   pd->iter, (endlike-startlike)/ddN.NT);
+        }
+      }
+    } else
+      break;
+  }
+  return NULL;
+}
+
+void pctl_sample(int iter, int procs) {
+  int p, index;
+  struct pst_data pd;
+#ifdef H_THREADS
+  pthread_t thread[procs];
+#endif
+  
+  /*
+   *  first, create docstats if needed
+   */
+  ddP.docstats = NULL;
+  for (index=0; index<100000; index++) {
+    int k;
+    enum ParType par;
+    if ( pctl_par_iter(index, iter, &par, &k) && par==ParBDK ) {
+      ddP.docstats = dmi_bstore(&ddM);
+      break;
+    }
+  }
+  index = 0;
+  pd.index = &index;
+  pd.iter = iter;
+#ifdef H_THREADS
+  for (p = 0 ; p < procs ; p++){ 
+    if ( pthread_create(&thread[p],NULL,pctl_sample_thread,(void*)&pd) != 0) {
+      yap_message("pctl_sample() thread failed %d\n",p+1 );
+    }
+  }
+  //waiting for threads to finish
+  for (p = 0; p < procs; p++){
+    pthread_join(thread[p], NULL);
+  }
+#else
+  pctl_sample_thread((void*)&pd);
+#endif
+  if ( ddP.docstats ) {
+    dmi_freebstore(&ddM,ddP.docstats);
+    ddP.docstats = NULL;
   }
 }
 
@@ -658,7 +773,7 @@ void pctl_print(FILE *fp) {
     int t;
     if ( !ddT[ParBDK].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
-	      ddT[ParBDK].name, ddT[ParBDK].cycles, ddP.bdkbatch);
+	      ddT[ParBDK].name, ddT[ParBDK].cycles, ddP.kbatch);
     fprintf(fp, "bdk =");
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %5lf", ddP.bdk[t]);

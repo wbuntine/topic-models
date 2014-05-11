@@ -153,23 +153,9 @@ static double bterms_phi1(double b, void *mydata) {
 
 
 void sample_bt(double *b) {
-  double startlike;
-  if ( verbose>1 ) {
-    startlike = likelihood();
-    yap_message("sample_bt (pre): b_theta=%lf, lp=%lf\n",
-		*b, startlike);
-  }
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_theta, NULL, b, "bt", 1);
   ddP.b_theta = *b;
   cache_update("bt");
-  if ( verbose>1 ) {
-    double endlike = likelihood();
-    yap_message("sample_bt (post): b_theta=%lf, lp=%lf\n",
-		*b, endlike);
-    if ( endlike < startlike-50 ) {
-      yap_quit("Sampler failed due to huge decrease!\n");
-    }
-  }
 }
 
 static double bterms_burst(double b, void *mydata) {
@@ -189,118 +175,44 @@ static double bterms_burst(double b, void *mydata) {
 }
 
 void sample_bb(double *b) {
-  double startlike;
   uint16_t **docstats;
-  if ( verbose>1 ) {
-    startlike = likelihood();
-    yap_message("sample_bb (pre): b_burst=%lf, lp=%lf\n",
-		*b, startlike);
-  }
   docstats = dmi_bstore(&ddM);
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_burst, (void*)docstats, 
 	   b, "bb", 1);
   ddP.b_burst = *b;
   cache_update("bb");
-  if ( verbose>1 ) {
-    double endlike = likelihood();
-    yap_message("sample_bb (post): b_burst=%lf, lp=%lf\n",
-		*b, endlike);
-    if ( endlike < startlike-50 ) {
-      yap_quit("Sampler failed due to huge decrease!\n");
-    }
-  }
   dmi_freebstore(&ddM,docstats);
-  docstats = NULL;
 }
 
 void sample_bm1(double *b) {
-  double startlike;
   int e;
-  if ( verbose>1 ) {
-    startlike = likelihood();
-    yap_message("sample_bm1 (pre): b_mu[1...]=%lf, lp=%lf\n",
-		*b, startlike);
-  }
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_mu1, NULL, b, "bm1", 1);
   for (e=1; e<ddN.E; e++)
     ddP.b_mu[e] = *b;
   cache_update("bm1");
-  if ( verbose>1 ) {
-    double endlike = likelihood();
-    yap_message("sample_bm1 (post): b_mu[1...]=%lf, lp=%lf\n",
-		*b, endlike);
-    if ( endlike < startlike-50 ) {
-      yap_quit("Sampler failed due to huge decrease!\n");
-    }
-  }
 }
 
-void sample_bp1(double *b) {
-  double startlike;
-  int k;
+void sample_bp1(double *b, int k) {
   double bb;
   assert(ddN.E>1);
-  for (k=0; k<ddN.T; k++) {
-    bb = ddP.b_phi[1][k];
-    if ( verbose>1 ) {
-      startlike = likelihood();
-      yap_message("sample_bp1 (pre): b_phi[1][%d]=%lf, lp=%lf\n",
-		  k, bb, startlike);
-    }
-    myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_phi1, &k, &bb, "bp1", 1);
-    ddP.b_phi[1][k] = bb;
-    cache_update("bp1");
-    if ( verbose>1 ) {
-      double endlike = likelihood();
-      yap_message("sample_bp1 (post): b_phi[1][%d]=%lf, lp=%lf\n",
-		  k, bb, endlike);
-      if ( endlike < startlike-HUGE_INCREASE ) {
-	yap_quit("Sampler failed due to huge decrease!\n");
-      }
-    }
-  }
+  bb = ddP.b_phi[1][k];
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_phi1, &k, &bb, "bp1", 1);
+  ddP.b_phi[1][k] = bb;
+  cache_update("bp1");
 }
 
 void sample_bp0(double *b) {
-  double startlike;
   int t;
-  if ( verbose>1 ) {
-    startlike = likelihood();
-    yap_message("sample_bp0 (pre): b_phi[0][0]=%lf, lp=%lf\n",
-		*b, startlike);
-  }
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_phi0, NULL, b, "bp0", 1);
   for (t=0; t<ddN.T; t++)
     ddP.b_phi[0][t] = *b;
   cache_update("bp0");
-  if ( verbose>1 ) {
-    double endlike = likelihood();
-    yap_message("sample_bp0 (post): b_phi[0][0]=%lf, lp=%lf\n",
-		*b, endlike);
-    if ( endlike < startlike-HUGE_INCREASE ) {
-      yap_quit("Sampler failed due to huge decrease!\n");
-    }
-  }
 }
 void sample_bm0(double *b) {
-  double startlike;
-  if ( verbose>0 ) {
-    startlike = likelihood();
-    yap_message("sample_bm0 (pre): b_mu[0]=%lf, lp=%lf\n",
-		*b, startlike);
-  }
   //WRAY  commenting this out stops sample_bm0() crashing!
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_mu0, NULL, b, "bm0", 1);
   ddP.b_mu[0] = *b;
   cache_update("bm0");
-  if ( verbose>0 ) {
-    double endlike = likelihood();
-    yap_message("sample_bm0 (post): b_mu[0]=%lf, lp=%lf\n",
-		*b, endlike);
-    if ( endlike < startlike-HUGE_INCREASE ) {
-      yap_quit("Sampler failed due to huge decrease!\n");
-    }
-  }
 }
 
 

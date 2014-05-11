@@ -456,7 +456,7 @@ int main(int argc, char* argv[])
             yap_quit("Need a valid 'g' argument\n");
           par = findpar(var);
           if ( par==ParBDK )
-            ddP.bdkbatch = st;
+            ddP.kbatch = st;
           else
             yap_quit("Illegal var for -g\n");
         }
@@ -1044,7 +1044,7 @@ int main(int argc, char* argv[])
       thisNd +=  parg[pro].thisNd;
       tot_time += parg[pro].tot_time;
     }
-#if 1 || defined(NONATOMIC)
+#if 0 || defined(NONATOMIC)
     if ( procs>1 )
       hca_correct_twt();
 #endif
@@ -1068,7 +1068,7 @@ int main(int argc, char* argv[])
         parg[pro].dots=dots;
         parg[pro].processid=pro;
         parg[pro].procs=procs;
-#ifndef H_THREADS
+#ifdef NO_THREADS
         testing_p(&parg[pro]);
 #else
         //calling sampling for processes
@@ -1077,7 +1077,7 @@ int main(int argc, char* argv[])
         }
 #endif
       }
-#ifdef H_THREADS
+#ifndef NO_THREADS
       //waiting for threads to finish
       for(pro = 0; pro < procs; pro++){
         pthread_join(thread[pro], NULL);
@@ -1112,7 +1112,7 @@ int main(int argc, char* argv[])
         ddS.Tlife[t]++;
     }
     if ( nosample==0 ) 
-      pctl_sample(iter);
+      pctl_sample(iter,procs);
     {
 	int Tmax_before = Tmax;
     	Tmax = pctl_Tmax(Tmax, iter);

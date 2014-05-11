@@ -24,6 +24,10 @@
 #include "yap.h"
 #include "sample.h"
 #include "data.h"
+#ifdef H_THREADS
+#include <pthread.h>
+#endif
+#include "atomic.h"
 
 enum ParType findpar(char *name) {
   enum ParType p;
@@ -51,6 +55,7 @@ void pctl_init() {
 
   for (par=0; par<=ParBB; par++) {
     ddT[par].sampler = NULL;
+    ddT[par].samplerk = NULL;
     ddT[par].name = NULL;
     ddT[par].ptr = NULL;
     ddT[par].fix = 0;           
@@ -98,7 +103,7 @@ void pctl_init() {
   ddT[ParBT].sampler = &sample_bt;
   ddT[ParBB].sampler = &sample_bb;
   ddT[ParBP0].sampler = &sample_bp0;
-  ddT[ParBP1].sampler = &sample_bp1;
+  ddT[ParBP1].samplerk = &sample_bp1;
 
   ddT[ParB0P].fix = 1;
   ddT[ParB0M].fix = 1;
@@ -148,6 +153,7 @@ void pctl_init() {
   ddP.teststem = NULL;
   ddP.training = 0;
   ddP.back = UINT32_MAX;
+  ddP.kbatch = 0;
   
   ddP.maxN = 20000;
   ddP.maxM = 1000;
@@ -303,6 +309,21 @@ void pctl_fix(int ITER) {
 
   if ( ddP.maxM>ddP.maxN )
     ddP.maxM = ddP.maxN;
+
+  if ( ddT[ParBP1].fix==0 ) {
+    /*
+     *  adjust kbatch
+     */
+    if ( ddP.kbatch==0 ) {
+      if ( ddN.T>=20 )
+        ddP.kbatch = ddN.T/5;
+      else
+        ddP.kbatch = ddN.T/2;
+    }
+    if (  ddP.kbatch > ddN.T )
+      ddP.kbatch = ddN.T;
+  }
+  
 }
 
 void pctl_report() {
@@ -332,15 +353,103 @@ double pctl_gammaprior(double x) {
   return -x/PYP_CONC_PSCALE/ddN.W + (PYP_CONC_PSHAPE-1)*log(x);
 }
 
-void pctl_sample(int iter) {
-  enum ParType par;
-  for (par=ParAM; par<=ParBB; par++) {
-    if (  !ddT[par].fix && ddT[par].ptr
-          && iter>ddT[par].start
-	  && iter%ddT[par].cycles==ddT[par].offset ) {
-      (*ddT[par].sampler)(ddT[par].ptr);
+/*
+ *   generate parameter corresponding to index
+ *   and return in *par and *k 
+ *        note b_phi has K values b_phi[1][k]
+ *        all other pars are single valued
+ *   return 1 if found OK, else return 0 if no more
+ */
+int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
+  enum ParType p;
+  for (p=ParAM; p<=ParBB; p++) {
+    if (  !ddT[p].fix && ddT[p].ptr
+          && iter>ddT[p].start
+	  && iter%ddT[p].cycles==ddT[p].offset ) {
+      if ( p==ParBP1 ) {
+        if ( index<ddP.kbatch ) {
+          *par = p;
+          *k = (iter*ddP.kbatch+index)%ddN.T;
+          return 1;
+        }
+        index -= ddN.T;
+      } else {
+        if ( index==0 ) {
+          *par = p;
+          *k = -1;
+          return 1;
+        }
+        index--;
+      }
     }
   }
+  return 0;
+}
+struct pst_data {
+  int iter;
+  int *index;  /*  shared location to get index */
+};
+static void *pctl_sample_thread(void *pin) {
+  struct pst_data *pd=(struct pst_data *)pin;
+  double startlike;
+  int k, index;
+  enum ParType par;
+  while ( 1 ) {
+    index = atomic_incr(*pd->index) - 1;
+    if ( pctl_par_iter(index, pd->iter, &par, &k) ) {
+      if ( verbose>1 ) {
+        startlike = likelihood();
+        if ( k<0 )
+          yap_message("sample_%s", ddT[par].name);
+        else
+          yap_message("sample_%s[%d]", ddT[par].name, k);
+        yap_message(" (pre): %s=%lf, lp=%lf\n",
+                    ddT[par].name, ddT[par].ptr[k<0?0:k], startlike);
+      }
+      if ( k<0 )
+        (*ddT[par].sampler)(ddT[par].ptr);
+      else
+        (*ddT[par].samplerk)(ddT[par].ptr,k);
+      if ( verbose>1 ) {
+        double endlike = likelihood();
+        if ( k<0 )
+          yap_message("sample_%s", ddT[par].name);
+        else
+          yap_message("sample_%s[%d]", ddT[par].name, k);
+        yap_message(" (pre): %s=%lf, lp=%lf\n",
+                    ddT[par].name, ddT[par].ptr[k<0?0:k], endlike);
+        if ( pd->iter>50 && (endlike-startlike)/ddN.NT>1 ) {
+          yap_quit("Sampler failed iter=%d due to huge decrease of %lf!\n",
+                   pd->iter, (endlike-startlike)/ddN.NT);
+        }
+      }
+    } else
+      break;
+  }
+  return NULL;
+}
+
+void pctl_sample(int iter, int procs) {
+  int p, index = 0;
+  struct pst_data pd;
+#ifdef H_THREADS
+  pthread_t thread[procs];
+#endif
+  pd.index = &index;
+  pd.iter = iter;
+#ifdef H_THREADS
+  for (p = 0 ; p < procs ; p++){ 
+    if ( pthread_create(&thread[p],NULL,pctl_sample_thread,(void*)&pd) != 0) {
+      yap_message("pctl_sample() thread failed %d\n",p+1 );
+    }
+  }
+  //waiting for threads to finish
+  for (p = 0; p < procs; p++){
+    pthread_join(thread[p], NULL);
+  }
+#else
+  pctl_sample_thread((void*)&pd);
+#endif
 }
 
 /*
@@ -370,8 +479,12 @@ void pctl_samplereport() {
   enum ParType par;
   yap_message("    sampling pars:");
   for (par=ParAM; par<=ParBB; par++) {
-    if (  !ddT[par].fix )
-      yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
+    if (  !ddT[par].fix ) {
+      if ( par==ParBP1 ) 
+        yap_message(" %sX%d(%d),", ddT[par].name, ddP.kbatch,ddT[par].cycles);
+      else 
+        yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
+    }
   }
   yap_message("\n");
 }

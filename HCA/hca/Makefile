@@ -5,10 +5,9 @@
 # CPPFLAGS
 
 CFILES = stats.c cache.c data.c gibbs.c like.c likesub.c lrs.c probs.c \
-  samplealpha.c sampleaw0.c sampleaw.c samplebw.c samplebeta.c samplebw0.c \
-  samplea0.c samplea.c sampleb.c sampleb0.c   \
-  topics.c pctl.c sparsemap.c tprob.c phi.c samplebdk.c \
-   change.c sampleadk.c  query.c loadhdp.c check.c 
+  samplea.c sampleb.c   \
+  topics.c pctl.c sparsemap.c tprob.c phi.c \
+   change.c  query.c loadhdp.c check.c 
 HFILES = data.h hca.h probs.h sample.h stats.h pctl.h diag.h check.h \
 	change.h
 

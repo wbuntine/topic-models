@@ -13,7 +13,7 @@ typedef struct D_pargs_s {
   double thislp;
   int thisNd;
   int dots;
-  int processid;
+  int *doc;
   int procs;  
   double tot_time;
 } D_pargs_p;
