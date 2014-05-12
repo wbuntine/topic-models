@@ -4,8 +4,8 @@ STB_HOME := /home/wbuntine/
 
 ##  Linux versions
 #  add "-g" or "-O5 -DNDEBUG" or ....
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE 
-# MYDEBUG=-g
+# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE 
+MYDEBUG=-g
 #  add "-g" for debugging libraries
 MYLIB=
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)

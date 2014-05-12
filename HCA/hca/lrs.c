@@ -71,7 +71,7 @@ double lp_test_LRS() {
   for(d=StartTestDoc; d<EndTestDoc; d++) {
     int lp;   /*  character position in doc for left-to-right sweep */
     int t;
-    int mi;
+    int mi = 0;
     if ( ddD.NdT[d]<=0 ) 
       continue;
     

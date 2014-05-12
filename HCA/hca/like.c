@@ -84,7 +84,7 @@ double likelihood_DIRalpha() {
 double likelihood_PYalpha() {
   int i,t;
   double likelihood = 0;
-  double la;
+  double la = 0;
   double lb = log(ddP.bpar);
   if ( ddP.apar>0 ) la = log(ddP.apar);
   for (i=0; i<ddN.DT; i++) {

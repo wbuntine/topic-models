@@ -95,7 +95,7 @@ void cache_init() {
         ddC.a_phi1 = ddC.a_zero;
       if ( PCTL_BURSTY() && ddP.a_burst==0 ) 
         ddC.a_burst = ddC.a_zero;
-      strcat(tag, " all zero PYP");
+      strcat(tag, "all zero PYP");
       S_tag(ddC.a_zero, tag);
       if ( verbose ) 
         S_report(ddC.a_zero,NULL);
@@ -108,8 +108,7 @@ void cache_init() {
 #endif
                       S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
     S_tag(ddC.a_mu,"a_mu, topic time PYP");
-    if ( verbose ) 
-      S_report(ddC.a_mu,NULL);
+    if ( verbose ) S_report(ddC.a_mu,NULL);
   }
   if ( ddP.a_theta!=0 ) {
     ddC.a_theta = S_make(ddD.N_dTmax/2, 100, ddD.N_dTmax+1, ddP.maxM, ddP.a_theta,
@@ -118,8 +117,7 @@ void cache_init() {
 #endif
                          S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
     S_tag(ddC.a_theta,"a_theta, topic->doc PYP");
-    if ( verbose ) 
-      S_report(ddC.a_theta,NULL);
+    if ( verbose ) S_report(ddC.a_theta,NULL);
   }
   if ( ddP.a_phi0!=0 ) {
     ddC.a_phi0 = S_make(ddP.maxN/10, ddP.maxM/2, ddP.maxN+1, ddP.maxM, ddP.a_phi0, 

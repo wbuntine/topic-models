@@ -69,7 +69,7 @@ static double bterms(double b, void *mydata) {
   uint16_t *localTd = (uint16_t *)mydata;
   double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
-  double lgba;
+  double lgba = 0;
   if ( ddP.apar>0 )
     lgba = lgamma(b/ddP.apar);
   for (i=0; i<ddN.DT; i++) {
@@ -182,7 +182,7 @@ static double bwterms(double bw, void *mydata) {
   struct gcache_s lgb_t;
 #else
   double lgb = lgamma(bw);
-  double lgba;
+  double lgba = 0;
 #endif
 #ifdef SBW_USECACHE
   if ( ddP.awpar>0 )

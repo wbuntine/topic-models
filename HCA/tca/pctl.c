@@ -391,7 +391,7 @@ struct pst_data {
 };
 static void *pctl_sample_thread(void *pin) {
   struct pst_data *pd=(struct pst_data *)pin;
-  double startlike;
+  double startlike = 0;
   int k, index;
   enum ParType par;
   while ( 1 ) {
@@ -430,7 +430,10 @@ static void *pctl_sample_thread(void *pin) {
 }
 
 void pctl_sample(int iter, int procs) {
-  int p, index = 0;
+#ifdef H_THREADS
+  int p;
+#endif
+  int index = 0;
   struct pst_data pd;
 #ifdef H_THREADS
   pthread_t thread[procs];

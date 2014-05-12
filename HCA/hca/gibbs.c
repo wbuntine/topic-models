@@ -183,7 +183,7 @@ double gibbs_lda(/*
 		 int  incremental  // 1=adding, -1=subtracting
 		 ) {
   int Td_ = 0;
-  int i, wid, t, mi;
+  int i, wid, t, mi = 0;
   double Z, tot;
   double logdoc = 0;
   int StartWord = ddD.NdTcum[did];

@@ -617,7 +617,7 @@ struct pst_data {
 };
 static void *pctl_sample_thread(void *pin) {
   struct pst_data *pd=(struct pst_data *)pin;
-  double startlike;
+  double startlike = 0;
   int k, index;
   enum ParType par;
   while ( 1 ) {

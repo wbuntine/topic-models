@@ -75,12 +75,14 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
     //sample rd from 0 ...e+1 (e+1 means going back to prior)
     *rd = 0;
     for (ee=e; ee>=0; ee--) {
-      int sec_part=0;
+      int sec_part = 0;
       if (ee<ddN.E-1) 
-	sec_part=ddS.cp_et[ee+1][t];
+	sec_part = ddS.cp_et[ee+1][t];
       if (sampleindicator(ddS.C_eDt[ee][t]+sec_part,ddS.cp_et[ee][t],&ud)) 
 	return 1;
-      if (ee>e-ddP.back && ud) {
+      // equality condition means decrement is forced back regardless
+      if ( (ee>e-ddP.back || ddS.C_eDt[ee][t]+sec_part==ddS.cp_et[ee][t])
+	   && ud) {
 	(*rd)++;
       } else {
 	break;
@@ -113,7 +115,9 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
     if (sampleindicator(ddS.m_evt[ee][v][t]+sec_part,
 			ddS.s_evt[ee][v][t],&uw)) 
       return 1;
-    if (ee>e-ddP.back && uw) {
+    // equality condition means decrement is forced back regardless
+    if ( (ee>e-ddP.back || ddS.m_evt[ee][v][t]+sec_part==ddS.s_evt[ee][v][t])
+	&& uw) {
       (*rw)++;
     } else {
       break;
@@ -225,7 +229,7 @@ void update_topic(int i, int did, int wid, int t, int mi,
                   float dtip, D_MiSi_t *dD) {
   int e = ddD.e[did];
   int rd;
-  int rw;
+  int rw=0;
   /*
    *   fix up doc side
    */
@@ -282,7 +286,7 @@ double gibbs_lda(/*
      float *p,    //  temp store
      D_MiSi_t *dD
      ) {
-  int i, wid, t, mi;
+  int i, wid, t, mi=0;
   int e;
   double Z, tot;
   double logdoc = 0;

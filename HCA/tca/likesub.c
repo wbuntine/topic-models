@@ -273,7 +273,8 @@ int doc_side_ind(int d, int t) {
     Z += Y * mu_zero_fact(i, t);
     Y *= mu_one_fact(i, t);
     Ze[i+1] = Z;
-    if ( i<=e-ddP.back ) break;
+    /*   cannot break if zeros so back is forced!  */
+    if ( i<=e-ddP.back && ddS.cp_et[i][t]>0 ) break;
   }
   if ( i<0 ) {
     Z += Y * mu0_prob(t);
@@ -324,7 +325,8 @@ int word_side_ind ( int e, int v, int t) {
     Z += Y * phi_zero_fact(i, v, t);
     Y *= phi_one_fact(i, v, t);
     Ze[i] = Z;
-    if ( i<=e-ddP.back ) break;
+    /*   cannot break if zeros so back is forced!  */
+    if ( i<=e-ddP.back && ddS.s_evt[i][v][t]>0 ) break;
   }
   if ( i<0 ) {
     Z += Y * phi0_prob(v, t);

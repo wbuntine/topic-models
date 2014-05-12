@@ -203,7 +203,6 @@ int main(int argc, char* argv[])
     case 'b':
       if ( !optarg || sscanf(optarg,"%d",&ddP.back)!=1 )
         yap_quit("Need a valid 'b' argument\n");
-      yap_quit("'b' option not debugged!!!\n");
       break;
     case 'c':
       if ( !optarg || sscanf(optarg,"%d",&checkpoint)!=1 )
