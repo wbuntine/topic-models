@@ -132,7 +132,7 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
  *   JINJING:   you need to fix this
  */
 int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
-  int  rw;           /*  indicator for docXwords's */
+  int  rw = 0;           /*  indicator for docXwords's */
   int  rd;           /*  indicator for docXtopic's */
   int  e = ddD.e[did];
   /*
