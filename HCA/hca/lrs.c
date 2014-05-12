@@ -136,7 +136,7 @@ double lp_test_LRS() {
       update_topic(i, d, wid,
                    t, mi, &Td_, &dD, 0.2, 0.2, dtip);
       totsum += log(pl/(ddP.lrsiter-ddP.lrsburn)); 
-      if ( ! isnormal(totsum) ) 
+      if ( ! finite(totsum) ) 
 	yap_quit("lp_test_LRS gone infinite on doc %d\n", d);
       if ( (ddP.bdk!=NULL) && M_multi(ddD.NdTcum[d]+lp) ) 
 	mi++;

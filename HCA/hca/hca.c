@@ -167,7 +167,7 @@ static void usage() {
 	  "   -w size,incr,start  #  use a data window this big, \n"
 	  "                  #     drift by incr after start cycles\n"
 #endif
-	  "   -W W           #  make max W larger\n"
+	  "   -W W           #  change max W\n"
 	  "   -x             #  enable use of exclude topics for -Q\n"
 	  "  testing and reports:\n"
 	  "   -h HOLD,arg    #  use document completion in '-l' testing\n"
@@ -803,13 +803,17 @@ int main(int argc, char* argv[])
        data_append(dbp, dbpt);
        free(dbpt->w);  free(dbpt->d); free(dbpt);
      }
+     if ( maxW>0 ) {
+       if ( dbp->W <= maxW ) 
+	 dbp->W = maxW;
+       if ( dbp->W > maxW )
+	 data_vocabshrink(dbp, maxW);
+     }     
      /*
       *  transfer into system
       */
      ddN.D = dbp->D;
      ddN.W = dbp->W;
-     if ( ddN.W< maxW ) 
-       ddN.W = maxW;
      ddN.N = dbp->N;
      ddN.NT = dbp->N;
      ddN.DT = training;
