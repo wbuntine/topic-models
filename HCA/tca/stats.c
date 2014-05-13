@@ -173,7 +173,7 @@ void tca_read_z(char *resstem, int docstart, int docend) {
       yap_quit("Cannot read %d-th entry from '%s'\n", i, restartfile);
     if ( ( PCTL_BURSTY() && sscanf(buf," %d,%d", &t, &r)!=2 )
 	 || ( !PCTL_BURSTY() && sscanf(buf," %d", &t)!=1 ) )
-      yap_quit("Cannot read %d-th entry from '%s'\n", i, restartfile);
+      yap_quit("Cannot scan %d-th entry from '%s'\n", i, restartfile);
     if ( t>=ddN.T || t<0 )
       yap_quit("Illegal t=%d\n", t);
     ddS.z[i] = t;

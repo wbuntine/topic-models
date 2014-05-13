@@ -84,7 +84,6 @@ void unfix_tableidtopic(int d, int t, int ind) {
     if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
     decr_dt = 1;
-    
   } 
   if ( decr_dt ) {          
     /*   decrementing up */
@@ -94,7 +93,7 @@ void unfix_tableidtopic(int d, int t, int ind) {
     for (i = e; i>end_e; i--) {
       int one = 1;
       if ( !atomic_decr_val(ddS.cp_et[i][t],one) ) {
-	/*   result  nonzero, so break here  */
+	/*   result nonzero, so break here  */
 	ind -= (e-i);
 	e = i;
 	break;

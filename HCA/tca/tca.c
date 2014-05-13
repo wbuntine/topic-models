@@ -446,6 +446,8 @@ int main(int argc, char* argv[])
       ddN.E = atoi(readpar(resstem,"E",buf,50));
       pctl_read(resstem, buf);
     }
+    if ( maxW==0 )
+      maxW = atoi(readpar(resstem,"W",buf,50));
     if ( ddP.training==0 ) {
       char *pv = readpar(resstem,"TRAIN",buf,50);
       if ( pv ) 

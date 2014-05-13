@@ -234,6 +234,7 @@ void update_topic(int i, int did, int wid, int t, int mi,
    *   fix up doc side
    */
   rd = doc_side_ind(did, t);
+  assert(rd>=-1 && rd<=e+1);
   ddS.N_dT[did]++;
   ddS.n_dt[did][t]++;
   if ( PCTL_BURSTY() ) 
@@ -248,6 +249,7 @@ void update_topic(int i, int did, int wid, int t, int mi,
    */
   if ( wid>=0 ) {
     rw = word_side_ind(e, wid, t);
+    assert(rw>=0 && rw<=e+1);
     atomic_incr(ddS.M_eVt[e][t]);
     atomic_incr(ddS.m_evt[e][wid][t]);
     if ( rw>0 ) {
