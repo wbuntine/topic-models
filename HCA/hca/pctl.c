@@ -623,7 +623,8 @@ static void *pctl_sample_thread(void *pin) {
   while ( 1 ) {
     index = atomic_incr(*pd->index) - 1;
     if ( pctl_par_iter(index, pd->iter, &par, &k) ) {
-      if ( verbose>1 ) {
+      if ( verbose>2 ) {
+	/*  fetching likelihood very expensive!! */
         startlike = likelihood();
         if ( k<0 )
           yap_message("sample_%s", ddT[par].name);
@@ -636,7 +637,7 @@ static void *pctl_sample_thread(void *pin) {
         (*ddT[par].sampler)(ddT[par].ptr);
       else
         (*ddT[par].samplerk)(ddT[par].ptr,k);
-      if ( verbose>1 ) {
+      if ( verbose>2 ) {
         double endlike = likelihood();
         if ( k<0 )
           yap_message("sample_%s", ddT[par].name);
