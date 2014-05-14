@@ -679,18 +679,19 @@ void pctl_sample(int iter, int procs) {
   pd.index = &index;
   pd.iter = iter;
 #ifdef H_THREADS
-  for (p = 0 ; p < procs ; p++){ 
-    if ( pthread_create(&thread[p],NULL,pctl_sample_thread,(void*)&pd) != 0) {
-      yap_message("pctl_sample() thread failed %d\n",p+1 );
-    }
-  }
-  //waiting for threads to finish
-  for (p = 0; p < procs; p++){
-    pthread_join(thread[p], NULL);
-  }
-#else
-  pctl_sample_thread((void*)&pd);
+  if ( procs>1 ) {
+      for (p = 0 ; p < procs ; p++){ 
+        if ( pthread_create(&thread[p],NULL,pctl_sample_thread,(void*)&pd) != 0) {
+          yap_message("pctl_sample() thread failed %d\n",p+1 );
+        }
+      }
+      //waiting for threads to finish
+      for (p = 0; p < procs; p++){
+        pthread_join(thread[p], NULL);
+      }
+  } else
 #endif
+  pctl_sample_thread((void*)&pd);
   if ( ddP.docstats ) {
     dmi_freebstore(&ddM,ddP.docstats);
     ddP.docstats = NULL;
