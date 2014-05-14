@@ -270,18 +270,22 @@ double lp_test_ML(int procs, enum GibbsType fix) {
   testml_t parg[procs];
   int p;
   
-  for(p = 0 ; p < procs ; p++) {
-    parg[p].fix = fix;
-    parg[p].procs = procs;
-    parg[p].thisp = p;
-    if ( pthread_create(&thread[p],NULL,lp_test_ML_p,(void*) &parg[p]) != 0)
-      yap_message("thread failed %d\n",p+1 );
-  }
-  //waiting for threads to finish
-  for (p = 0; p < procs; p++){
-    pthread_join(thread[p], NULL);
-    lik += parg[p].lik;
-    totw += parg[p].totw;
+  if ( procs==1 ) {
+     for(p = 0 ; p < procs ; p++) {
+       parg[p].fix = fix;
+       parg[p].procs = procs;
+       parg[p].thisp = p;
+       if ( pthread_create(&thread[p],NULL,lp_test_ML_p,(void*) &parg[p]) != 0)
+         yap_message("thread failed %d\n",p+1 );
+     }
+     //waiting for threads to finish
+     for (p = 0; p < procs; p++){
+       pthread_join(thread[p], NULL);
+       lik += parg[p].lik;
+       totw += parg[p].totw;
+     }
+  } else {
+     lp_test_ML_one(&lik, &totw, 1, 0, fix);
   }
   if ( totw==0 )
     return 0;

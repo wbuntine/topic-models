@@ -1080,16 +1080,19 @@ int main(int argc, char* argv[])
 #ifdef NO_THREADS
         testing_p(&parg[pro]);
 #else
-        //calling sampling for processes
-        if( pthread_create(&thread[pro],NULL,testing_p,(void*) &parg[pro]) != 0){
+        if ( procs==1 )
+	    testing_p(&parg[pro]);
+        else if( pthread_create(&thread[pro],NULL,testing_p,(void*) &parg[pro]) != 0){
           yap_message("thread failed %d\n",pro+1 );
         }
 #endif
       }
 #ifndef NO_THREADS
-      //waiting for threads to finish
-      for(pro = 0; pro < procs; pro++){
-        pthread_join(thread[pro], NULL);
+      if ( procs>1 ) {
+          //waiting for threads to finish
+          for(pro = 0; pro < procs; pro++){
+            pthread_join(thread[pro], NULL);
+          }
       }
 #endif 
       // getting lp, Nd and clock
