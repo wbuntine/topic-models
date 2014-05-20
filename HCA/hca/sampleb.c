@@ -257,10 +257,12 @@ void sample_b(double *b) {
 
 void sample_bdk(double *b, int k) {
   struct bdkterms_s ps;
+  char label[20];
+  sprintf(&label[0],"bdk[%d]", k);
   ps.t = k;
   assert(b);
   ps.docstats = ddP.docstats;
-  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bdkterms, &ps, &b[k], "bdk", 1);
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bdkterms, &ps, &b[k], label, 1);
 }
 
 /*

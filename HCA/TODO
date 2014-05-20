@@ -1,7 +1,7 @@
 The 'w' option, 08/05/14
 ========================
 I have this basically functioning.  The idea is to build on an initial window
-and then slowly move the window.   basic thing is working but now:
+and then slowly move the window.   Basic thing is working but now:
      * what to do with likelihood calcs?
         ->  rebuild and make them on window too!
      * how do you make it so the new stuff doesn't corrupt statistics as its
@@ -9,3 +9,4 @@ and then slowly move the window.   basic thing is working but now:
         ->  drift slowly
         ->  incorporate each doc but don't add to stats until all in ?
 Currently under EXPERIMENTAL
+

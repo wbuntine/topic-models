@@ -597,7 +597,7 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
           *k = (iter*ddP.kbatch+index)%ddN.T;
           return 1;
         }
-        index -= ddN.T;
+        index -= ddP.kbatch;
       } else {
         if ( index==0 ) {
           *par = p;

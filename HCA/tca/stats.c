@@ -162,6 +162,8 @@ void tca_read_z(char *resstem, int docstart, int docend) {
   i = 0;
   docstart = ddD.N_dTcum[docstart];
   docend = ddD.N_dTcum[docend];
+  //  yap_message("READING %ld to %ld\n", docstart, docend);
+
   if ( docstart>0 ) {
     for ( ; i<docstart; i++) {
       if ( !fgets(&buf[0], 50, fr) )

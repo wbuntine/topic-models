@@ -194,9 +194,11 @@ void sample_bm1(double *b) {
 
 void sample_bp1(double *b, int k) {
   double bb;
+  char label[20];
+  sprintf(&label[0], "bp1[%d]", k);
   assert(ddN.E>1);
   bb = ddP.b_phi[1][k];
-  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_phi1, &k, &bb, "bp1", 1);
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bterms_phi1, &k, &bb, label, 1);
   ddP.b_phi[1][k] = bb;
   cache_update("bp1");
 }
