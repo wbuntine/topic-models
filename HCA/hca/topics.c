@@ -242,7 +242,7 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       underused++;
     yap_message("\nTopic %d (", k);
     if ( ddP.phi==NULL ) 
-      yap_message("p=%.2lf%%,", 
+      yap_message((ddN.T>200)?"p=%.3lf%%,":"p=%.2lf%%,", 
 		  100*((double)ddS.NWt[k])/(double)Nk_tot);   
     if ( nophi ) 
       yap_message("ws=%.1lf%%,", 100*(1-spw));
