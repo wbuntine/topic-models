@@ -43,7 +43,7 @@ typedef struct D_diag_s {
   int     n_words;
   uint16_t    docode;
   uint16_t    didcode;
-  float **code;
+  float ***code;
 } D_diag_t;
 
 
@@ -77,10 +77,10 @@ double alpha_entropy();
  *    during Gibbs estimate proportion
  *    of topic in this select words
  */
-void sparsemap_init(FILE *fp);
+void sparsemap_init(FILE *fp, int proc);
 void sparsemap_null();
 void sparsemap_free();
-void sparsemap_report(char *resstem, double epsilon);
+void sparsemap_report(char *resstem, double epsilon, int proc);
 int sparsemap_word(uint32_t w);
 
 /*

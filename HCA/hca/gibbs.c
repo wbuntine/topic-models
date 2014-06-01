@@ -180,7 +180,8 @@ double gibbs_lda(/*
 		 int words,  //  do this many
 		 float *p,    //  temp store, at least 4*T
 		 D_MiSi_t *dD,
-		 int  incremental  // 1=adding, -1=subtracting
+		 int  incremental,  // 1=adding, -1=subtracting
+		 int proc           //  process number for diagnostics     
 		 ) {
   int Td_ = 0;
   int i, wid, t, mi = 0;
@@ -251,13 +252,15 @@ double gibbs_lda(/*
 	   *   so abandon this word, but still keep diagnostics
 	   */    
 	  if ( ddG.docode && G_isword(wid) ) {
+	    /*  have a different accumulator for each thread */
 	    double bdterm = 1;
 	    int n = sparsemap_word(wid);
 	    if ( PCTL_BURSTY() )
 	      bdterm = (ddP.bdk[t]+ddP.ad*dD->Si[t])/(ddP.bdk[t]+dD->Mi[t]);
-	    ddG.code[n][t] += bdterm;
+	    ddG.code[proc][n][t] += bdterm;
 	  }
 	  if ( ddG.doprob ) {
+	    /*    this is indexed by document so is thread safe */
 	    double bdterm = 1;
 	    if ( 0 && PCTL_BURSTY() )
 	      bdterm = (ddP.bdk[t]+ddP.ad*dD->Si[t])/(ddP.bdk[t]+dD->Mi[t]);
@@ -307,12 +310,14 @@ double gibbs_lda(/*
      *    need anything other than standard p[] calcs
      ***********************/    
     if ( ddG.docode && G_isword(wid) ) {
+      /*  different accumulator for each thread */
       double bdterm = 1;
       int n = sparsemap_word(wid);
       for (t=0; t<ddN.T; t++) 
-	ddG.code[n][t] += p[t]*bdterm/Z;
+	ddG.code[proc][n][t] += p[t]*bdterm/Z;
     }
     if ( ddG.doprob ) {
+      /*   indexed by doc so thread safe */
       double bdterm = 1;
       if ( did<ddN.DT )
 	for (t=0; t<ddN.T; t++) 

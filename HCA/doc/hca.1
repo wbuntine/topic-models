@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Tue May  6 12:40:22 EST 2014
+.\" Manual page created with latex2man on Mon Jun  2 00:38:51 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -704,6 +704,8 @@ option.
 .SH EXAMPLES
 
 .PP
+.SS BASIC RUNNING
+.PP
 These examples work as is on late model Linux, Macs and Windows. 
 However, you need to replace the executable, 
 hca,
@@ -715,40 +717,138 @@ For instance, on Windows that might be hca/hca.exe\&.
 Run basic LDA with parameter fitting on the full dataset and no testing, 
 sending logging to stderr\&.
 .Vb
-hca \-v \-e \-V \-K20 \-C100 data/ch c1
+   hca \-v \-e \-K20 \-C100 data/ch c1
 .Ve
+The command line means: 
+.TP
+``\-v\&'': 
+use level one verbosity; 
+.TP
+``\-e\&'': 
+send the log file to stderr,
+not to ``c1.log\&''; 
+.TP
+``\-K20\&'': 
+use 20 topics (the truncation level); 
+.TP
+``\-C100\&'': 
+run for 100 cycles; 
+.TP
+``data.ch\&'': 
+stem for data file; 
+.TP
+``c1\&'': 
+stem for results file. 
+.PP
 The parameters as they are sampled will be 
 printed on a line beginning wth ``Par:\&''\&. 
 At the end, the top 20 words will be printed and the 
 final training perplexity printed. This is based on 
 the posterior probability, not word probability 
 estimates. 
-Restart and build a topic probability vector for each document, 
+.PP
+If you have the multicore version compiled, 
+and you have an 8\-core CPU, then run with 8 threads: 
+.Vb
+   hca \-v \-e \-K20 \-C100 \-q8 data/ch c1
+.Ve
+.TP
+``\-q8\&'': 
+use 8 threads for Gibbs sampling. 
+.PP
+This just repeats the above but should be faster! 
+.PP
+.SS PRINT WORDS FOR THE TOPICS
+Restart after the previous run but run no cycles. 
+Input the tokens from 
+data/ch.tokens,
+and print top 10 words for each topic. 
+.Vb
+   hca \-v \-v \-r0 \-e \-V \-C0 data/ch c1
+.Ve
+The command line means: 
+.TP
+``\-v \-v\&'': 
+use level two verbosity; 
+.TP
+``\-r0\&'': 
+restart from document 0, i.e., on all documents; 
+.TP
+``\-V\&'': 
+input the tokens from 
+``data/ch.tokens,\&'' and print top 10 words for each topic. 
+Note must have at least level two verbosity; 
+.TP
+``\-C0\&'': 
+do not run any cycles, just do reporting. 
+.PP
+This will have lines like: 
+.Vb
+Topic 15 (p=5.88%,ws=71.8%,ds=69.4%) words =,museum,salonika,byzantine
+.Ve
+which means the topic is observed in 5.88% of word occurrences, 
+word sparsity for the topic is 71.8% 
+(71.8% of the words have zero data for this topic), 
+and document sparsity for the topic is 69.4% 
+(69.4% of the documents have zero data for this topic). 
+.PP
+.SS PRODUCE SPARSITY MAPPINGS AND DOCUMENT TOPIC PROBABILITIES
+Restart again and build a topic probability vector for each document, 
 as well as sparsity mappings for the words in 
 data/ch.smap
 file. 
+This you need to create/edit ahead of time. 
 .Vb
 hca \-v \-r0 \-e \-lsp,2,1 \-ltheta,2,1 \-C20 data/ch c1
 .Ve
+.TP
+``\-lsp2,1\&'': 
+sample for sparsity every 2nd cycle 
+starting at the 1st. 
+.TP
+``\-ltheta,2,1\&'': 
+sample probabilities per document 
+(theta) every 2nd cycle 
+starting at the 1st. 
+.TP
+``\-C20\&'': 
+sampling done for 20 cycles. 
+.PP
 Now view the sparsity report at c1.smap
 and 
 the topic probabilities at c1.theta,
 and the values saved in the parameter file c1.par\&.
 .PP
-Rerun basic LDA with parameter fitting on the full dataset and testing 
+.SS RUN WITH TESTING
+.PP
+Run basic LDA with parameter fitting on the full dataset and testing 
 on the final 100 documents. Logging now to c1.log\&.
 Checkpoint every 20 cycles 
 (note, we usually only do this for cycles taking over 10 minutes each). 
 .Vb
-hca \-v \-V \-K20 \-C100 \-c20 \-T100 data/ch c1
+hca \-v \-K20 \-C100 \-c20 \-T100 data/ch c1
 .Ve
+Again run multi\-core if needed. 
+.TP
+``\-c20\&'': 
+do a checkpoint with any reporting every 
+20 cycles. 
+.TP
+``\-T100\&'': 
+use the last 100 documents for testing. 
+The documents must be ordered so the test data is at the end. 
+Alternatively, a file stem can be given if test data is in a 
+separate file. 
+.PP
 View the end of the log file to get the test perplexity, 
-which is printed after ``log_2(test perpML)\&'' 
-Now rerun but use document completion (every 4th word), not the default 
+which is printed after ``log_2(test perpML)\&''\&. 
+.PP
+Now restart but use document completion (every 4th word), not the default 
 likelihood calculation. 
 .Vb
-hca \-v \-V \-r0 \-hdoc,4   data/ch c1
+hca \-v \-e \-r0 \-hdoc,4 data/ch c1
 .Ve
+??????????????????? 
 View the end of the log file to get the test perplexity, 
 which is printed after ``log_2(test perpHold)\&''\&. 
 Note it is also recorded in the parameter file. 
@@ -763,27 +863,42 @@ option is used to prevent it
 doing test likelihood calculations, which are potentially slow 
 on larger data sets. 
 The PMI data has a value printed for each topic as well as a 
-final average. It bases its calcuations on the matrix 
+final average. It bases its calculations on the matrix 
 data/ch/pmi.gz
 created explicitly for this test set. 
-For other datasets, you will need to down load prepared 
+For other datasets, you will need to download prepared 
 PMI matrices from the project homepage. 
+.PP
+.SS BURSTINESS
 .PP
 The burstiness version is new. Our best bet, currently is to run 
 with optimisation of the hyperparameters: 
 .Vb
-hca \-v \-e \-V \-K20 \-C100 \-Sbdk=200 \-Sad=0.5 data/ch c1
+hca \-v \-e \-v \-V \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
 .Ve
+.TP
+``\-Sbdk=100\&'': 
+burstiness document concentration is different 
+for every topic. This initialises all of them to 100. 
+Default has no burstiness. 
+.TP
+``\-Sad=0.5\&'': 
+burstiness document discount set to 
+0.5, same for all topics. Default is zero. 
+.PP
 So the initial discount for the bursty topics is 
-0.5 and its a shared parameter for all. 
-The concentration we set quite high initially 
-with ``bdk=200\&'', and these will be sampled separately with 
-each topic, so bdk
+0.5. The concentration we set quite high initially, 
+and these will be sampled separately with 
+each topic in batches, so bdk
 is a vector in the 
 parameter file. 
 The hyperparameter sampling slows it down quite a bit but seems to 
 make a significant difference. Unused topics sometimes 
 get a very low concentration. 
+Alternatively, fix the burstiness discount with 
+\fB\-F\fP\fIad\fP
+and continue sampling burstiness concentration only, 
+which is quite a lot faster. 
 .PP
 .SH ERRORS
 

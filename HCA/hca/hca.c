@@ -196,6 +196,7 @@ static void usage() {
 #endif
           "   -t traindocs   #  train documents, at start, default all-test\n"
           "   -T testdocs    #  test documents, at end, default 0\n"
+	  "   -T TESTSTEM    #  or stem for a data file of same kind\n"
           "   -V             #  load vocab file to allow printing terms\n"
 	  "   -X             #  do classifier results using data in STEM.class\n"
  	  );
@@ -246,7 +247,7 @@ void *sampling_p(void *pargs)
     }
 #endif
     par->thislp += gibbs_lda(GibbsNone, par->Tmax, usei, ddD.NdT[usei], p, 
-			     &dD, incremental);
+			     &dD, incremental, par->processid);
     par->thisNd += ddD.NdT[usei];
     if ( par->dots>0 && i>0 && (i%par->dots==0) ) yap_message(".");
     if ( ddP.bdk!=NULL )   //WRAY ???
@@ -283,7 +284,8 @@ void *testing_p(void *pargs)
       continue;
     }
     if ( ddP.bdk!=NULL ) misi_build(&dD,i,0);
-    par->thislp += gibbs_lda(fix, par->Tmax, i, ddD.NdT[i], p, &dD, 0);
+    par->thislp += gibbs_lda(fix, par->Tmax, i, ddD.NdT[i], p, &dD, 
+			     0, par->processid);
     par->thisNd += ddD.NdT[i];
     remove_doc(i, fix);
     if ( par->dots>0 && i>0 && (i%par->dots==0) ) 
@@ -898,7 +900,7 @@ int main(int argc, char* argv[])
     char *fname = yap_makename(stem,".smap");
     FILE *fp = fopen(fname,"r");
     if ( fp ) {
-      sparsemap_init(fp);
+      sparsemap_init(fp, procs);
       fclose(fp);
     } 
     free(fname);
@@ -984,7 +986,6 @@ int main(int argc, char* argv[])
     /*
      *   set diagnostics to tell Gibbs which to store
      */
-#ifndef H_THREADS
     /*  have to figure out what to do with threads */
     if ( ddG.n_words>0 && iter>ddP.spburn && (iter%ddP.spiter)==0 )
       ddG.docode = 1;
@@ -994,7 +995,6 @@ int main(int argc, char* argv[])
       ddG.doprob = 1;
     else
       ddG.doprob = 0;
-#endif
     
 #ifdef EXPERIMENTAL
     if ( ddP.window>0 && iter>=ddP.window_cycle ) {
@@ -1059,12 +1059,14 @@ int main(int argc, char* argv[])
 #endif
 
 
-#ifndef H_THREADS
     if ( ddG.docode ) {
       ddG.didcode++;
       ddG.docode = 0;
     }
-    /*  have to figure out what to do with threads */
+
+    /*
+     *  now run testing
+     */
     if ( ddP.tprobiter>0 && iter>ddP.tprobburn && (iter%ddP.tprobiter)==0 ) {
       /*
        *   now run sampler on test docs
@@ -1104,7 +1106,6 @@ int main(int argc, char* argv[])
       ddG.didtprob++;
       ddG.doprob = 0;
     }
-#endif
     
     /*
      *   unset diagnostics
@@ -1177,7 +1178,7 @@ int main(int argc, char* argv[])
 	    displayed++;
 	}
 	if ( ddG.n_words>0 && ddG.didcode ) 
-	  sparsemap_report(resstem,0.5);
+	  sparsemap_report(resstem,0.5,procs);
       }
       if ( ddP.window ) 
 	hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
@@ -1220,7 +1221,7 @@ int main(int argc, char* argv[])
        displayed++;
     }
     if ( ddG.n_words>0  && ddG.didcode) 
-      sparsemap_report(resstem,0.5);
+      sparsemap_report(resstem,0.5,procs);
   }
 
   if ( ddG.didtprob )

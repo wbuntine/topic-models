@@ -164,6 +164,8 @@ void cache_free() {
   if ( ddP.bdk!=NULL && ddP.ad!=0 ) {
     S_free(ddC.SD);
   }
+  if ( ddC.S0 )
+    S_free(ddC.S0);
 }
 
 void cache_update(char *par) {

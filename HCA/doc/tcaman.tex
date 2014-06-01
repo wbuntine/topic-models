@@ -15,8 +15,7 @@
 
 \begin{Name}{1}{tca}{Wray Buntine \\ Jinjing Li}{Data Analysis Tools}{tca}
 
-  \Prog{tca} is a C implementation of the non-parametric dynamic topic model from \citet{dtmpypwl}. It allows both the topic mixtures and the word-topic distributions to change over epochs (time) through two-parameter Poisson-Dirichlet processes (PDP). The software can also be configured to run as a standard LDA model with proper parameters. ``Document completion'' testing, coherence measurements with PMI  and a few other diagnostic values are supported.  \Prog{tca} uses multi-cores to speed up the computation when possible.
-
+  \Prog{tca} is a C implementation of the non-parametric dynamic topic model from \citet{dtmpypwl}. It allows both the topic mixtures and the word-topic distributions to change over epochs (time) through two-parameter Poisson-Dirichlet processes (PDP). The software can also be configured to run as a standard LDA model with proper parameters, though this is intended only for testing. ``Document completion'' testing, coherence measurements with PMI  and a few other diagnostic values are supported.  \Prog{tca} can run multi-core to speed up the computation.
 
 \end{Name}
 
@@ -32,7 +31,7 @@
 \Arg{DataStem} that form the input set of data.
 When checkpointing, or at termination, the output is written
 to files with stem  \Arg{RepStem}.
-On restart with the \OptArg{-r}{0} option, some of these
+On restart with the \Opt{-r} option, some of these
 are also read initially to restore the previous state.
 A log of the run is reported to \File{stderr} if the
 \Opt{-e} option is used.  By default, the log goes to
@@ -147,7 +146,7 @@ Specify the maximum number of previous epochs that table indicators can use for 
 \item[\OptArg{-c}{cycles}] 
 Do a checkpoint every this many \texttt{cycles}.
 This saves the output statistics and the parameter file
-adequate to do a restart with \OptArg{-r}{0} option.
+adequate to do a restart with \Opt{-r} option.
 \item[\OptArg{-C}{cycles}] 
 Stop after this many \texttt{cycles}.
 Default is 100. 
@@ -175,9 +174,8 @@ to count \texttt{maxM} and maximum table counts for $a_{\mu}$ and $a_{\phi}$ to 
 Default is 1000,10000. Higher numbers are needed when running with large number of documents.
 \item[\OptArg{-q}{threads}] If compiled with threading, enables
 this many threads.  Default is 1.
-\item[\OptArg{-r}{offset}]
-Restart.  Currently must use \texttt{offset} equal to ``0''
-for a normal restart.
+\item[\Opt{-r}]
+Restart from a previous run, reloading data and parameters.
 \item[\OptArg{-R}]
 Restart from the output file from \Prog{hca}
 and the beta side is held constant and not sampled.
@@ -367,7 +365,7 @@ contributes to standard LDA statistics, and
 so does not contribute to LDA statistics.
 \end{Description}
 These files along with \File{RepStem.par} are input
-on a restart using \OptArg{-r}{0}.
+on a restart using \Opt{-r}.
 
 \section{The Parameter File}
 
@@ -417,7 +415,7 @@ Restart and build a topic probability vector for each document,
 as well as sparsity mappings for the words in 
 \File{data/ch.smap} file.
 \begin{verbatim}
-tca -v -r0 -e -lsp,2,1 -ltheta,2,1 -C20 data/ch c1
+tca -v -r -e -lsp,2,1 -ltheta,2,1 -C20 data/ch c1
 \end{verbatim} 
 
 Now view the sparsity report at \File{c1.smap} and
@@ -437,7 +435,7 @@ which is printed after ``log\_2(test perpML)''
 Now rerun but use document completion (every 4th word), not the default
 likelihood calculation.
 \begin{verbatim}
-tca -v -V -r0 -hdoc,4   data/ch c1
+tca -v -V -r -hdoc,4   data/ch c1
 \end{verbatim}
 
 View the end of the log file to get the test perplexity,
@@ -446,7 +444,7 @@ Note it is also recorded in the parameter file.
 Restart, no sampling this time using \OptArg{-C}{0}, just record the 
 PMI and the classification details on test data.
 \begin{verbatim}
-tca -v -V -r0 -C0 -Llike,0,0 -Lclass,10,1 -p  data/ch c1
+tca -v -V -r -C0 -Llike,0,0 -Lclass,10,1 -p  data/ch c1
 \end{verbatim}
 
 Note the \OptArg{-L}{like,0,0} option is used to prevent it 

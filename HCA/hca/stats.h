@@ -62,7 +62,7 @@ extern D_DMi_t ddM;
 
 #define M_multi(l)  misi_multi(&ddM,l)
 
-double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental);
+double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental, int proc);
 
 /*
  *    steps inside Gibbs to add/remove effects of one word on all stats

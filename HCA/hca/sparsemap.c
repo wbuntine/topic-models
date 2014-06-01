@@ -27,7 +27,7 @@
 /*
  *    report sparsity for words in map
  */
-void sparsemap_init(FILE *fp) {
+void sparsemap_init(FILE *fp, int procs) {
   int w, n=0;
   int dim;
   /*
@@ -49,7 +49,14 @@ void sparsemap_init(FILE *fp) {
   /*
    *   set up data structures
    */
-  ddG.code = fmat(ddG.n_words,ddN.T);
+  ddG.code = malloc(sizeof(*ddG.code)*procs);
+  if ( !ddG.code )
+    yap_quit("Out of memory in sparsemap_init()\n");
+  {
+    int p;
+    for (p=0; p<procs; p++)
+      ddG.code[p] = fmat(ddG.n_words,ddN.T);
+  }
   ddG.iscodeword = u32vec((ddN.W+31)/32);
   for (n=0; n<ddG.n_words; n++) {
     ddG.iscodeword[ddG.words[n]/32U] |= (1U << (ddG.words[n]%32U));
@@ -70,13 +77,13 @@ void sparsemap_free() {
   if ( ddG.n_words>0 ) {
     ddG.n_words = 0;
     free(ddG.words);
-    free(ddG.code[0]);free(ddG.code);
+    free(ddG.code[0][0]);free(ddG.code[0]);free(ddG.code);
     free(ddG.iscodeword);
     sparsemap_null();
   }
 }
 
-void sparsemap_report(char *resstem, double epsilon) {
+void sparsemap_report(char *resstem, double epsilon, int procs) {
   FILE *fp;
   int n, k;
   char *fname = yap_makename(resstem,".smap");
@@ -88,14 +95,21 @@ void sparsemap_report(char *resstem, double epsilon) {
     double tot = 0;
     uint32_t w = ddG.words[n];
     fprintf(fp,"%s(%d):", ddN.tokens?ddN.tokens[w]:"--", w);
+    if ( procs>1 ) {
+      /*  accummulate into ddG.code[0]  */
+      int p;
+      for (k=0; k<ddN.T; k++) 
+	for (p=1; p<procs; p++) 
+	  ddG.code[0][n][k] += ddG.code[p][n][k];
+    }
     for (k=0; k<ddN.T; k++) {
-      double val = ddG.code[n][k]/ddG.didcode;
+      double val = ddG.code[0][n][k]/ddG.didcode;
       if ( val>epsilon ) 
 	fprintf(fp," %d/%0.1f", k, val);
       tot += val;
     }
     for (k=0; k<ddN.T; k++) {
-      double val = ddG.code[n][k]/ddG.didcode/tot;
+      double val = ddG.code[0][n][k]/ddG.didcode/tot;
       if ( val>0.00001 ) 
 	ent -= val * log(val);
     }

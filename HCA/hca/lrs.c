@@ -97,7 +97,7 @@ double lp_test_LRS() {
       double pl = 0;   /*  probability total for this word */
       for (r=0; r<ddP.lrsiter; r++) {
 	if ( lp>0 ) 
-	  gibbs_lda(GibbsNone, ddN.T, d, lp, p, &dD, 0);
+	  gibbs_lda(GibbsNone, ddN.T, d, lp, p, &dD, 0, 0);
 	if ( r>=ddP.lrsburn ) {
 	  /*
 	   *   now compute prob( w[lp] | w[0:lp-1], z[0:lp-1] )
@@ -209,12 +209,12 @@ static void lp_test_ML_one(double *lik, int *totw,
     }
     if ( ddP.bdk!=NULL ) misi_build(&dD,i,0);
     for (r=0; r<ddP.mltburn; r++) 
-      gibbs_lda(fix, ddN.T, i, ddD.NdT[i], fact, &dD, 0);
+      gibbs_lda(fix, ddN.T, i, ddD.NdT[i], fact, &dD, 0, thisp);
     /*
      *   record harmonic mean of last (samples-burnin)
      */
     for (; r<ddP.mltiter; r++) 
-      hmean = logadd(hmean,-gibbs_lda(fix, ddN.T, i, ddD.NdT[i], fact, &dD, 0));
+      hmean = logadd(hmean,-gibbs_lda(fix, ddN.T, i, ddD.NdT[i], fact, &dD, 0, thisp));
     *lik += log(ddP.mltiter-ddP.mltburn) - hmean;
     *totw += thisw;
     if ( ddP.bdk!=NULL ) misi_unbuild(&dD,i,0);
@@ -368,14 +368,14 @@ double lp_test_Pred(char *resstem) {
     for (t=0; t<ddN.T; t++)  tvec[t] = 0;
     for (c=0; c<ddN.C; c++)  cvec[c] = 0;
     for (r=0; r<ddP.prdburn; r++) 
-      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD, 0);
+      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD, 0, 0);
     /*
      *   record topics of last (samples-burnin)
      */
     for (; r<ddP.prditer; r++) {
       double ptot = 0;
       int Td_;
-      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD, 0);
+      gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, &dD, 0, 0);
       /*
        *  do this to predict the topic proportions for this round
        */

@@ -451,6 +451,8 @@ Likewise for the \texttt{PYbeta} variable and the \Opt{-B} option.
 \section{Examples}
 %%%%%%%%%%%%%%%%%%
 
+\subsection{Basic running}
+
 These examples work as is on late model Linux, Macs and Windows.
 However, you need to replace the executable,
 \texttt{hca}, by the system dependent one,
@@ -460,38 +462,108 @@ For instance, on Windows that might be \texttt{hca/hca.exe}.
 Run basic LDA with parameter fitting on the full dataset and no testing,
 sending logging to \Prog{stderr}.
 \begin{verbatim}
-hca -v -e -V -K20 -C100 data/ch c1
+   hca -v -e -K20 -C100 data/ch c1
 \end{verbatim}
+The command line means:
+\begin{description}
+\item[``-v'':] use level one verbosity;
+\item[``-e'':] send the log file to  \texttt{stderr},
+not to ``c1.log'';
+\item[``-K20'':] use 20 topics (the truncation level);
+\item[``-C100'':] run for 100 cycles;
+\item[``data.ch'':] stem for data file;
+\item[``c1'':] stem for results file.
+\end{description}
 The parameters as they are sampled will be
 printed on a line beginning wth ``Par:''.
 At the end, the top 20 words will be printed and the
 final training perplexity printed.  This is based on
 the posterior probability, not word probability
 estimates.
-Restart and build a topic probability vector for each document,
+
+If you have the multicore version compiled, 
+and you have an 8-core CPU, then run with 8 threads:
+\begin{verbatim}
+   hca -v -e -K20 -C100 -q8 data/ch c1
+\end{verbatim}
+\begin{description}
+\item[``-q8'':] use 8 threads for Gibbs sampling.
+\end{description}
+This just repeats the above but should be faster!
+
+\subsection{Print words for the topics}
+Restart after the previous run but run no cycles.
+Input the tokens from
+\File{data/ch.tokens}, and print top 10 words for each topic.
+\begin{verbatim}
+   hca -v -v -r0 -e -V -C0 data/ch c1
+\end{verbatim}
+The command line means:
+\begin{description}
+\item[``-v -v'':] use level two verbosity;
+\item[``-r0'':] restart from document 0, i.e., on all documents;
+\item[``-V'':] input the tokens from
+``data/ch.tokens,'' and print top 10 words for each topic.
+Note must have at least level two verbosity;
+\item[``-C0'':] do not run any cycles, just do reporting.
+\end{description}
+This will have lines like:
+\begin{verbatim}
+Topic 15 (p=5.88%,ws=71.8%,ds=69.4%) words =,museum,salonika,byzantine
+\end{verbatim}
+which means the topic is observed in 5.88\% of word occurrences,
+word sparsity for the topic is 71.8\%
+(71.8\% of the words have zero data for this topic),
+and document sparsity for the topic is 69.4\%
+(69.4\% of the documents have zero data for this topic).
+
+\subsection{Produce sparsity mappings and document topic probabilities}
+Restart again and build a topic probability vector for each document,
 as well as sparsity mappings for the words in 
 \File{data/ch.smap} file.
+This you need to create/edit ahead of time.
 \begin{verbatim}
 hca -v -r0 -e -lsp,2,1 -ltheta,2,1 -C20 data/ch c1
 \end{verbatim} 
+\begin{description}
+\item[``-lsp2,1'':] sample for sparsity every 2nd cycle
+starting at the 1st.
+\item[``-ltheta,2,1'':] sample probabilities per document
+(theta) every 2nd cycle
+starting at the 1st.
+\item[``-C20'':] sampling done for 20 cycles.
+\end{description}
 Now view the sparsity report at \File{c1.smap} and
 the topic probabilities at \File{c1.theta},
 and the values saved in the parameter file \File{c1.par}.
 
-Rerun basic LDA with parameter fitting on the full dataset and testing
+\subsection{Run with testing}
+
+Run basic LDA with parameter fitting on the full dataset and testing
 on the final 100 documents.  Logging now to \File{c1.log}.
 Checkpoint every 20 cycles
 (note, we usually only do this for cycles taking over 10 minutes each).
 \begin{verbatim}
-hca -v -V -K20 -C100 -c20 -T100 data/ch c1
+hca -v -K20 -C100 -c20 -T100 data/ch c1
 \end{verbatim}
+Again run multi-core if needed.
+\begin{description}
+\item[``-c20'':] do a checkpoint with any reporting every
+20 cycles.
+\item[``-T100'':] use the last 100 documents for testing.
+The documents must be ordered so the test data is at the end.
+Alternatively, a file stem can be given if test data is in a 
+separate file.
+\end{description}
 View the end of the log file to get the test perplexity,
-which is printed after ``log\_2(test perpML)''
-Now rerun but use document completion (every 4th word), not the default
+which is printed after ``log\_2(test perpML)''.
+
+Now restart but use document completion (every 4th word), not the default
 likelihood calculation.
 \begin{verbatim}
-hca -v -V -r0 -hdoc,4   data/ch c1
+hca -v -e -r0 -hdoc,4 data/ch c1
 \end{verbatim}
+???????????????????
 View the end of the log file to get the test perplexity,
 which is printed after ``log\_2(test perpHold)''.
 Note it is also recorded in the parameter file.
@@ -504,25 +576,36 @@ Note the \OptArg{-L}{like,0,0} option is used to prevent it
 doing test likelihood calculations, which are potentially slow
 on larger data sets.
 The PMI data has a value printed for each topic as well as a 
-final average.  It bases its calcuations on the matrix
+final average.  It bases its calculations on the matrix
 \File{data/ch/pmi.gz} created explicitly for this test set.
-For other datasets, you will need to down load prepared
+For other datasets, you will need to download prepared
 PMI matrices from the project homepage.
+
+\subsection{Burstiness}
 
 The burstiness version is new.  Our best bet, currently is to run
 with optimisation of the hyperparameters:
 \begin{verbatim}
-hca -v -e -V -K20 -C100 -Sbdk=200 -Sad=0.5 data/ch c1
+hca -v -e -v -V -K20 -C100 -Sbdk=100 -Sad=0.5 data/ch c1
 \end{verbatim}
+\begin{description}
+\item[``-Sbdk=100'':]  burstiness document concentration is different
+for every topic.  This initialises all of them to 100.
+Default has no burstiness.
+\item[``-Sad=0.5'':] burstiness document discount set to 
+0.5, same for all topics.  Default is zero.
+\end{description}
 So the initial discount for the bursty topics is
-0.5 and its a shared parameter for all.
-The concentration we set quite high initially
-with ``bdk=200'', and these will be sampled separately with
-each topic, so \texttt{bdk} is a vector in the
+0.5.   The concentration we set quite high initially, 
+and these will be sampled separately with
+each topic in batches, so \texttt{bdk} is a vector in the
 parameter file.
 The hyperparameter sampling slows it down quite a bit but seems to
 make a significant difference.  Unused topics sometimes
 get a very low concentration.
+Alternatively, fix the burstiness discount with 
+\OptArg{-F}{ad} and continue sampling burstiness concentration only,
+which is quite a lot faster.
 
 \section{Errors}
 
