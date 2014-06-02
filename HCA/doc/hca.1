@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Mon Jun  2 15:00:29 EST 2014
+.\" Manual page created with latex2man on Mon Jun  2 22:30:23 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -76,6 +76,17 @@ These parts are set using the
 and \fB\-B\fP
 options. 
 .PP
+There are various model parameters, notably the 
+discount and concentrations for the different Pitman\-Yor 
+processes in the model. 
+These are usually sampled using Adaptive Rejection Sampling. 
+They are also kept bounded using constraints coded 
+into the pctl.h
+header file. 
+So when a parameter fails to change, check the sampling 
+by increasing verbosity and you may observe the value tries to 
+change but doesn\&'t. 
+.PP
 The programme uses generalised second order Stirling numbers 
 with the library extracted from libstb
 version 1.8 
@@ -83,8 +94,8 @@ released at \fBhttps://github.com/wbuntine/libstb\fP\&.
 This is initialised with predefined bounds on the tables, 
 and these can be modified with the \fB\-N\fP
 option. 
-This should be used for collections with more than 
-20,000 documents, but its best to run first and on 
+This should be used for collections with larger numbers of 
+documents, but its best to run first and on 
 error, increase the bounds. 
 .PP
 .SH OPTIONS
@@ -135,6 +146,8 @@ alpha is uniform and theta is modelled with a Pitman\-Yor Process.
 this value
 for each dimension. 
 The value must be a positive float. 
+Note the value stored internally and printed is the total of this over the 
+number of words W. 
 .TP
 \fB\-B\fP\fItype\fP
  Second form of the \fB\-B\fP
@@ -571,7 +584,7 @@ option.
 .TP
 DataStem.txtbag
  default bag or list format for \fIlinkBags\fP(1)
-command of DCABags\&.
+command of text\-bags\&.
 Word indices offset by 0. 
 .PP
 The various output files such as 
@@ -740,10 +753,10 @@ from the install directory where the data/
 directory is. 
 For instance, on Windows that might be hca/hca.exe\&.
 .PP
-Run basic LDA with parameter fitting on the full dataset and no testing, 
+Run basic HDP\-LDA with parameter fitting on the full dataset and no testing, 
 sending logging to stderr\&.
 .Vb
-   hca \-v \-e \-K20 \-C100 data/ch c1
+   hca \-v \-e \-K20 \-B0.001 \-C100 data/ch c1
 .Ve
 The command line means: 
 .TP
@@ -756,6 +769,10 @@ not to ``c1.log\&'';
 .TP
 ``\-K20\&'': 
 use 20 topics (the truncation level); 
+.TP
+``\-B0.001\&'': 
+use a symmetric Dirichlet prior on word probability 
+vectors (i.e., topics) with this value; 
 .TP
 ``\-C100\&'': 
 run for 100 cycles; 
@@ -776,7 +793,7 @@ estimates.
 If you have the multicore version compiled, 
 and you have an 8\-core CPU, then run with 8 threads: 
 .Vb
-   hca \-v \-e \-K20 \-C100 \-q8 data/ch c1
+   hca \-v \-e \-K20 \-B0.001 \-C100 \-q8 data/ch c1
 .Ve
 .TP
 ``\-q8\&'': 
@@ -905,12 +922,16 @@ Without \fB\-h\fP
 the default is to use 
 a standard likelihood calculation so will be biased. 
 .Vb
-hca \-v \-e \-r0 \-C0 \-hdoc,4 data/ch c1
+hca \-v \-e \-r0 \-C0 \-hdoc,4 \-T100 data/ch c1
 .Ve
 .TP
 ``\-hdoc,4\&'': 
 hold out every 4\-th word in 
 the document. 
+.TP
+``\-T100\&'': 
+the test set size must be repeated, since it is not 
+reloaded with the restart. 
 .PP
 View the end of the log file to get the test perplexity, 
 which is printed after ``log_2(test perpHold)\&''\&. 
@@ -919,7 +940,7 @@ Note it is also recorded in the parameter file.
 Restart and record the 
 PMI and the classification details on test data. 
 .Vb
-hca \-v \-v \-V \-r0 \-C0 \-Llike,0,0 \-Lclass,10,1 \-p  data/ch c1
+hca \-v \-v \-V \-r0 \-C0 \-Llike,0,0 \-X \-p \-T100 data/ch c1
 .Ve
 .TP
 ``\-Llike,0,0\&'': 
@@ -927,9 +948,10 @@ prevent it
 doing test likelihood calculations, which are potentially slow 
 on larger data sets. 
 .TP
-``\-Lclass,10,1\&'': 
-do a class probability calculation 
-using 10 Gibbs cycles with recording after the first one. 
+``\-X\&'': 
+load up class data from data/ch.clas
+file to 
+enable classification on test data. 
 .TP
 ``\-p\&'': 
 initiate PMI calculation. 
@@ -950,10 +972,11 @@ The second line gives the mean PMI.
 .PP
 .SS BURSTINESS
 .PP
-The burstiness version is new. Our best bet, currently is to run 
+The burstiness version significantly improves everything. 
+Our best bet, currently, is to run 
 with optimisation of the hyperparameters: 
 .Vb
-hca \-v \-e \-v \-V \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
+hca \-v \-v \-e \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
 .Ve
 .TP
 ``\-Sbdk=100\&'': 
@@ -965,7 +988,7 @@ Default has no burstiness.
 burstiness document discount set to 
 0.5, same for all topics. Default is zero. 
 .PP
-So the initial discount for the bursty topics is 
+The initial discount for the bursty topics is 
 0.5. The concentration we set quite high initially, 
 and these will be sampled separately with 
 each topic in batches, so bdk
@@ -1015,15 +1038,17 @@ maintainer.
 The command \fIlinkBags\fP(1)
 is available from \fBhttp://mloss.org\fP
 in 
-the software DCABags\&.
+the software text\-bags
+at
+.br
+\fBhttps://github.com/wbuntine/text\-bags\fP
+\&. 
 The extended library libstb,
 parts of which are included, is available 
-individually from \fBhttp://mloss.org\fP\&.
-.PP
-Other supporting software and data sets are available at the project home 
-page at
-.br
-\fBhttps://github.com/wbuntine/topic\-models\fP
+individually from \fBhttp://mloss.org\fP
+also at 
+\fBhttps://github.com/wbuntine/libstb\fP
+\&. 
 .PP
 .SH VERSION
 

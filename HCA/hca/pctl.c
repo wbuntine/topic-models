@@ -311,19 +311,19 @@ void pctl_dims() {
       ddP.alpha = 0.05*ddN.NT/(ddN.DT*ddN.T);
     }
     if ( ddP.alpha< DIR_MIN )
-      ddP.alpha = DIR_MIN*2.0;
+      ddP.alpha = DIR_MIN;
     if ( ddP.alpha> DIR_MAX )
-      ddP.alpha = DIR_MAX/2.0;
+      ddP.alpha = DIR_MAX;
   }
   if ( ddP.PYbeta==H_None ) {
     double betain;
     betain = ddP.betac;
     if ( ddP.betac< DIR_MIN ) 
-      ddP.betac = DIR_MIN*2.0;
+      ddP.betac = DIR_MIN;
     if ( ddP.betac>DIR_MAX ) 
-      ddP.betac = DIR_MAX/2.0;
+      ddP.betac = DIR_MAX;
     if ( ddP.betac>DIR_TOTAL_MAX/ddN.W )
-      ddP.betac = DIR_TOTAL_MAX/2.0/ddN.W;
+      ddP.betac = DIR_TOTAL_MAX/ddN.W;
     if ( verbose>=1 && betain!=ddP.betac ) {
       yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
 		  betain, ddP.betac);
@@ -524,8 +524,8 @@ void pctl_fixbeta(char *file, char *resstem) {
     }
   }
   if ( ddP.betac!=0 && ddP.PYbeta==H_None ) {
-    assert(ddP.beta>0);
     ddP.beta = ddP.betac*ddN.W;
+    assert(ddP.beta>0);
     for (c=0; c<ddN.W; c++)
       ddP.betapr[c] = ddP.betac;
   } else if ( ddP.betapr ) {
@@ -540,7 +540,8 @@ void pctl_fixbeta(char *file, char *resstem) {
 
 void pctl_report() {
   yap_message("PYbeta  = %d\n", (int)ddP.PYbeta);
-  yap_message("beta  = %lf\n", ddP.beta);
+  if ( ddP.beta>0 )
+    yap_message("beta  = %lf  # total over words\n", ddP.beta);
   if ( ddP.betapr && ddP.betac==0 ) 
     yap_message("# beta from file\n");
   if ( ddP.PYbeta ) {
@@ -578,6 +579,7 @@ void pctl_report() {
       yap_message(" %d", (int)ddP.excludetopic[t]);
     yap_message("\n");
   }
+  
 }
 
 double pctl_gammaprior(double x) {
@@ -729,7 +731,7 @@ int pctl_hold(int i) {
 
 void pctl_samplereport() {
   enum ParType par;
-  yap_message("    sampling pars:");
+  yap_message("Sampling pars:");
   for (par=ParA; par<=ParBeta; par++) {
     if (  !ddT[par].fix )
       yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
@@ -760,6 +762,7 @@ static void printpar(FILE *fp, enum ParType par) {
 }
 
 void pctl_print(FILE *fp) {
+  fprintf(fp, "#  beta is the total over W word\n");
   printpar(fp,ParBeta);
   fprintf(fp, "PYbeta  = %d\n", (int)ddP.PYbeta);
   if ( ddP.PYbeta ) {

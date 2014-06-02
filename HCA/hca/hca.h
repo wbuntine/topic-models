@@ -23,6 +23,8 @@
 #include "stats.h"
 #include "srng.h"
 
+#define HCA_VERSION "0.9"
+
 #define MAXM 1000
 /* 
  *   when defined, stops introducing new topics into a 

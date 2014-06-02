@@ -60,13 +60,23 @@ each topic.  This is not used by default.
 These parts are set using the
 \Opt{-S}, \Opt{-A} and \Opt{-B} options.
 
+There are various model parameters, notably the
+discount and concentrations for the different Pitman-Yor
+processes in the model.
+These are usually sampled using Adaptive Rejection Sampling.
+They are also kept bounded using constraints coded
+into the \File{pctl.h} header file.
+So when a parameter fails to change, check the sampling
+by increasing verbosity and you may observe the value tries to 
+change but doesn't.
+
 The programme uses generalised second order Stirling numbers
 with the library extracted from \Prog{libstb} version 1.8
 released at \URL{https://github.com/wbuntine/libstb}.
 This is initialised with predefined bounds on the tables,
 and these can be modified with the \Opt{-N} option.
-This should be used for collections with more than
-20,000 documents, but its best to run first and on
+This should be used for collections with larger  numbers of
+documents, but its best to run first and on
 error, increase the bounds.
 
 
@@ -99,6 +109,8 @@ This is the default.
 \item[\OptArg{-B}{value}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
+Note the value stored internally and printed is the total of this over the
+number of words W.
 \item[\OptArg{-B}{type}] 
 Second form of the \Opt{-B} option.
 Use a beta prior of \texttt{type}
@@ -356,7 +368,7 @@ The report is instigated by the
 \OptArg{-l}{sp} option.
 \item[\File{DataStem.tokens}] tokens/words in the dictionary, one per line.
 Optional file used with \Opt{-V} option.
-\item[\File{DataStem.txtbag}] default bag or list format for \Cmd{linkBags}{1} command of \texttt{DCABags}.  Word indices offset by 0.
+\item[\File{DataStem.txtbag}] default bag or list format for \Cmd{linkBags}{1} command of \texttt{text-bags}.  Word indices offset by 0.
 \end{Description}
 
 The various output files such as
@@ -499,15 +511,12 @@ estimates.
 If you have the multicore version compiled, 
 and you have an 8-core CPU, then run with 8 threads:
 \begin{verbatim}
-   hca -v -e -K20 -C100 -q8 data/ch c1
+   hca -v -e -K20 -B0.001 -C100 -q8 data/ch c1
 \end{verbatim}
 \begin{description}
 \item[``-q8'':] use 8 threads for Gibbs sampling.
 \end{description}
 This just repeats the above but should be faster!
-
-To do the run with some parameters fixed do instead:
-????????????
 
 \subsection{Restart and print words for the topics}
 Restart from checkpoint after the previous run but run no cycles.
@@ -607,11 +616,13 @@ get perplexity, with no more Gibbs cycles.
 Without \Opt{-h} the default is to use
 a standard likelihood calculation so will be biased.
 \begin{verbatim}
-hca -v -e -r0 -C0 -hdoc,4 data/ch c1
+hca -v -e -r0 -C0 -hdoc,4 -T100 data/ch c1
 \end{verbatim}
 \begin{description}
 \item[``-hdoc,4'':] hold out every 4-th word in
 the document.
+\item[``-T100'':] the test set size must be repeated, since it is not
+reloaded with the restart.
 \end{description}
 View the end of the log file to get the test perplexity,
 which is printed after ``log\_2(test perpHold)''.
@@ -620,14 +631,14 @@ Note it is also recorded in the parameter file.
 Restart and record the 
 PMI and the classification details on test data.
 \begin{verbatim}
-hca -v -v -V -r0 -C0 -Llike,0,0 -Lclass,10,1 -p  data/ch c1
+hca -v -v -V -r0 -C0 -Llike,0,0 -X -p -T100 data/ch c1
 \end{verbatim}
 \begin{description}
 \item[``-Llike,0,0'':] prevent it 
 doing test likelihood calculations, which are potentially slow
 on larger data sets.
-\item[``-Lclass,10,1'':] do a class probability calculation
-using 10 Gibbs cycles with recording after the first one.
+\item[``-X'':] load up class data from \File{data/ch.clas} file to
+enable classification on test data.
 \item[``-p'':] initiate PMI calculation.
 \end{description}
 The PMI data has a value printed for each topic as well as a 
@@ -645,10 +656,11 @@ The second line gives the mean PMI.
 
 \subsection{Burstiness}
 
-The burstiness version is new.  Our best bet, currently is to run
+The burstiness version significantly improves everything.
+Our best bet, currently, is to run
 with optimisation of the hyperparameters:
 \begin{verbatim}
-hca -v -e -v -V -K20 -C100 -Sbdk=100 -Sad=0.5 data/ch c1
+hca -v -v -e -K20 -C100 -Sbdk=100 -Sad=0.5 data/ch c1
 \end{verbatim}
 \begin{description}
 \item[``-Sbdk=100'':]  burstiness document concentration is different
@@ -657,7 +669,7 @@ Default has no burstiness.
 \item[``-Sad=0.5'':] burstiness document discount set to 
 0.5, same for all topics.  Default is zero.
 \end{description}
-So the initial discount for the bursty topics is
+The initial discount for the bursty topics is
 0.5.   The concentration we set quite high initially, 
 and these will be sampled separately with
 each topic in batches, so \texttt{bdk} is a vector in the
@@ -694,15 +706,13 @@ maintainer.
 \section{See Also}
 %%%%%%%%%%%%%%%%%%
 
-
 The command \Cmd{linkBags}{1} is available from \URL{http://mloss.org} in 
-the software \Prog{DCABags}.
+the software \Prog{text-bags} at\\
+\URL{https://github.com/wbuntine/text-bags} .
 The extended library \Prog{libstb}, parts of which are included, is available
-individually from \URL{http://mloss.org}.
+individually from \URL{http://mloss.org} also at
+\URL{https://github.com/wbuntine/libstb} .
 
-Other supporting software and data sets are available at the project home
-page at\\
-\URL{https://github.com/wbuntine/topic-models}
 
 \section{Version}
 %%%%%%%%%%%%%%%%%

@@ -96,23 +96,23 @@ static const char *stype() {
   if ( ddP.PYalpha ) {
     if ( ddP.PYbeta )
       return 
-	"  H.Pitman-Yor sampler for topics"
+	"H.Pitman-Yor sampler for topics"
 	", H.Pitman-Yor sampler for words"
 	"\n";
       else
 	return 
-	  "  H.Pitman-Yor sampler for topics"
+	  "H.Pitman-Yor sampler for topics"
 	  ", Dirichlet sampler for words"
 	  "\n";
   } else {
     if ( ddP.PYbeta )
       return 
-	"  Dirichlet sampler for topics"
+	"Dirichlet sampler for topics"
 	", H.Pitman-Yor sampler for words"
 	"\n";
     else
       return 
-	"  Dirichlet sampler for topics"
+	"irichlet sampler for topics"
 	", Dirichlet sampler for words"
 	"\n";
   }
@@ -121,10 +121,11 @@ static const char *stype() {
 static void usage() {
   fprintf(stderr,"Commandline:  OPTION+ STEM RESSTEM\n"
 	  "  (reads STEM.dit and STEM.wit, results to RESSTEM.*)\n  ");
+  fprintf(stderr," Version " HCA_VERSION ", "); 
 #ifdef H_THREADS
-  fprintf(stderr," Threads,");
+  fprintf(stderr,"threads, ");
 #endif
-  fprintf(stderr,"%s", stype());
+  fprintf(stderr, stype());
   fprintf(stderr,
           "  OPTION is choice of:\n"
 	  "  setting hyperparameters:\n"
@@ -726,8 +727,9 @@ int main(int argc, char* argv[])
   }
   
   yap_commandline(argc, argv);
+  yap_message("Version " HCA_VERSION ", ");
 #ifdef H_THREADS
-  yap_message(" Threads,");
+  yap_message("threads, ");
 #endif
   yap_message(stype());
 
@@ -1186,8 +1188,10 @@ int main(int argc, char* argv[])
 	yap_report("cycles: ");
       }
     } else {
-      yap_message(" %d", iter);
-      if ( verbose>1 )  yap_message("\n");
+      if ( verbose>1 )  
+	yap_message("cycle %d\n", iter);
+      else
+	yap_message(" %d", iter);
     }
   
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {

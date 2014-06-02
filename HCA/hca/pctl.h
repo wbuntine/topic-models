@@ -35,9 +35,9 @@
 /*
  *    bounds for the parameters to various distributions
  */
-#define DIR_MIN 0.001
-#define DIR_MAX 1
-#define DIR_TOTAL_MAX 1000
+#define DIR_MIN 0.0001
+#define DIR_MAX 1.0
+#define DIR_TOTAL_MAX 10000.0
 #define PYP_DISC_MIN 0.01
 #define PYP_DISC_MAX 0.98
 #define PYP_CONC_MIN 0.001
