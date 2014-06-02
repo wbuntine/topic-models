@@ -10,3 +10,26 @@ and then slowly move the window.   Basic thing is working but now:
         ->  incorporate each doc but don't add to stats until all in ?
 Currently under EXPERIMENTAL
 
+Need to ensure "fixed" hyperparameters remain fixed on restore!
+
+From Allen Riddell:
+1. in the examples section of the man page you give this command:
+     hca -v -V -K20 -C100 -c20 -T100 data/ch c1
+which fails with:
+[21/04/2014:16:58:15] Cannot read line 4259/4259 from 'data/ch.tokens
+
+2. another example from the section, resuming with -r0 and doing document
+   completion runs but doesn't seem to work as desired. After running the
+   sequence (dropping -V to avoid the above error)
+  hca -v -K20 -C100 -c20 -T100 data/ch c1
+  hca -v -r0 -hdoc,4 data/ch c1
+
+3.  I'm most familiar with Mallet, so I'll use it as an example: You can save the 
+  assignment of each word to topics with the --output-state option. You can then 
+  divide documents by date and count the frequency of words within each topic at 
+  each time step. 100M tokens should not be challenging. The R package "mallet" 
+  also provides an interface for grabbing the empirical distribution over words 
+  for each topic from a subset of documents.
+
+4.  fix the description of A, B, alpha beta in the docs... these are priors
+    on phi, theta etc.

@@ -173,7 +173,7 @@ int pctl_hold(int i);
 int pctl_training(int D);
 void pctl_free();
 
-void fixbeta(char *file, char *resstem);
+void pctl_fixbeta(char *file, char *resstem);
 double pctl_gammaprior(double x);
 
 #endif

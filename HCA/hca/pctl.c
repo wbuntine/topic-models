@@ -316,12 +316,18 @@ void pctl_dims() {
       ddP.alpha = DIR_MAX/2.0;
   }
   if ( ddP.PYbeta==H_None ) {
-    if ( ddP.beta< DIR_MIN*ddN.W ) 
-      ddP.beta = DIR_MIN*ddN.W*2.0;
-    if ( ddP.beta>DIR_MAX*ddN.W ) 
-      ddP.beta = DIR_MAX*ddN.W/2.0;
-    if ( ddP.beta>DIR_TOTAL_MAX )
-      ddP.beta = DIR_TOTAL_MAX/2.0;
+    double betain;
+    betain = ddP.betac;
+    if ( ddP.betac< DIR_MIN ) 
+      ddP.betac = DIR_MIN*2.0;
+    if ( ddP.betac>DIR_MAX ) 
+      ddP.betac = DIR_MAX/2.0;
+    if ( ddP.betac>DIR_TOTAL_MAX/ddN.W )
+      ddP.betac = DIR_TOTAL_MAX/2.0/ddN.W;
+    if ( verbose>=1 && betain!=ddP.betac ) {
+      yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
+		  betain, ddP.betac);
+    }
   }
   if ( ddP.window>0 ) {
     if ( ddP.window>=ddN.DT )
@@ -480,7 +486,7 @@ int pctl_Tmax(int Tmax, int iter) {
 /*
  *   initialising or ddP.beta is changed
  */
-void fixbeta(char *file, char *resstem) {
+void pctl_fixbeta(char *file, char *resstem) {
   int c;
   if ( ((ddP.PYbeta==H_PDP||ddP.PYbeta==H_HDP) && file) 
        || (ddP.PYbeta==H_None && !ddP.betapr) ) {
@@ -519,7 +525,7 @@ void fixbeta(char *file, char *resstem) {
   }
   if ( ddP.betac!=0 && ddP.PYbeta==H_None ) {
     assert(ddP.beta>0);
-    ddP.betac = ddP.beta/ddN.W;
+    ddP.beta = ddP.betac*ddN.W;
     for (c=0; c<ddN.W; c++)
       ddP.betapr[c] = ddP.betac;
   } else if ( ddP.betapr ) {

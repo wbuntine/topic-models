@@ -97,8 +97,7 @@ This is the default.
 \item[pdp] alpha is uniform and theta is modelled with a Pitman-Yor Process.
 \end{Description}
 \item[\OptArg{-B}{value}]  Use a symmetric Dirichlet prior with
-this \texttt{value} as the total over dimensions, so each dimension
-gets \texttt{value}/$W$ for $W$ being the number of words.
+this \texttt{value} for each dimension.
 The value must be a positive float.
 \item[\OptArg{-B}{type}] 
 Second form of the \Opt{-B} option.
@@ -223,20 +222,22 @@ Starts at zero and currently understands 0-3.
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
 \item[\OptArg{-h}{Hold,arg}] 
 Do document completion testing on the test set.
-There are three styles of document completion implemented.
-When \texttt{Hold} is the string ``doc'', then every \texttt{arg}-th
+There are three styles of document completion implemented
+given by the \texttt{Hold} parameter.
+\begin{description}
+\item[doc] every \texttt{arg}-th
 word is held out in estimating the latent variables (like theta)
 for the document and used instead for testing of perplexity.
 That is, words at document positions \texttt{arg-1}, \texttt{2*arg-1}, 
 \emph{etc.}
-When \texttt{Hold} is the string ``dict'', then every \texttt{arg}-th
+\item[dict] every \texttt{arg}-th
 word in the dictionary is held out in estimating
 and used for testing.  So if a word has dictionary index 
 \texttt{arg-1}, \texttt{2*arg-1}, \emph{etc.}, it is held out.
-When \texttt{Hold} is the string ``fract'',
-then the \texttt{fract}
+\item[fract] then the \texttt{fract}
 proportion at the tail of the document is held out.  
 The initial proportion is used in estimating.
+\end{description}
 \item[\OptArg{-l}{Diag,cycles,start}] 
 Do a run-time estimation of the diagnostic \texttt{Diag}
 starting after the \texttt{start} cycle and then taking the
@@ -261,6 +262,9 @@ Stored in the \File{RepStem.testprob} file.
 Estimate the topic probability vector for each training document.
 Stored in the \File{RepStem.theta} file.
 \end{Description}
+Note that for \texttt{Diag}=``testprob'' or ``theta'',
+an additional argument after \texttt{start} giving the lowerbound
+on probabilities.  Lower ones are dropped.
 \item[\OptArg{-L}{Diag,cycles,start}] 
 Do a diagnostic estimate \texttt{Diag} after
 all Gibbs sampling is complete.
@@ -296,6 +300,8 @@ in the right format.  This can be created with the
 The format is a simple sparse matrix form with lines
 of the form ``N M PMI'' for word indices
 (offset by 0) N and M and PMI value.
+\emph{WARNING:}  the file \File{DataStem.pmi} needs to be specifically built for 
+the dataset as the word indices must align.
 \item[\OptArg{-P}{secs}]  
 Calculate test perplexity (using document completion)
 every interval in \texttt{secs} seconds.  If Gibbs cycles are long,
@@ -307,11 +313,18 @@ a pre-estimated phi matrix (for efficiency).
 \item[\OptArg{-t}{size}]  Specify size of training set.  It takes the
 first \texttt{size} entries in the data set. Default is all the
 set minus the test data.
+\item[\OptArg{-T}{filestem}]  Specify a separate test set.  
+Assumes the same suffix as for \File{DataStem}.
+When using this, be sure to fix the training set size with 
+\OptArg{-t}{size} if you do not want to train on the full
+data set.
 \item[\OptArg{-T}{size}]  Specify size of test set.  It takes the
 \texttt{size} entries immediately following the training set. 
-Default is zero.
+Default is zero.  This option can be confused with the above, so do not use 
+filestems that are just integers.
 \item[\Opt{-V}]  load the dictionary from the
 \File{DataStem.tokens} file for use in reporting.  It has one token per line.
+Must have at least level two verbosity or this is ignored.
 \item[\Opt{-X}]  Instigate report on naive Bayes classification
 using the topic model and classes given in \File{DataStem.class} file.
 The report is a confusion matrix to file \File{RepStem.tbyc} built on
@@ -459,10 +472,10 @@ However, you need to replace the executable,
 from the install directory where the \File{data/} directory is.
 For instance, on Windows that might be \texttt{hca/hca.exe}.
 
-Run basic LDA with parameter fitting on the full dataset and no testing,
+Run basic HDP-LDA with parameter fitting on the full dataset and no testing,
 sending logging to \Prog{stderr}.
 \begin{verbatim}
-   hca -v -e -K20 -C100 data/ch c1
+   hca -v -e -K20 -B0.001 -C100 data/ch c1
 \end{verbatim}
 The command line means:
 \begin{description}
@@ -470,6 +483,8 @@ The command line means:
 \item[``-e'':] send the log file to  \texttt{stderr},
 not to ``c1.log'';
 \item[``-K20'':] use 20 topics (the truncation level);
+\item[``-B0.001'':]  use a symmetric Dirichlet prior on word probability
+vectors (i.e., topics) with this value;
 \item[``-C100'':] run for 100 cycles;
 \item[``data.ch'':] stem for data file;
 \item[``c1'':] stem for results file.
@@ -491,8 +506,11 @@ and you have an 8-core CPU, then run with 8 threads:
 \end{description}
 This just repeats the above but should be faster!
 
-\subsection{Print words for the topics}
-Restart after the previous run but run no cycles.
+To do the run with some parameters fixed do instead:
+????????????
+
+\subsection{Restart and print words for the topics}
+Restart from checkpoint after the previous run but run no cycles.
 Input the tokens from
 \File{data/ch.tokens}, and print top 10 words for each topic.
 \begin{verbatim}
@@ -522,64 +540,108 @@ Restart again and build a topic probability vector for each document,
 as well as sparsity mappings for the words in 
 \File{data/ch.smap} file.
 This you need to create/edit ahead of time.
+This must run a number of cycles because the estimates are done 
+during the Gibbs sampling.
 \begin{verbatim}
-hca -v -r0 -e -lsp,2,1 -ltheta,2,1 -C20 data/ch c1
+hca -v -r0 -e -lsp,2,1 -ltheta,2,1,0.001 -C20 data/ch c1
 \end{verbatim} 
 \begin{description}
 \item[``-lsp2,1'':] sample for sparsity every 2nd cycle
 starting at the 1st.
-\item[``-ltheta,2,1'':] sample probabilities per document
+\item[``-ltheta,2,1,0.001'':] sample probabilities per document
 (theta) every 2nd cycle
 starting at the 1st.
+Only report probabilities above 0.001.
 \item[``-C20'':] sampling done for 20 cycles.
 \end{description}
 Now view the sparsity report at \File{c1.smap} and
 the topic probabilities at \File{c1.theta},
 and the values saved in the parameter file \File{c1.par}.
+Again, add the \OptArg{-q}{8} option to run this faster,
+with 8 threads (if you have 8 cores).
+
+Read lines in the sparsity report, \File{c1.smap}, as follows:
+\begin{verbatim}
+--(12): 5/2.6 14/1.3 19/219.0 perp=1.149816
+\end{verbatim} 
+Token with index 12 occurs in topics 5, 14 and 19.
+It has 2.6 counts (its a sample average so counts can be a fraction)
+in topic 5 and 219.0 in topic 19.
+The log-2 entropy of the topic distribution based on these
+counts is 1.149816.
+
+Read lines in the topic probabilities report, \File{c1.theta}, as follows:
+\begin{verbatim}
+15: 16:0.006699 17:0.088948 19:0.902410
+\end{verbatim} 
+Document 15 has 0.006699 for topic 15 and 0.902410 for topic 17.
+The three topics only add to 0.998057 because some
+smaller topics must have been dropped.
 
 \subsection{Run with testing}
 
-Run basic LDA with parameter fitting on the full dataset and testing
-on the final 100 documents.  Logging now to \File{c1.log}.
+Run basic LDA with training and parameter fitting on a subset
+and testing on the final 100 documents.  
+The training subset is the full dataset minus the test data.
+Logging now to \File{c1.log}.
 Checkpoint every 20 cycles
 (note, we usually only do this for cycles taking over 10 minutes each).
 \begin{verbatim}
 hca -v -K20 -C100 -c20 -T100 data/ch c1
 \end{verbatim}
-Again run multi-core if needed.
+Again run multi-core with \OptArg{-q}{8} if needed.
 \begin{description}
 \item[``-c20'':] do a checkpoint with any reporting every
 20 cycles.
-\item[``-T100'':] use the last 100 documents for testing.
+\item[``-T100'':] use the last 100 documents for testing,
+so the first (datasetsize-100) are used for training.
 The documents must be ordered so the test data is at the end.
 Alternatively, a file stem can be given if test data is in a 
-separate file.
+separate file, so loaded from there.
 \end{description}
 View the end of the log file to get the test perplexity,
 which is printed after ``log\_2(test perpML)''.
 
-Now restart but use document completion (every 4th word), not the default
-likelihood calculation.
+Now restart but use document completion (every 4th word) to 
+get perplexity, with no more Gibbs cycles.
+Without \Opt{-h} the default is to use
+a standard likelihood calculation so will be biased.
 \begin{verbatim}
-hca -v -e -r0 -hdoc,4 data/ch c1
+hca -v -e -r0 -C0 -hdoc,4 data/ch c1
 \end{verbatim}
-???????????????????
+\begin{description}
+\item[``-hdoc,4'':] hold out every 4-th word in
+the document.
+\end{description}
 View the end of the log file to get the test perplexity,
 which is printed after ``log\_2(test perpHold)''.
 Note it is also recorded in the parameter file.
-Restart, no sampling this time using \OptArg{-C}{0}, just record the 
+
+Restart and record the 
 PMI and the classification details on test data.
 \begin{verbatim}
-hca -v -V -r0 -C0 -Llike,0,0 -Lclass,10,1 -p  data/ch c1
+hca -v -v -V -r0 -C0 -Llike,0,0 -Lclass,10,1 -p  data/ch c1
 \end{verbatim}
-Note the \OptArg{-L}{like,0,0} option is used to prevent it 
+\begin{description}
+\item[``-Llike,0,0'':] prevent it 
 doing test likelihood calculations, which are potentially slow
 on larger data sets.
+\item[``-Lclass,10,1'':] do a class probability calculation
+using 10 Gibbs cycles with recording after the first one.
+\item[``-p'':] initiate PMI calculation.
+\end{description}
 The PMI data has a value printed for each topic as well as a 
 final average.  It bases its calculations on the matrix
-\File{data/ch/pmi.gz} created explicitly for this test set.
+\File{data/ch.pmi.gz} created explicitly for this test set.
 For other datasets, you will need to download prepared
 PMI matrices from the project homepage.
+The PMI output in the log file is:
+\begin{verbatim}
+PMI ::  0:2.051 1:3.172 2:5.170 3:0.353 ...
+PMI = 1.257
+\end{verbatim}
+The first line gives the PMI per topic.
+The second line gives the mean PMI.
 
 \subsection{Burstiness}
 

@@ -208,7 +208,7 @@ void cache_update(char *par) {
     } 
   } else {
     if ( strcmp(par,"beta")==0 ) {
-      fixbeta(NULL, NULL);
+      pctl_fixbeta(NULL, NULL);
       if ( ddP.betac>0) {
 	gcache_init(&ddC.lgbeta, ddP.betac);
       }

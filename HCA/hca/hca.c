@@ -388,7 +388,7 @@ int main(int argc, char* argv[])
 	ddP.PYbeta = H_HPDD;
       else if ( strcmp(optarg,"pdp")==0 ) 
 	ddP.PYbeta = H_PDP;
-      else if ( sscanf(optarg,"%lf",&ddP.beta)==1 )
+      else if ( sscanf(optarg,"%lf",&ddP.betac)==1 )
 	ddP.PYbeta = H_None;
       else
 	yap_quit("Need a valid 'B' argument\n");
@@ -918,10 +918,10 @@ int main(int argc, char* argv[])
   if ( restart && betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP)) {
     char *fname=yap_makename(resstem,".beta");
     //   the NULL stops it from rewriting the file back
-    fixbeta(fname, NULL);
+    pctl_fixbeta(fname, NULL);
     free(fname);
   } else {
-    fixbeta(betafile, resstem);
+    pctl_fixbeta(betafile, resstem);
   }
   cache_init(maxT, maxNwt);
   
