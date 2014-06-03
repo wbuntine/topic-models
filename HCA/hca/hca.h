@@ -36,7 +36,7 @@
  *   Allow experimental stuff ... only for developers since
  *   they mostly don't work
  */
-#define EXPERIMENTAL
+// #define EXPERIMENTAL
 
 /*
  *   Switch on to allow threading

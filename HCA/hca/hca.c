@@ -152,7 +152,7 @@ static void usage() {
           "   -K topics      #  maximum number of topics\n"
 	  "   -m             #  up the memory conservation by one\n"
 	  "   -M maxtime     #  maximum training time, quit early if reached\n"
-	  "   -N maxT,maxNwt #  maximum counts for Stirling number tables\n"
+	  "   -N maxNwt,maxT #  maximum counts for Stirling number tables\n"
 #ifdef H_THREADS
 	  "   -q threads     #  set number of threads, default 1\n"
 #endif
@@ -560,7 +560,7 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 's' argument\n");
       break;
     case 'N':
-      if ( !optarg || sscanf(optarg,"%d,%d", &maxT, &maxNwt)<1 )
+      if ( !optarg || sscanf(optarg,"%d,%d", &maxNwt, &maxT)<1 )
 	yap_quit("Need a valid 'N' argument\n");
       break;
      case 'o':

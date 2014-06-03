@@ -17,6 +17,7 @@
 
 #include <stdint.h>
 #include "gibbs.h"
+#include "dirdim.h"
 
 #define BETA 100
 #define APAR 0.0
@@ -32,23 +33,6 @@
  *    to RESSTEM.istats
  */
 #define IND_STATS
-
-/*
- *    bounds for the parameters to various distributions
- */
-#define DIR_MIN 0.001
-#define DIR_MAX 1
-#define DIR_TOTAL_MAX 1000
-#define PYP_DISC_MIN 0.01
-#define PYP_DISC_MAX 0.98
-#define PYP_CONC_MIN 0.001
-#define PYP_CONC_MAX 10000.0
-/*
- *    priors for PYP_CONC
- *    NB.  scale is multiplied by the dimension
- */
-#define PYP_CONC_PSHAPE 1.1
-#define PYP_CONC_PSCALE 1
 
 /*
  *  hyperparameters and test parameters

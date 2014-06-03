@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Mon Jun  2 22:30:23 EST 2014
+.\" Manual page created with latex2man on Tue Jun  3 16:39:17 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "HCA" "1" "2013/11/25" "Data Analysis Tools " "Data Analysis Tools "
+.TH "HCA" "1" "2014/06/03" "Data Analysis Tools " "Data Analysis Tools "
 .SH NAME
 
 .PP
@@ -50,9 +50,15 @@ or combinations of options work correctly.
 Note that in this release, all the more experimental features 
 have been stripped, so this release contains 
 only moderately well tested components. 
+Note also, this is not intended to be code that others could easily 
+modify. In order to get performance, to provide all the features, 
+and to run multi\-core, the code is quite convoluted. 
+Researchers seeking simple code they can experiment and 
+modify themselves should request a cutdown version from the author. 
 .PP
 The programme runs a Gibbs sampler for a variety of 
-non\-parametric topic models. 
+non\-parametric topic models 
+including HDP\-LDA. 
 The model selected has three parts: 
 .TP
 alpha: 
@@ -81,7 +87,7 @@ discount and concentrations for the different Pitman\-Yor
 processes in the model. 
 These are usually sampled using Adaptive Rejection Sampling. 
 They are also kept bounded using constraints coded 
-into the pctl.h
+into the util/dimdir.h
 header file. 
 So when a parameter fails to change, check the sampling 
 by increasing verbosity and you may observe the value tries to 
@@ -110,32 +116,63 @@ the following functions:
 and 
 \fItesting and reports\fP
 .PP
-.SS SETTING OF HYPERPARAMETERS
+.SS SETTING UP THE MODEL AND HYPERPARAMETERS
+For these, theta
+is a vector for each document representing the 
+topic proportions and 
+phi
+is a vector for each topic representing the 
+word proportions. The task of the system is to estimate these. 
+The vector theta and its various priors and parameters is the Alpha side 
+and the vector phi and its various priors and parameters is the Beta side. 
+All the scalar parameters can be set using the 
+\fB\-S\fP\fIvar=value\fP
+option 
+and thereafter fixed using the \fB\-F\fP\fIvar\fP
+option 
+or by default sampled 
+using adaptive rejection sampling. 
+.PP
 .TP
 \fB\-A\fP\fIvalue\fP
- Use a symmetric Dirichlet prior for alpha 
-with this value
+ Use a symmetric Dirichlet prior on theta 
+using this value
 for each dimension. The value must be a positive float. 
 .TP
 \fB\-A\fP\fItype\fP
  A second version of the 
 \fB\-A\fP
 option with a string argument. 
-It defines an alpha prior of type
+It defines a distribution on theta and its prior mean (a vector) 
+alpha
+of type
 as follows: 
 .RS
 .TP
 hdp 
-alpha is modelled with a symmetric Dirichlet and 
-theta is modelled with a Dirichlet Process. 
+theta is modelled with a Dirichlet Process 
+with mean alpha
+and concentration b,
+and alpha is modelled with a symmetric Dirichlet with concentration 
+b0\&.
 .TP
 hpdd 
-alpha is modelled with a (truncated) GEM and 
-theta is modelled with a Pitman\-Yor Process. 
+theta is modelled with a Pitman\-Yor Process 
+with mean alpha,
+discount a
+and concentration b,
+and alpha is modelled with a (truncated) GEM 
+with discount a0
+and concentration b0\&.
 This is the default. 
 .TP
 pdp 
-alpha is uniform and theta is modelled with a Pitman\-Yor Process. 
+theta is modelled with a Pitman\-Yor Process 
+with mean alpha,
+discount a
+and concentration b,
+and alpha is uniform. 
+This is not hierarchical because alpha is constant. 
 .RE
 .RS
 .PP
@@ -146,34 +183,46 @@ alpha is uniform and theta is modelled with a Pitman\-Yor Process.
 this value
 for each dimension. 
 The value must be a positive float. 
-Note the value stored internally and printed is the total of this over the 
+\fIWarning:\fP
+the value stored internally and printed is the total of this over the 
 number of words W. 
 .TP
 \fB\-B\fP\fItype\fP
  Second form of the \fB\-B\fP
 option. 
-Use a beta prior of type
+Use a prior beta of type
 ``hdp\&'' ``hpdd\&'' or ``pdp\&''\&. Similar to the \fB\-A\fP
 option. 
 .RS
 .TP
 hdp 
-beta is modelled with a Dirichlet, 
-by default symmetric, 
+phi is modelled with a Dirichlet Process 
+with mean beta
+and concentration bw
+and 
+beta is modelled with a Dirichlet with concentration bw0
+by default symmetric (a uniform mean) 
 or its mean can be set with the \fB\-u\fP
-option, 
-and phi is modelled with a Dirichlet Process. 
+option. 
 .TP
 hpdd 
-beta is modelled with a (truncated) GEM and 
-phi is modelled with a Pitman\-Yor Process. 
+phi is modelled with a Pitman\-Yor Process 
+with mean beta,
+discount aw
+and concentration bw,
+and beta is modelled with a (truncated) GEM 
+and discount aw0
+and concentration bw0\&.
 This is the default. 
 .TP
 pdp 
-beta is by default uniform, 
+phi is modelled with a Pitman\-Yor Process 
+with mean beta,
+discount aw
+and concentration bw,
+and beta is by default uniform, 
 or it can be set with the \fB\-u\fP
-option, 
-and phi is modelled with a Pitman\-Yor Process. 
+option. 
 This is not hierarchical because beta is constant. 
 .RE
 .RS
@@ -316,11 +365,11 @@ Default is 10.
 \fB\-M\fP\fImaxtime\fP
  Quit early when total training time exceeds this many seconds. 
 .TP
-\fB\-N\fP\fImaxT,maxN\fP
+\fB\-N\fP\fImaxN,maxT\fP
  Set maximum for the Stirling number tables 
 to count maxN
 and table count maxT\&.
-Default is 1000,10000. 
+Default is 10000,1000. 
 On collections with more than 20k documents, can require more. 
 .TP
 \fB\-q\fP\fIthreads\fP
@@ -568,7 +617,7 @@ at
 Word indices offset by 1. 
 .TP
 DataStem.ldac
- Standard LdaC format. Word indices to the dictionary are offset by 1. 
+ Standard LdaC format. Word indices to the dictionary are offset by 0. 
 .TP
 DataStem.smap
  A list of word indices (offset by 0) 
@@ -1015,34 +1064,39 @@ error message like:
 for integers N,M
 and label XXX
 then you 
-need to increase the bounds. 
-If the tag XXX
-is ``SX, docXtopic PYP" 
-then increase the bound BM
-using the option 
-\fB\-N\fP\fIBM\fP
-with an increased BM\&.
-If the tag XXX
-is ``SX, docXtopic PYP" 
-then increase both bounds BN,BM
-using the option 
-\fB\-N\fP\fIBM,BN\fP
-(note the order of the bounds). 
+need to increase the bounds BN,BM\&.
+If only the BM
+bound is violated, 
+then set BN
+to its default (10000) and increase 
+BM
+to, say 5000 (your choice) with the 
+option \fB\-N\fP\fI10000,5000\fP\&.
+The BN
+bound should only be violated 
+when the Beta side table is affected, 
+in which case the label will be 
+XXX=\&''SB, topicXword PYP". 
+Now increase BN
+to, say 30000 (your choice) with the 
+option \fB\-N\fP\fI30000,1000\fP,
+leaving BM
+as it was. 
 .PP
-For other errors, please report to the 
-maintainer. 
+For other errors, please report to the maintainer. 
+Best bet is to recompile 
+with ``MYDEBUG=\-g\&'' set in the Makefile 
+and possibly run under a memory checker to get details of 
+the reason for the crash. 
 .PP
 .SH SEE ALSO
 
 .PP
 The command \fIlinkBags\fP(1)
-is available from \fBhttp://mloss.org\fP
-in 
-the software text\-bags
-at
-.br
+is available from text\-bags
+at 
 \fBhttps://github.com/wbuntine/text\-bags\fP
-\&. 
+and was previously released at \fBhttp://mloss.org\fP\&.
 The extended library libstb,
 parts of which are included, is available 
 individually from \fBhttp://mloss.org\fP
@@ -1053,10 +1107,10 @@ also at
 .SH VERSION
 
 .PP
-This programme is version 0.4 of 2013/11/25\&.
+This programme is version 0.5 of 2014/06/03\&.
 This incorporates parts of the library libstb
 version 1.8 
-also of 2013/11/25\&.
+also of 2014/06/03\&.
 .PP
 .SH LICENSE AND COPYRIGHT
 
@@ -1065,9 +1119,8 @@ also of 2013/11/25\&.
 Copyright 
 (C)2011\-2014, Prof. Wray Buntine, 
 NICTA, Canberra, Australia (to 2013), and Monash 
-University (from 2014)
-.br
-\fBwray.buntine@monash.edu\fP
+University (from 2014), 
+\fBwray.buntine@monash.edu\fP\&.
 Some parts also by Dr.  Jinjin Li (2013) and 
 Mr.  Swapnil Mishra (2013\-2014). 
 .PP

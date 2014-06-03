@@ -119,7 +119,7 @@ void cache_init(int maxM, int maxW) {
                       S_THREADS|
 #endif
                       S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
-      S_tag(ddC.SX,"SX, docXtopic PYP");
+      S_tag(ddC.SX,"SA, docXtopic PYP");
       if ( verbose ) S_report(ddC.SX,NULL);
     }
     gcache_init(&ddC.qda, ddP.apar);
@@ -137,7 +137,7 @@ void cache_init(int maxM, int maxW) {
                       S_THREADS|
 #endif
                       S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
-      S_tag(ddC.SY,"SY, topicXword PYP");
+      S_tag(ddC.SY,"SB, topicXword PYP");
       if ( verbose ) S_report(ddC.SY,NULL);
     }
     gcache_init(&ddC.qdaw, ddP.awpar);

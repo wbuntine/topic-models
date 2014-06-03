@@ -6,8 +6,8 @@
 
 \usepackage[fancyhdr]{latex2man}
 
-\setDate{2013/11/25}
-\setVersion{0.4}
+\setDate{2014/06/03}
+\setVersion{0.5}
 
 \begin{document}
 
@@ -42,9 +42,15 @@ or combinations of options work correctly.
 Note that in this release, all the more experimental features
 have been stripped, so this release contains
 only moderately well tested components.
+Note also, this is not intended to be code that others could easily
+modify.  In order to get performance, to provide all the features,
+and to run multi-core, the code is quite convoluted.
+Researchers seeking simple code they can experiment and
+modify themselves should request a cutdown version from the author.
 
 The programme runs a Gibbs sampler for a variety of
-non-parametric topic models.
+non-parametric topic models
+including HDP-LDA.
 The model selected has three parts:
 \begin{Description}[alpha]
 \item[alpha:] this is the prior on topic vector (theta) for each document.
@@ -65,7 +71,7 @@ discount and concentrations for the different Pitman-Yor
 processes in the model.
 These are usually sampled using Adaptive Rejection Sampling.
 They are also kept bounded using constraints coded
-into the \File{pctl.h} header file.
+into the \File{util/dimdir.h} header file.
 So when a parameter fails to change, check the sampling
 by increasing verbosity and you may observe the value tries to 
 change but doesn't.
@@ -91,41 +97,69 @@ the following functions:
 \emph{general control}, and
 \emph{testing and reports}
 
-\subsection{Setting of hyperparameters}
+\subsection{Setting up the model and hyperparameters}
+For these, \texttt{theta} is a vector for each document representing the
+topic proportions and
+ \texttt{phi} is a vector for each topic representing the
+word proportions.  The task of the system is to estimate these.
+The vector theta and its various priors and parameters is the Alpha side
+and the vector phi and its various priors and parameters is the Beta side.
+All the scalar parameters can be set using the 
+\OptArg{-S}{var=value} option 
+and thereafter fixed using the \OptArg{-F}{var} option
+or by default sampled
+using adaptive rejection sampling.
+
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
-\item[\OptArg{-A}{value}]  Use a symmetric Dirichlet prior for alpha
-with this \texttt{value} for each dimension.  The value must be a positive float.
+\item[\OptArg{-A}{value}]  Use a symmetric Dirichlet prior on theta
+using this \texttt{value} for each dimension.  The value must be a positive float.
 \item[\OptArg{-A}{type}]  A second version of the
 \Opt{-A} option with a string argument.
-It defines an alpha prior of \texttt{type} as follows:
+It defines a distribution on theta and its prior mean (a vector) 
+ \texttt{alpha} of \texttt{type} as follows:
 \begin{Description}[hpdd]
-\item[hdp] alpha is modelled with a symmetric Dirichlet and
-theta is modelled with a Dirichlet Process.
-\item[hpdd] alpha is modelled with a (truncated) GEM and
-theta is modelled with a Pitman-Yor Process.
+\item[hdp] 
+theta is modelled with a Dirichlet Process 
+with mean \texttt{alpha} and concentration \texttt{b},
+and alpha is modelled with a symmetric Dirichlet with concentration
+\texttt{b0}.
+\item[hpdd] theta is modelled with a Pitman-Yor Process
+with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
+and alpha is modelled with a (truncated) GEM 
+with discount \texttt{a0} and concentration \texttt{b0}.
 This is the default.
-\item[pdp] alpha is uniform and theta is modelled with a Pitman-Yor Process.
+\item[pdp] theta is modelled with a Pitman-Yor Process
+with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
+and alpha is uniform.
+This is not hierarchical because alpha is constant.
 \end{Description}
 \item[\OptArg{-B}{value}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
-Note the value stored internally and printed is the total of this over the
+\emph{Warning:}
+ the value stored internally and printed is the total of this over the
 number of words W.
 \item[\OptArg{-B}{type}] 
 Second form of the \Opt{-B} option.
-Use a beta prior of \texttt{type}
+Use a prior beta of \texttt{type}
 ``hdp'' ``hpdd'' or ``pdp''.  Similar to the \Opt{-A} option.
 \begin{Description}[hpdd]
-\item[hdp] beta is modelled with a Dirichlet,
-by default symmetric,
-or its mean can be set with the \Opt{-u} option,
-and phi is modelled with a Dirichlet Process.
-\item[hpdd] beta is modelled with a (truncated) GEM and
-phi is modelled with a Pitman-Yor Process.
+\item[hdp] phi is modelled with a Dirichlet Process
+with mean \texttt{beta} and concentration \texttt{bw} and 
+beta is modelled with a Dirichlet with concentration \texttt{bw0}
+by default symmetric (a uniform mean)
+or its mean can be set with the \Opt{-u} option.
+\item[hpdd] 
+phi is modelled with a Pitman-Yor Process
+with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
+and beta is modelled with a (truncated) GEM 
+and discount \texttt{aw0} and concentration \texttt{bw0}.
 This is the default.
-\item[pdp] beta is by default uniform,
-or it can be set with the \Opt{-u} option,
-and phi is modelled with a Pitman-Yor Process.
+\item[pdp]
+ phi is modelled with a Pitman-Yor Process
+with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
+and beta is by default uniform,
+or it can be set with the \Opt{-u} option.
 This is not hierarchical because beta is constant.
 \end{Description}
 \item[\OptArg{-S}{var=value}]  Set variable \texttt{var} to float \texttt{value},
@@ -205,10 +239,10 @@ Set $T$ the maximum number of topics.
 Default is 10.
 \item[\OptArg{-M}{maxtime}] 
 Quit early when total training time exceeds this many seconds.
-\item[\OptArg{-N}{maxT,maxN}] 
+\item[\OptArg{-N}{maxN,maxT}] 
 Set maximum for the Stirling number tables
 to count \texttt{maxN} and table count \texttt{maxT}.
-Default is 1000,10000.
+Default is 10000,1000.
 On collections with more than 20k documents, can require more.
 \item[\OptArg{-q}{threads}] If compiled with threading, enables
 this many threads.  Default is 1.
@@ -361,7 +395,7 @@ gives the dictionary index.
 \item[\File{DataStem.docword}] This format appears in some UCI data sets
 at\\\URL{http://archive.ics.uci.edu/ml/datasets/Bag+of+Words}.
 Word indices offset by 1.
-\item[\File{DataStem.ldac}] Standard LdaC format.  Word indices to the dictionary are offset by 1.
+\item[\File{DataStem.ldac}] Standard LdaC format.  Word indices to the dictionary are offset by 0.
 \item[\File{DataStem.smap}] A list of word indices (offset by 0)
 about which one wants a sparsity report generated.
 The report is instigated by the
@@ -691,24 +725,31 @@ error message like:
     S_V(N,M,A) tagged 'XXX' hit bounds (BN,BM)
 \end{verbatim}
 for integers \texttt{N,M} and label \texttt{XXX} then you
-need to increase the bounds.
-If the tag \texttt{XXX} is ``SX, docXtopic PYP"
-then increase the bound \texttt{BM} using the option
-\OptArg{-N}{BM} with an increased \texttt{BM}.
-If the tag \texttt{XXX} is ``SX, docXtopic PYP"
-then increase both bounds \texttt{BN,BM} using the option
-\OptArg{-N}{BM,BN}
-(note the order of the bounds).
+need to increase the bounds \texttt{BN,BM}.
+If only the \texttt{BM} bound is violated,
+then set \texttt{BN} to its default (10000) and increase
+\texttt{BM} to, say 5000 (your choice) with the
+option \OptArg{-N}{10000,5000}.
+The \texttt{BN} bound should only be violated
+when the Beta side table is affected,
+in which case the label will be
+XXX=''SB, topicXword PYP".
+Now increase \texttt{BN} to, say 30000 (your choice) with the
+option \OptArg{-N}{30000,1000},
+leaving \texttt{BM} as it was.
 
-For other errors, please report to the
-maintainer.
+For other errors, please report to the maintainer.
+Best bet is to recompile 
+with ``MYDEBUG=-g'' set in the Makefile
+and possibly run under a memory checker to get details of
+the reason for the crash.
 
 \section{See Also}
 %%%%%%%%%%%%%%%%%%
 
-The command \Cmd{linkBags}{1} is available from \URL{http://mloss.org} in 
-the software \Prog{text-bags} at\\
-\URL{https://github.com/wbuntine/text-bags} .
+The command \Cmd{linkBags}{1} is available from  \Prog{text-bags} at
+\URL{https://github.com/wbuntine/text-bags}
+and was previously released at \URL{http://mloss.org}.
 The extended library \Prog{libstb}, parts of which are included, is available
 individually from \URL{http://mloss.org} also at
 \URL{https://github.com/wbuntine/libstb} .
@@ -727,8 +768,8 @@ also of \Date.
 \begin{description}
 \item[Copyright] \copyright\ 2011-2014, Prof.~Wray Buntine, 
   NICTA, Canberra, Australia (to 2013), and Monash
-University (from 2014)\\
-     \Email{wray.buntine@monash.edu}
+University (from 2014),
+     \Email{wray.buntine@monash.edu}.
 Some parts also by Dr.\ Jinjin Li (2013) and 
 Mr.\ Swapnil Mishra (2013-2014).
 
