@@ -125,7 +125,7 @@ static void usage() {
 #ifdef H_THREADS
   fprintf(stderr,"threads, ");
 #endif
-  fprintf(stderr, stype());
+  fprintf(stderr, "%s", stype());
   fprintf(stderr,
           "  OPTION is choice of:\n"
 	  "  setting hyperparameters:\n"
@@ -748,8 +748,13 @@ int main(int argc, char* argv[])
       if ( pv ) 
 	 ddP.training = atoi(pv);
     } 
-   if ( maxW==0 )
-      maxW = atoi(readpar(resstem,"W",buf,50));
+    {
+	int tryW = atoi(readpar(resstem,"W",buf,50));
+        if ( maxW==0 )
+      	    maxW = tryW;
+        if ( ddP.PYbeta==H_None  )
+	    ddP.betac = ddP.beta/tryW;
+    }
     if ( doexclude==0 ) {
       if ( ddP.n_excludetopic ) {
 	ddP.n_excludetopic = 0;
