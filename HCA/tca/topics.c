@@ -56,9 +56,19 @@ static uint32_t *NwK = NULL;
 static int tscorek;
 static int tscoree;
 
+static unsigned getnk(int w, int k) {
+  return ddS.m_evt[tscoree][w][k]
+    + ((tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][k]:0);
+}
+static unsigned getNk(int k) {
+  return ddS.M_eVt[tscoree][k]
+    + ((tscoree+1<ddN.E)?ddS.S_eVt[tscoree+1][k]:0);
+}
 static unsigned getn(int w) {
-  return ddS.m_evt[tscoree][w][tscorek]
-    + ((tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][tscorek]:0);
+  return getnk(w,tscorek);
+}
+static unsigned getN() {
+  return getNk(tscorek);
 }
 
 static double idfscore(int w) {
@@ -72,14 +82,12 @@ static double Qscore(int w) {
   N = NwK[w];
   if ( n/((double)N) <= lowerQ )
     return 0;
-  return N/((double)ddN.NT) * 
-    (n/((double)N)-lowerQ)/(1-lowerQ);
+  return N/NWK * (n/((double)N)-lowerQ)/(1-lowerQ);
 }
 
 static double costscore(int w) {
-  double N = NwK[w];
-  return getn(w)/((double)ddS.M_eVt[tscoree][tscorek]) 
-    - (N*ddS.M_eVt[tscoree][tscorek]/((double)ddN.NT))/((double)ddN.NT);
+  double Nk = getN();
+  return getn(w)/Nk - (NwK[w]*Nk/(double)NWK/(double)NWK);
 }
 
 static double countscore(int w) {
@@ -89,7 +97,7 @@ static double countscore(int w) {
 void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   int w,k;
   int *indk = NULL;
-  int Nk_tot, Sk_tot;
+  int M_tot;
   double (*tscore)(int) = NULL;
   double sparsityword = 0;
   double sparsitydoc = 0;
@@ -97,6 +105,8 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   char *fname = yap_makename(resstem,".top");
   FILE *fp;
 
+  assert(ddN.tokens);
+  
   if ( scoretype == ST_idf ) {
     tscore = idfscore;
   } else if ( scoretype == ST_count ) {
@@ -108,6 +118,9 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     lowerQ = 1.0/ddN.T;
   }    
 
+  NwK = u32vec(ddN.W);
+  if ( !NwK )
+    yap_quit("Out of memory in cca_displaytopics()\n");
   fp = fopen(fname,"w");
   if ( !fp ) 
     yap_sysquit("Cannot open file '%s' for write\n", fname);
@@ -116,29 +129,17 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     /*
      *  first collect counts of each word/term
      */
-    if ( scoretype != ST_count ) {
-      NwK = u32vec(ddN.W);
-      if ( !NwK )
-	yap_quit("Out of memory in cca_displaytopics()\n");
-      for (w=0; w<ddN.W; w++) {
-	NwK[w] = 0;
+    NWK = 0;
+    for (w=0; w<ddN.W; w++) {
+      NwK[w] = 0;
+      for (k=0; k<ddN.T; k++) {
+	NwK[w] += getnk(w,k); 
       }
-      NWK = 0;
-      for (w=0; w<ddN.W; w++) {
-	for (k=0; k<ddN.T; k++) {
-	  NwK[w] += ddS.m_evt[tscoree][w][k];    //  should use CCT_ReadN()
-	}
-	NWK += NwK[w];
-      }
-    }
-    
-    assert(ddN.tokens);
-    
-    Nk_tot = 0;
-    Sk_tot = 0;
+      NWK += NwK[w];
+    }    
+    M_tot = 0;
     for (k=0; k<ddN.T; k++) {
-      Nk_tot += ddS.M_eVt[tscoree][k];
-      Sk_tot += ddS.S_eVt[tscoree][k];
+      M_tot += ddS.M_eVt[tscoree][k];
     }
     
     indk = malloc(sizeof(*indk)*ddN.W);
@@ -165,29 +166,42 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       spw = ((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
       sparsityword += spw;
       
-      if ( ddS.M_eVt[tscoree][k]*ddN.T*100<Nk_tot ) 
+      if ( ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
 	underused++;
       yap_message("\nTopic %d/%d (", k, (int)tscoree);
       yap_message("p=%.2lf%%/%.2lf%%,", 
-		  (tscoree+1==ddN.E)?
-		  (100*((double)ddS.M_eVt[tscoree][k])/(double)Nk_tot)
-		  :
-		  100*((double)(ddS.M_eVt[tscoree][k]
-				+ ddS.S_eVt[tscoree+1][k]))
-		  /((double)(Nk_tot+Sk_tot)),
-		  100*((double)ddS.M_eVt[tscoree][k])/(double)Nk_tot
-		  );   
-     yap_message("ws=%.1lf%%,", 100*(1-spw));
+		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
+		  100.0*getNk(k)/(double)NWK );
+      yap_message("ws=%.1lf%%,", 100*(1-spw));
       yap_message("ds=%.1lf%%", 100*(1-spd) );
       fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);
       yap_message(") words =");
       for (w=0; w<topword && w<cnt; w++) {
+	/*  print to file */
 	fprintf(fp," %d", (int)indk[w]);
 	if ( verbose>2 ) {
-	  double score = tscore(indk[w]);
-	  yap_message(",%s(%6lf)", ddN.tokens[indk[w]], score);
-	} else
-	  yap_message(",%s", ddN.tokens[indk[w]]);
+	  fprintf(fp,"(");
+	  fprintf(fp,(scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
+	  if ( verbose>3 ) {
+	    double prob = 
+	      ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
+	    fprintf(fp,",%6lf", prob);
+	  } 
+	  fprintf(fp,")");
+	} 	
+	/*  yap to report */
+	yap_message(",%s", ddN.tokens[indk[w]]);
+	if ( verbose>2 ) {
+	  yap_message("(");
+	  if ( verbose>3 ) yap_message("s=");
+	  yap_message((scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
+	  if ( verbose>3 ) {
+	    double prob = 
+	      ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
+	    yap_message(",p=%6lf", prob);
+	  } 
+	  yap_message(")");
+	} 
       }
       yap_message("\n");
       fprintf(fp, "\n");
@@ -203,8 +217,6 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   fclose(fp);
   free(fname);
   free(indk);
-  if ( scoretype != ST_count ) {
-    free(NwK);
-    NwK = NULL;
-  }
+  free(NwK);
+  NwK = NULL;
 }

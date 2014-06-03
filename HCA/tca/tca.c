@@ -172,6 +172,7 @@ int main(int argc, char* argv[])
   enum GibbsType fix_hold = GibbsNone;
   char *stem;
   char *resstem;
+  int topwords = 20;
   int noerrorlog = 0;
   int displayed = 0;
   int load_vocab = 0;
@@ -319,16 +320,26 @@ int main(int argc, char* argv[])
       break;
     case 'o':
       {
-        if ( strcmp(optarg,"idf")==0 )
+	char *ptr = strchr(optarg, ',');
+	int len = strlen(optarg);
+	if ( ptr ) 
+	  len = ptr - optarg;
+        if ( strncmp(optarg,"idf",len)==0 )
           score = ST_idf;
-        else if ( strcmp(optarg,"count")==0 )
+        else if ( strncmp(optarg,"count",len)==0 )
           score = ST_count;
-        else if ( strcmp(optarg,"Q")==0 )
+        else if ( strncmp(optarg,"Q",len)==0 )
           score = ST_Q;
-        else if ( strcmp(optarg,"cost")==0 )
+        else if ( strncmp(optarg,"cost",len)==0 )
           score = ST_cost;
         else
           yap_quit("Need a valid parameter for 'o' argument\n");
+	if ( ptr ) {
+	  /*  there was a second arg */
+	  if ( sscanf(ptr+1, "%d", &topwords) != 1)
+	    yap_quit("Need a valid second 'o' argument\n");
+	}
+      break;
       }
       break;
    case 'p':
@@ -421,6 +432,13 @@ int main(int argc, char* argv[])
 
   if ( dopmi )
     load_vocab = 1;
+  if ( dopmi && verbose !=2 ) {
+    /*  
+     *   due to the use of the ".top" file
+     *   its really multi-purpose 
+     */
+    yap_quit("When computing PMI verbose must be exactly 2\n");
+  }
 
   if ( noerrorlog==0 ) {
     char *wname = yap_makename(resstem, ".log");
@@ -686,14 +704,14 @@ int main(int argc, char* argv[])
      *   progress reports
      */
     if ( ( iter>ddP.progburn && (iter%ddP.progiter)==0 ) || iter+1>=ITER ) {
-      yap_message("\n%d, log_2(perp)=%lf,%lf", iter, 
+      yap_message(" %d\nlog_2(perp)=%lf,%lf", iter, 
 		  -M_LOG2E * likelihood()/ddN.NT, -M_LOG2E * thislp/thisNd);
       pctl_update(iter);
       if ( verbose && iter%10==0 )
 	yap_probs();
       if ( iter>0 && verbose>1 ) {
 	if ( ddN.tokens ) {
-	  tca_displaytopics(resstem,20,score);
+	  tca_displaytopics(resstem,topwords,score);
 	  displayed++;
 	}
       }
@@ -703,7 +721,7 @@ int main(int argc, char* argv[])
       }
     } else {
       yap_message(" %d", iter);
-      if ( verbose )  yap_message("\n");
+      if ( verbose>1)  yap_message("\n");
     }
   
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
@@ -721,7 +739,7 @@ int main(int argc, char* argv[])
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
     if ( ddN.tokens ) {
-       tca_displaytopics(resstem,20,score);
+       tca_displaytopics(resstem,topwords,score);
        displayed++;
     }
   }
