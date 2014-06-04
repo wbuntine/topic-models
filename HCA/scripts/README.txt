@@ -4,6 +4,8 @@ Scripts
 The main scripts come with their own man page so use the 
 option "--man" to get the manpage:
 e.g.,   ./cooc2pmi.pl --man
+Though for this to work, you must have Perl's "pod2usage" 
+programme installed  and the appearance isn't great!
 
 Generate PMI, NPMI or robust version of PMI from the output of
 of linkCoco (see DCA-Bags):

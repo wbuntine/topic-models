@@ -3,10 +3,11 @@
 STB_HOME := /home/wbuntine/
 
 ##  Linux versions
-#  add "-g" or "-O5 -DNDEBUG" or ....
+#         add "-g" or "-O5 -DNDEBUG" or ....
+#  Add "-DH_THREADS" to get multi-core version
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE 
+MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
 # MYDEBUG=-g
 #  add "-g" for debugging libraries
 MYLIB=

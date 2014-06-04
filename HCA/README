@@ -4,7 +4,7 @@ HCA is research software that does various versions of non-parametric topic
 models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, all with/without 
 burstiness modelling.  Various diagnostics, ``document completion'' testing 
 and coherence measurements with PMI are also supported.  The code
-runs on multi-core getting about 50% efficiency with 8 cores.
+runs on multi-core (depeing on your compiler) getting about 50% efficiency with 8 cores.
 
 The project home page and more details about the theory behind the software 
 can be found at:
@@ -22,21 +22,77 @@ even though its a small collection).
 Various scripts are provided "as is" with minor documention
 in "scripts/" directory.
 
+On the OSX, a Mac
+=================
+Currently, atomic operations (multi-core) only supported with the
+GNU compiler, gcc.
+You install gcc from macports and select ‘gcc as new default compiler’
+This can be done by using command 
+
+#  sudo port install gcc48(this is actually 4.8.2)
+#  port select --list gcc
+
+Then edit the top level Makefile to change "-O5" since apparantly gcc on
+the OSX doesn't support it the same.
+
 MAKING the PROGRAMME
 ====================
 There are no prerequisites.  Although in Windows you will
-need to compile with "gcc".
-
+need to compile with "gcc" and in OSX "gcc" is best supported.
 There is a simple Makefile in this directory currently configured
 to optimise the compiler for a Linux machine.  Edit the configuration
-if you have a Mac.
+if you have a Mac or Windows.  
+
+By default, multicore version is disabled.  This is because you should 
+get the single core version working and tested first, before
+getting the multi-core version.
 
 Then:
 	#   this builds the two libraries in "lib/" and "util/" and hca
 	make
-	#   if it works OK do a simple test, one of
-	make linux-test
-	make windows-test
+        #  run a simple test .... (modify executable for windows)
+        hca/hca -v -e data/ch /tmp/test
+        #  the last line should be a report such as:
+        #         log_2(train perp) = 11.06904
+        #  (where your value will vary a percent or so)
+
+BUILD for MULTICORE
+==================
+For multi-core/threading to work, we need to get atomic operations
+supported, which are part of the C++11 standard.
+
+Unfortunately, all recent C compilers seem to vary dramatically in 
+their implementation of atomic operations.   We have tested
+on Linux boxes only with GNU gcc 4.1.2, 4.8.0 and 4.8.2.  
+But we haven't fully tested 4.1.2.
+OSX runs with gcc but we're waiting on the new release of
+clang to get that working (we're not OSX experts but expecting
+better atomic ops support soon).  Windows works with gcc only.
+
+To get atomic operations working in a different compiler
+tool-chain, you will need to edit:
+	util/atomic.h   
+and you will have to create a new branch of the compiler
+conditionals there which test for the compiler version and then provide
+conversion macros for yours.  This should not be too
+difficult.  You could also send the main author
+(details below) your compiler details and he *may* be able to create
+a version for you, just not test it.
+PLEASE:   Work with us in supporting your compiler tool-chain
+          so we can get better coverage ;-)
+
+With the atomic operations working with your compiler, then
+edit the top level Makefile.
+Add the "-DH_THREADS" switch to the end of compiler options flags
+which is MYDEBUG, e.g.
+ MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
+
+Then make as before and test with no extra threads and 4 threads:
+        #  run a simple test .... (modify executable for windows)
+        hca/hca -v -e data/ch /tmp/test
+        hca/hca -v -e -q4 data/ch /tmp/test
+You should notice the speed difference.
+
 
 INSTALLATION
 ============
@@ -60,6 +116,22 @@ The documentation in "doc/" and the test data in "data/" should
 be used for reference.  The "scripts/" can be handy if you manage
 to figure them out!
 
+
 GETTING STARTED
 ===============
 Work through the examples in the documentation using the data in "data/"
+
+
+LICENSES
+========
+Most of the code is under MPL version 2.0.
+The lib/arms.c code comes from Wally Gilk's website without a clear
+license.  The lib/digamma.c code comes from Radford Neal's
+with a "free" license.
+
+
+AUTHOR CONTACT
+==============
+Please send bug reports, requests, queries and details of fixes
+and changes, such as util/atomic.h to:
+	Wray Buntine,  wray.buntine@monash.edu

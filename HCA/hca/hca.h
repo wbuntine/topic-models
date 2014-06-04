@@ -23,7 +23,7 @@
 #include "stats.h"
 #include "srng.h"
 
-#define HCA_VERSION "0.9"
+#define HCA_VERSION "0.5"
 
 #define MAXM 1000
 /* 
@@ -41,8 +41,9 @@
 /*
  *   Switch on to allow threading
  *   if off some vestiges remain but wont call threads
+ *  NB.  not usually done here, done in the Makefile
  */
-#define H_THREADS
+// #define H_THREADS
 
 /*
  *   define this to set up the cache in alphabasetopicprob()

@@ -15,7 +15,6 @@ my $dowin = 0;
 my $SIGMA = 0;
 
 # encoding pragmas follow any includes like "use"
-use encoding 'utf8';
 use open ':utf8';
 binmode STDIN, ":utf8";
 binmode STDERR, ":utf8";

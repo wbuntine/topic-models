@@ -23,6 +23,7 @@
 
 #include "yap.h"
 #include "util.h"
+extern int verbose;
 
 #define HASHPRIME 7919U
 #define REHASHPRIME 7883U
@@ -119,7 +120,8 @@ double report_pmi(char *topfile,   /* name of topics file */
     for (i = 0; i<topk && *buf; i++) {
       buf = strpbrk(buf," \t\n");    //   skip to next space
       if ( sscanf(buf, " %u", &j) <1 ) {
-	yap_message("Cannot read word %d in topic line %d from file '%s'\n", 
+	if ( verbose>2 ) 
+	    yap_message("Cannot read word %d in topic line %d from file '%s'\n", 
 		    i+1, lineno, topfile);
 	break;
       }

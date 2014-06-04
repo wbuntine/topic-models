@@ -29,8 +29,9 @@
  *   Switch on to allow threading
  *   if off some vestiges remain but wont call threads
  *   NB. some asserts must be off with threading due to optimisation
+ *   NB.  not usually done here, done in the Makefile
  */
-#define H_THREADS
+// #define H_THREADS
 
 /*
  *   when defined does traing of changes to a single m_evt
