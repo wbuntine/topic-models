@@ -9,9 +9,8 @@ use POSIX;
 use Getopt::Long;
 use Pod::Usage;
 
-my $ALPHA = 1.0;
+my $ALPHA = 0.0;
 my $donorm = 0;
-my $dowin = 0;
 my $SIGMA = 0;
 
 # encoding pragmas follow any includes like "use"
@@ -31,9 +30,7 @@ GetOptions(
 	   $SIGMA = $1;
     },
     'norm!'      =>  \$donorm,
-    'win!'       =>  \$dowin,
     'man'      => sub {pod2usage(-exitstatus => 0, -verbose => 2)},
-    'norm!'        => \$usenorm,
     'h|help'       => sub {pod2usage(1)},
 );
 
@@ -69,11 +66,7 @@ if ( /^-1\s-1\s([0-9\.]+)\s([0-9\.]+)/ ) {
 }
 while ( ($_=<C>) ) {
     if ( /^([0-9]+)\s+-1\s([0-9\.]+)\s([0-9\.]+)/ ) {
-	if ( $dowin ) {
-	    $cnt[$1] = $3+$ALPHA;
-	} else {
-	    $cnt[$1] = $2+$ALPHA;
-	}
+	$cnt[$1] = $3+$ALPHA;
 	$cnttot += $cnt[$1];
     }
 }
@@ -86,26 +79,26 @@ print STDERR "Reading $coocfile for PMI\n";
 open(C,"<$coocfile") or die "Cannot reopen input '$coocfile': $!";
 while ( ($_=<C>) ) {
     if ( /^([0-9]+)\s+([0-9]+)\s+([0-9\.]+)/ ) {
-	my $i1 = $1;
-	my $i2 = $2;
-	my $if = $3;
+	my $i1 = $1;   # word ind 1
+	my $i2 = $2;   # word ind 2
+	my $if = $3;   # #windows they are in together
 	if ( defined($cnt[$i1]) && defined($cnt[$i2]) ) {
 	    my $val = $if / $fullwin;
 	    my $norm = $val;
-	    $val /= ($cnt[$i1]/$cnttot)*($cnt[$i2]/$cnttot);
+	    $val /= ($cnt[$i1]/$fullwin)*($cnt[$i2]/$fullwin);
 	    if ( $SIGMA>0) {
 		#  shrink using +/- $SIGMA*sqrt() back to 1
 		if ( $val > 1 ) {
 		    $val = ($if - $SIGMA*sqrt($if)) / $fullwin;
-		    $val /= (($cnt[$i1]+$SIGMA*sqrt($cnt[$i1]))/$cnttot)
-			* (($cnt[$i2]+$SIGMA*sqrt($cnt[$i2]))/$cnttot);
+		    $val /= (($cnt[$i1]+$SIGMA*sqrt($cnt[$i1]))/$fullwin)
+			* (($cnt[$i2]+$SIGMA*sqrt($cnt[$i2]))/$fullwin);
 		    if ( $val< 1 ) {
 			$val = 1;
 		    } 
 		} else {
 		    $val = ($if + $SIGMA*sqrt($if)) / $fullwin;
-		    $val /= (($cnt[$i1]-$SIGMA*sqrt($cnt[$i1]))/$cnttot)
-			* (($cnt[$i2]-$SIGMA*sqrt($cnt[$i2]))/$cnttot);
+		    $val /= (($cnt[$i1]-$SIGMA*sqrt($cnt[$i1]))/$fullwin)
+			* (($cnt[$i2]-$SIGMA*sqrt($cnt[$i2]))/$fullwin);
 		    if ( $val> 1 ) {
 			$val = 1;
 		    } 
@@ -131,7 +124,7 @@ cooc2pmi.pl - convert ".cooc" file to ".pmi" to stdout.
 
 =head1 SYNOPSIS
     
-cooc2pmi.pl [--alpha A --sigma S --norm --win] COOCFILE STEM > PMIFILE
+cooc2pmi.pl [--alpha A --sigma S --norm] COOCFILE STEM > PMIFILE
 
 Options:
 
@@ -142,8 +135,6 @@ Options:
     --man              print man page and exit.
     --norm             use the newer normalised PMI score
     --sigma S          shrink counts back to independence by this many
-    --win              for single word probs, use window probability,
-                        not the default occurence probability
 
 =head1 DESCRIPTION
 
@@ -156,9 +147,10 @@ I<linkCoco> from the DCA-Bags release.
 =head1 SEE ALSO
 
 I<linkCoco>(1).
+I<hca>(1).
 
-DCA-bags and ddca websites are inside
-F<http://forge.nicta.com.au>
+I<text-bags> and 
+I<topic-models> websites are GitHub.
 
 =head1 AUTHOR
 
@@ -166,7 +158,7 @@ Wray Buntine
 
 =head1 COPYRIGHT AND LICENSE
 
-Copyright (C) 2011-2013 Wray Buntine
+Copyright (C) 2011-2014 Wray Buntine
 
 This library is free software; you can redistribute it and/or modify
 it under the same terms as Perl itself, either Perl version 5.8.4 or,
