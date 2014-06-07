@@ -75,7 +75,7 @@ static D_bag_t *data_read_ldac(char *stem) {
   wname = yap_makename(stem, ".ldac");
   fp = fopen(wname,"r");
   if ( !fp )
-    yap_sysquit("Cannot open txtbag file '%s'\n", wname);
+    yap_sysquit("Cannot open ldac file '%s'\n", wname);
   /*
    *   first run through to get dims
    */
@@ -190,6 +190,8 @@ static D_bag_t *data_read_bag(char *stem) {
       if ( fscanf(fp," %u %u", &w, &c) != 2 )
 	yap_sysquit("Cannot read %n-th data line from '%s'\n", i, wname);
       N += c;
+      if ( w>=win )
+        yap_quit("Txtbag file '%s' has word index too large\n", wname);
     }
   }
   rewind(fp);

@@ -8,7 +8,7 @@ STB_HOME := /home/wbuntine/
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
 MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
-# MYDEBUG=-g
+# MYDEBUG=-g 
 #  add "-g" for debugging libraries
 MYLIB=
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)

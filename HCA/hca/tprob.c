@@ -24,6 +24,8 @@
 #include "yap.h" 
 #include "diag.h" 
 
+extern int verbose;
+
 /*
  *    report sparsity for words in map
  */
@@ -87,8 +89,67 @@ void tprob_report(char *resstem, double epsilon) {
     fprintf(fp,"\n");
   }
   fclose(fp);
+  if ( verbose )
+    yap_message("Written test theta estimate as tagged sparse matrix to '%s'\n",
+                fname);
   free(fname);
 }
+
+void tprob_load(char *resstem) {
+  FILE *fp;
+  int n, k;
+  char *buf;
+  int bufsize = 20*ddN.T+10;
+  char *fname;
+  buf = malloc(bufsize+1);
+  ddP.theta = fmat(ddN.D-ddN.DT,ddN.T);
+  if ( !ddP.theta || !buf)
+    yap_quit("Out of memory in tprob_load()\n");
+  if ( ddP.teststem )
+    fname = yap_makename(ddP.teststem,".testprob");
+  else
+    fname = yap_makename(resstem,".testprob");
+  fp = fopen(fname,"r");
+  if ( !fp )
+    yap_sysquit("Cannot open doc-topic input file '%s'\n", fname);
+  for (n=0; n<ddN.D-ddN.DT; n++) {
+    float f;
+    int nin;
+    char *bufptr;
+    if ( fgets(&buf[0],bufsize,fp)==NULL )
+      yap_sysquit("Cannot read line %d from '%s'\n", i+1, fname);
+    if ( ! iscntrl(buf[strlen(&buf[0])-1]) )
+      /*   line too long  */
+      yap_quit("Cannot parse line %d from '%s', too long\n", i, fname);
+    bufptr = &buf[0];
+    if ( sscanf(bufptr,"%d", &nin)!=1 ) 
+      yap_quit("Cannot read document %d from input file '%s'\n", n, fname);
+    if ( n!=nin ) 
+      yap_quit("Bad line %d!=%d from input file '%s'\n", n, nin, fname);
+    bufptr = strchr(bufptr,':');
+    if ( !bufptr ) 
+      yap_quit("Bad line %d from input file '%s'\n", n, fname);
+    bufptr = strrchr(bufptr,' ');
+    if ( !bufptr ) 
+      yap_quit("Bad line %d from input file '%s'\n", n, fname);
+    bufptr ++;
+    while ( sscanf(bufptr,"%d:%f", &nin, &f)==2 ) {
+      fmat[n][nin] = f;
+      bufptr = strchr(bufptr,' ');
+      if ( !bufptr ) 
+        break;
+      bufptr = strrchr(bufptr,' ');
+      if ( !bufptr ) 
+        yap_quit("Bad line %d from input file '%s'\n", n, fname);
+      bufptr ++;
+    }
+  }
+  fclose(fp);
+  free(fname);
+  free(buf);
+}
+
+
 
 void prob_report(char *resstem, double epsilon) {
   FILE *fp;
@@ -118,6 +179,9 @@ void prob_report(char *resstem, double epsilon) {
     fprintf(fp,"\n");
   }
   fclose(fp);
+  if ( verbose )
+    yap_message("Written training theta estimate as tagged sparse matrix to '%s'\n",
+                fname);
   free(fname);
 }
 

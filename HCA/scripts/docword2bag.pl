@@ -64,6 +64,7 @@ sub num() {  return $a-$b; }
 print STDERR "Done documents:";
 while ( ($_=<DW>) ) {
   ($d,$f,$c) = split();
+  $f--;
   if ( $d==$doc+1 )  {
       if ( $doc>0 && ($doc % 1000)==0 ) {
 	  print STDERR "$doc, ";
@@ -87,7 +88,7 @@ while ( ($_=<DW>) ) {
       $lf = 0;
       $lc = 0;
   }
-  if ( $f<=0 || $f> $WORDS ) {
+  if ( $f<0 || $f> $WORDS ) {
    die "Bad feature in: $_";
   }
   if ( $c<=0 ) {
@@ -150,6 +151,8 @@ Expects to find vocab.STEM.txt and docword.STEM.txt or docword.STEM.txt.gz
 in the UCI data format in the current directory.  
 These are converted to the input required for
 DCA's ".txtbag" format or the LDAC format.
+Note docword format has word indices offset by 1, so we have to
+convert to offset by 0.
 
 This a slow Perl script, so conversion is not fast.
 

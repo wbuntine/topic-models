@@ -183,6 +183,7 @@ void pctl_init() {
  
   ddP.hold_every = 0;
   ddP.hold_dict = 0;
+  ddP.hold_all = 0;
   ddP.hold_fraction = 0;
   ddP.docstats = NULL;
 }
@@ -712,7 +713,7 @@ void pctl_sample(int iter, int procs) {
  *    otherwise compute hold out
  */
 int pctl_hold(int i) {
-  if ( i>=ddN.NT ) { 
+  if ( ddP.hold_all || i>=ddN.NT ) { 
     int d = ddD.d[i];
     int starti = ddD.NdTcum[d];
     if ( ddP.hold_dict ) {

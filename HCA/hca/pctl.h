@@ -38,8 +38,9 @@
  */
 typedef struct D_pars_s {
   /*
-   *  sometimes we fix \phi or \alpha during testing (or training)
+   *  sometimes we fix \phi, \theta or \alpha during testing (or training)
    */
+  float **theta;
   float **phi;
   float *fixalpha;
   /*
@@ -116,6 +117,7 @@ typedef struct D_pars_s {
   double hold_fraction;
   int    hold_dict;
   int    hold_every;
+  int    hold_all;
 } D_pars_t;
 
 #define PCTL_BURSTY()          (ddP.bdk!=NULL)

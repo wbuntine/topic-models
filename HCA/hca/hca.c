@@ -160,6 +160,7 @@ static void usage() {
           "                  #  load training statistics previously saved\n"
 	  "   -r alpha       #  keyword 'alpha' means load '.alpha' file\n"
 	  "   -r phi         #  keyword 'phi' means load '.phi' file\n"
+	  "   -r tprob       #  keyword 'tprob' means load '.tprob' file\n"
 	  "   -r hdp         #  keyword 'hdp' means load saved data from HDP,\n"
           "                  #    from 'mode-word-assignments.dat' file\n"
           "   -s seed        #  random number seed, default is a time value\n"
@@ -175,6 +176,8 @@ static void usage() {
           "                  #  HOLD=dict, hold out words w with (w%%arg)==0\n"
           "                  #  HOLD=doc, hold out at place l with (l%%arg)==0\n"
           "                  #  HOLD=fract, hold out last fract words in doc\n"
+	  "   -h all         #  no test set, done on training set\n"
+          "                  #  use another -h option to give style\n"
           "   -l DIAG,cycles,start #  cycles for runtime calculations\n"
 	  "                  #  DIAG is one of 'sp','theta','testprob','prog',\n"
 	  "                  #  'phi', 'alpha'\n"
@@ -316,7 +319,9 @@ int main(int argc, char* argv[])
 
   enum GibbsType fix_hold = GibbsNone;
   char *stem;
+#ifdef QUERY
   int qparts=0, this_qpart=0;
+#endif
   char *resstem;
   char *betafile = NULL;
   int noerrorlog = 0;
@@ -346,6 +351,7 @@ int main(int argc, char* argv[])
   int nosave = 0;
   int doclass = 0;
   int loadhdp = 0;
+  int loadtheta = 0;
   int loadphi = 0;
   int loadalpha = 0;
   int nosample = 0;
@@ -483,7 +489,9 @@ int main(int argc, char* argv[])
 	fix_hold = GibbsHold;
 	if ( !optarg  )
 	  yap_quit("Need a valid 'h' argument\n");
-        if ( strncmp(optarg,"dict,",5)==0 ) {
+        if ( strncmp(optarg,"all,",4)==0 ) {
+          ddP.hold_all = 1;
+        } else if ( strncmp(optarg,"dict,",5)==0 ) {
           if ( sscanf(&optarg[5],"%d",&ddP.hold_dict)<1 || ddP.hold_dict<2 )
             yap_quit("Need a valid 'hdict' argument\n");
         } else if ( strncmp(optarg,"fract,",6)==0 ) {
@@ -613,6 +621,8 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'r' argument\n");
       if ( strcmp(optarg,"alpha")==0 ) {
 	loadalpha++;
+      } else if ( strcmp(optarg,"theta")==0 ) {
+	loadtheta++;
       } else if ( strcmp(optarg,"phi")==0 ) {
 	loadphi++;
       } else if ( strcmp(optarg,"hdp")==0 ) {
@@ -787,6 +797,8 @@ int main(int argc, char* argv[])
   assert(restart || ITER>0);
   if ( loadphi && ddP.phiiter>0 )
     yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
+  if ( loadtheta && ddP.probiter>0 )
+    yap_quit("Options '-l theta,...' and '-r theta' incompatible\n");
   if ( loadalpha && ddP.alphaiter>0 )
     yap_quit("Options '-l alpha,...' and '-r alpha' incompatible\n");
 
@@ -967,7 +979,7 @@ int main(int argc, char* argv[])
     checkpoint = 0;
     ddP.progiter = 1000;
     nosave= 1;
-    // goto FINISH;
+    goto FINISH;
   }
 #endif
 
@@ -1086,7 +1098,7 @@ int main(int argc, char* argv[])
         parg[pro].dots=dots;
         parg[pro].processid=pro;
         parg[pro].procs=procs;
-#ifdef NO_THREADS
+#ifndef H_THREADS
         testing_p(&parg[pro]);
 #else
         if ( procs==1 )
@@ -1096,7 +1108,7 @@ int main(int argc, char* argv[])
         }
 #endif
       }
-#ifndef NO_THREADS
+#ifdef H_THREADS
       if ( procs>1 ) {
           //waiting for threads to finish
           for(pro = 0; pro < procs; pro++){
@@ -1251,8 +1263,9 @@ int main(int argc, char* argv[])
    */
   hca_report(resstem, stem, ITER, procs, fix_hold, (dopmi&&displayed>0)?1:0, 
              showlike, nosave);
-
+#ifdef QUERY
  FINISH:
+#endif
   /*
    *  free
    */

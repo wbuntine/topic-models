@@ -77,6 +77,7 @@ if ( $TRAIN>$N-2*$E ) {
     exit(1);
 }
 
+
 # make a hash giving the training set
 my @rlist = List::Util::shuffle(0 .. ($N-1));
 my %train = ();
@@ -88,13 +89,17 @@ for (my $i=0; $i<$TRAIN; $i++) {
 #  build training part
 
 if ( $ldac ) {
+    print STDERR "Using '$stem1.ldac'\n";
     open(I,"<$stem1.ldac");
     open(O,">$stem2.ldac");
 } else {
+    print STDERR "Using '$stem1.txtbag'\n";
     open(I,"<$stem1.txtbag");
     open(O,">$stem2.txtbag");
-    print O <I>;
-    print O <I>;
+    $_ = <I>;
+    print O $_;
+    $_ = <I>;
+    print O $_;
 }
 open(E,">$stem2.epoch");
 
@@ -104,9 +109,14 @@ for (my $e = 0; $e<$E; $e++) {
 }
 for (my $i=0; $i<$N; $i++) {
     my $line = <I>;
-    if ( $train{$i} ) {
+    if ( !defined($line) ) {
+	print STDERR "Ran out of file at line $i/$N\n";
+	$i = $N;
+    } else {
+      if ( $train{$i} ) {
 	$eout[$epoch[$i]]++;
 	print O $line;
+      }
     }
 }
 print E "$E\n";
@@ -120,9 +130,14 @@ for (my $e = 0; $e<$E; $e++) {
 }
 for (my $i=0; $i<$N; $i++) {
     my $line = <I>;
-    if ( !defined($train{$i}) ) {
+    if ( !defined($line) ) {
+	print STDERR "Ran out of file at line $i/$N\n";
+	$i = $N;
+    } else {
+      if ( !defined($train{$i}) ) {
 	$eout[$epoch[$i]]++;
 	print O $line;
+      }
     }
 }
 print E "$E\n";

@@ -81,7 +81,7 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
       if (sampleindicator(ddS.C_eDt[ee][t]+sec_part,ddS.cp_et[ee][t],&ud)) 
 	return 1;
       // equality condition means decrement is forced back regardless
-      if ( (ee>e-ddP.back || ddS.C_eDt[ee][t]+sec_part==ddS.cp_et[ee][t])
+      if ( (ee>e-ddP.back || ddS.C_eDt[ee][t]+sec_part<=ddS.cp_et[ee][t])
 	   && ud) {
 	(*rd)++;
       } else {
@@ -116,7 +116,7 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
 			ddS.s_evt[ee][v][t],&uw)) 
       return 1;
     // equality condition means decrement is forced back regardless
-    if ( (ee>e-ddP.back || ddS.m_evt[ee][v][t]+sec_part==ddS.s_evt[ee][v][t])
+    if ( (ee>e-ddP.back || ddS.m_evt[ee][v][t]+sec_part<=ddS.s_evt[ee][v][t])
 	&& uw) {
       (*rw)++;
     } else {
@@ -125,6 +125,7 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
   }
   return 0;
 }
+
 /*
  *   remove topic, so update all statistics;
  *   return non-zero if fails due to constraints
@@ -160,62 +161,68 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
     misi_decr(dD, i, mi, t, wid);
 
   /*
-   *    remove from doc stats
+   *    remove from doc stats ...
    */
-  {
+  if ( rd>=0 ) {
+    /* 
+     *   subtract affect of table indicator for topic PYP;
+     *   when multicore, need to maintain consistency of constraints
+     */
     int n = ddS.n_dt[did][t];
     assert(n>0);
-    if ( n==1 ) {
-      /*
-       *   chains going to zero work up
-       */
+    if ( 1 && n==1 ) {
+      /*  chains going to zero, work up  */
+      // ??????????  wrong ... its ddS.c_dt[d][t] we should worry about!
       ddS.n_dt[did][t] = 0;
       ddS.N_dT[did]--;
-    }
-    if ( rd>=0 ) {
-      /*
-       *    subtract affect of table indicator for topic PYP
-       */
       unfix_tableidtopic(did,t,rd);
-    }
-    if ( n>1 ) {
-     /*
-      *   chains not going to zero work down
-      */
+    } else {
+     /*  chains not going to zero, work down  */
+      unfix_tableidtopic(did,t,rd);
       ddS.n_dt[did][t] = n-1;
       ddS.N_dT[did]--;
     }
+  } else {
+    ddS.n_dt[did][t]--;
+    ddS.N_dT[did]--;
   }
-
+  
   /*
-   *  remove from topicXword stats
+   *  remove from topicXword stats;
+   *  note wid<0 means burstiness caught case
    */
   if ( wid>=0 ) {
-    int decr = 0;
-    if ( e==ddN.E-1 || ddS.s_evt[e+1][wid][t]==0 ) {
-      int one = 1;
-      /*  no data inherited from later epoch */
-      if ( atomic_decr_val(ddS.m_evt[e][wid][t],one) ) {
-	/*   m_evt[e][wid][t] was decremented to zero */
-	if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
-	  yap_message("Whoops atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40\n");
-	decr = 1;
-      }
-    }      
     if ( rw>=1 ) {
+      int decr = 0;
+      /*
+       *  need to safely catch with atomic ops if it goes to zero
+       */
+      if ( e==ddN.E-1 || ddS.s_evt[e+1][wid][t]==0 ) {
+        int one = 1;
+        /*  no data inherited from later epoch */
+        if ( atomic_decr_val(ddS.m_evt[e][wid][t],one) ) {
+          /*   m_evt[e][wid][t] was decremented to zero */
+          atomic_decr(ddS.M_eVt[e][t]);
+          decr = 1;
+        }
+      }
       /*
        *    subtract affect of table indicator for word PYP
        */
       unfix_tableidword(e,wid,t,rw);
-    }
-    if ( decr==0 ) {
+      if ( decr==0 ) {
+        /*  not decremented to zero above */
 #ifndef H_THREADS
-      assert(ddS.m_evt[e][wid][t]>0);
+        assert(ddS.m_evt[e][wid][t]>0);
 #endif
-      if ( atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40 ) 
-	yap_message("Whoops atomic_decr(ddS.m_evt[e][wid][t])>=UINT32_MAX-40\n");
-      if ( atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40 ) 
-	yap_message("Whoops atomic_decr(ddS.M_eVt[e][t])>=UINT32_MAX-40\n");
+        /*  safe because the count is uniquely associated with this word */
+        atomic_decr(ddS.m_evt[e][wid][t]);
+        atomic_decr(ddS.M_eVt[e][t]);
+      }
+    } else {
+      /*  safe because the count is uniquely associated with this word */
+      atomic_decr(ddS.m_evt[e][wid][t]);
+      atomic_decr(ddS.M_eVt[e][t]);
     }
   }
   return 0;
@@ -235,28 +242,71 @@ void update_topic(int i, int did, int wid, int t, int mi,
    */
   rd = doc_side_ind(did, t);
   assert(rd>=-1 && rd<=e+1);
-  ddS.N_dT[did]++;
-  ddS.n_dt[did][t]++;
+  
   if ( PCTL_BURSTY() ) 
     // set wid negative if the word is bursty
     wid = misi_incr(dD, i, mi, t, wid, dtip);
 
   if ( rd>=0 ) {
-    fix_tableidtopic(did, t, rd);
+    /*
+     *    increment affect of table indicator for topic PYP;
+     *    when multicore, need to maintain consistency of constraints
+     */
+    int n = ddS.n_dt[did][t];
+    if ( 0 && n==0 ) {
+      /*  ripple to one, so go down chain */
+      fix_tableidtopic(did, t, rd);
+      ddS.N_dT[did]++;
+      ddS.n_dt[did][t] = 1;
+    } else {
+      /*  increment up chain */
+      ddS.N_dT[did]++;
+      ddS.n_dt[did][t] = n+1;
+      fix_tableidtopic(did, t, rd);
+    }
+  } else {
+    ddS.N_dT[did]++;
+    ddS.n_dt[did][t]++;
   }
+
   /*
    *   fix up topicXword side
    */
   if ( wid>=0 ) {
     rw = word_side_ind(e, wid, t);
     assert(rw>=0 && rw<=e+1);
-    atomic_incr(ddS.M_eVt[e][t]);
-    atomic_incr(ddS.m_evt[e][wid][t]);
     if ( rw>0 ) {
+      /*
+       *    subtract affect of table indicator for word PYP;
+       *    when multicore, need to maintain consistency of constraints
+       */
+      int zero = 0;
+      int incr = 0;
+      if ( atomic_incr_val(ddS.m_evt[e][wid][t],zero) ) {
+        if ( 1 ) {
+          atomic_incr(ddS.M_eVt[e][t]);
+          incr = 1;
+        } else {
+          atomic_decr(ddS.m_evt[e][wid][t]);
+        }
+        /*  cancel increment and do afterwards */
+      } else {
+        atomic_incr(ddS.M_eVt[e][t]);
+        atomic_incr(ddS.m_evt[e][wid][t]);
+        incr = 1;
+      }
       /*
        *  we have a new table for the word matrix
        */
       fix_tableidword(e,wid,t,rw);
+      if ( !incr ) {
+        atomic_incr(ddS.M_eVt[e][t]);
+        atomic_incr(ddS.m_evt[e][wid][t]);
+      }
+    } else {
+      /*  simple case, order doesn't matter  */
+      atomic_incr(ddS.M_eVt[e][t]);
+      atomic_incr(ddS.m_evt[e][wid][t]);
     }
   }
 #ifdef IND_STATS
