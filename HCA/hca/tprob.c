@@ -13,6 +13,7 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -97,7 +98,7 @@ void tprob_report(char *resstem, double epsilon) {
 
 void tprob_load(char *resstem) {
   FILE *fp;
-  int n, k;
+  int n;
   char *buf;
   int bufsize = 20*ddN.T+10;
   char *fname;
@@ -117,30 +118,30 @@ void tprob_load(char *resstem) {
     int nin;
     char *bufptr;
     if ( fgets(&buf[0],bufsize,fp)==NULL )
-      yap_sysquit("Cannot read line %d from '%s'\n", i+1, fname);
+      yap_sysquit("Cannot read line %d from '%s'\n", n+1, fname);
     if ( ! iscntrl(buf[strlen(&buf[0])-1]) )
       /*   line too long  */
-      yap_quit("Cannot parse line %d from '%s', too long\n", i, fname);
+      yap_quit("Cannot parse line %d from '%s', too long\n", n+1, fname);
     bufptr = &buf[0];
     if ( sscanf(bufptr,"%d", &nin)!=1 ) 
-      yap_quit("Cannot read document %d from input file '%s'\n", n, fname);
+      yap_quit("Cannot read line %d from input file '%s'\n", n+1, fname);
     if ( n!=nin ) 
-      yap_quit("Bad line %d!=%d from input file '%s'\n", n, nin, fname);
+      yap_quit("Bad doc %d!=%d from input file '%s'\n", n, nin, fname);
     bufptr = strchr(bufptr,':');
     if ( !bufptr ) 
-      yap_quit("Bad line %d from input file '%s'\n", n, fname);
+      yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
     bufptr = strrchr(bufptr,' ');
     if ( !bufptr ) 
-      yap_quit("Bad line %d from input file '%s'\n", n, fname);
+      yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
     bufptr ++;
     while ( sscanf(bufptr,"%d:%f", &nin, &f)==2 ) {
-      fmat[n][nin] = f;
+      ddP.theta[n][nin] = f;
       bufptr = strchr(bufptr,' ');
       if ( !bufptr ) 
         break;
       bufptr = strrchr(bufptr,' ');
       if ( !bufptr ) 
-        yap_quit("Bad line %d from input file '%s'\n", n, fname);
+        yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
       bufptr ++;
     }
   }

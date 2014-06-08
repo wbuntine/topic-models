@@ -880,6 +880,12 @@ int main(int argc, char* argv[])
       alpha_load(resstem);
     }
   } 
+  if ( loadtheta ) {
+    tprob_load(resstem);
+    fprintf(stderr,"theta[3][30] = %f\n", ddP.theta[3][30]);
+    fprintf(stderr,"theta[6][49] = %f\n", ddP.theta[6][49]);
+    exit(0);
+  }
   data_alloc();
   if ( ddP.phiiter>0 )
     phi_init(resstem);
