@@ -92,6 +92,6 @@ void tprob_null();
 void tprob_free();
 void tprob_report(char *resstem, double epsilon);
 void prob_report(char *resstem, double epsilon);
-void tprob_load(char *resstem);
+void prob_load(char *resstem, char *suff, float **mat);
 
 #endif

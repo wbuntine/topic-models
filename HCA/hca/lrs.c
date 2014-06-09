@@ -195,7 +195,8 @@ static void lp_test_ML_one(double *lik, int *totw,
   for(i=StartTestDoc; i<EndTestDoc; i+=procs) {
     double hmean = -1e30;
     int  thisw =  add_doc(i, fix);
-    if ( thisw<=1 || (fix==GibbsHold && thisw>=ddD.NdT[i]-1) ) {
+    if ( ddP.hold_all==0 && 
+	 (thisw<=1 || (fix==GibbsHold && thisw>=ddD.NdT[i]-1) ) ) {
 #ifdef TRACE_WT
       yap_message("remove_doc(d=%d,N=%d,T=%d) before continue\n",
 		  i, (int)ddS.Nwt[TR_W][TR_T],(int)ddS.Twt[TR_W][TR_T]);

@@ -59,6 +59,7 @@ void pctl_init() {
   ddP.teststem = NULL;
   ddP.training = 0;
   ddP.memory = 0;
+  ddP.theta = NULL;
   ddP.phi = NULL;
   ddP.fixalpha = NULL;
   for (par=0; par<=ParBeta; par++) {
@@ -441,7 +442,7 @@ void pctl_fix(char *betafile, int ITER) {
       ddP.lrsburn = 1;
   } else
     ddP.lrsburn = 0;
-  if ( ddP.mltiter>0 ) {
+  if ( ddP.mltiter>0 && ddP.hold_all==0 ) {
     if ( ddP.mltburn>=ddP.mltiter )
       ddP.mltiter = ddP.mltburn+1;
     if ( ddP.mltburn<1 )
@@ -713,7 +714,9 @@ void pctl_sample(int iter, int procs) {
  *    otherwise compute hold out
  */
 int pctl_hold(int i) {
-  if ( ddP.hold_all || i>=ddN.NT ) { 
+  if ( ddP.hold_all )
+    return 1;
+  if ( i>=ddN.NT ) { 
     int d = ddD.d[i];
     int starti = ddD.NdTcum[d];
     if ( ddP.hold_dict ) {
@@ -809,6 +812,9 @@ void pctl_free() {
     free(ddP.bdk);
   if ( ddP.phi ) {
     free(ddP.phi[0]); free(ddP.phi);
+  }
+  if ( ddP.theta ) {
+    free(ddP.theta[0]); free(ddP.theta);
   }
   if ( ddP.fixalpha ) {
     free(ddP.fixalpha);

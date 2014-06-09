@@ -177,7 +177,6 @@ static void usage() {
           "                  #  HOLD=doc, hold out at place l with (l%%arg)==0\n"
           "                  #  HOLD=fract, hold out last fract words in doc\n"
 	  "   -h all         #  no test set, done on training set\n"
-          "                  #  use another -h option to give style\n"
           "   -l DIAG,cycles,start #  cycles for runtime calculations\n"
 	  "                  #  DIAG is one of 'sp','theta','testprob','prog',\n"
 	  "                  #  'phi', 'alpha'\n"
@@ -489,8 +488,10 @@ int main(int argc, char* argv[])
 	fix_hold = GibbsHold;
 	if ( !optarg  )
 	  yap_quit("Need a valid 'h' argument\n");
-        if ( strncmp(optarg,"all,",4)==0 ) {
+        if ( strcmp(optarg,"all")==0 ) {
           ddP.hold_all = 1;
+	  ddP.mltburn = 0;
+	  ddP.mltiter = 1;
         } else if ( strncmp(optarg,"dict,",5)==0 ) {
           if ( sscanf(&optarg[5],"%d",&ddP.hold_dict)<1 || ddP.hold_dict<2 )
             yap_quit("Need a valid 'hdict' argument\n");
@@ -669,11 +670,13 @@ int main(int argc, char* argv[])
 	char *tname = data_name(optarg,data);
 	FILE *fp = fopen(tname,"r");
 	if ( fp==NULL ) {
+	  free(tname);
 	  tname = data_name(optarg,testdata);
 	  fp = fopen(tname,"r");
         } else {
 	  testdata = data;
         }
+	free(tname);
 	if ( fp!=NULL ) {
 	  /*  its a valid test filename */
           ddP.teststem = optarg;
@@ -881,10 +884,9 @@ int main(int argc, char* argv[])
     }
   } 
   if ( loadtheta ) {
-    tprob_load(resstem);
-    fprintf(stderr,"theta[3][30] = %f\n", ddP.theta[3][30]);
-    fprintf(stderr,"theta[6][49] = %f\n", ddP.theta[6][49]);
-    exit(0);
+    ddP.theta = fmat(ddN.D,ddN.T);
+    prob_load(resstem,".theta",ddP.theta);
+    prob_load(resstem,".testprob",&ddP.theta[ddN.DT]);
   }
   data_alloc();
   if ( ddP.phiiter>0 )

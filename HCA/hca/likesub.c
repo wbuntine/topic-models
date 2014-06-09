@@ -238,6 +238,8 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
  *   only used in estimation
  */
 double topicprob(int d, int t, int Ttot) {
+  if ( ddP.theta ) 
+    return ddP.theta[d][t];
   if ( !ddP.PYalpha ) 
     return ((double)ddS.Ndt[d][t]+ddP.alpha)/((double)ddS.NdT[d]+ddN.T*ddP.alpha);
   if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL ) {

@@ -57,12 +57,14 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
       if ( !fp )
         yap_sysquit("Cannot open output '%s' file:", fname);
     }
-    if ( !showlike )
+    if ( ddP.hold_all==0 ) {
+      if ( !showlike )
 	scale = -M_LOG2E /ddN.NT;
-    logprob = likelihood();
-    if ( fp )
-      fprintf(fp, "logperptrain = %lf\n", scale * logprob);
-    yap_message("log_2(train perp) = %lf\n", scale * logprob);
+      logprob = likelihood();
+      if ( fp )
+	fprintf(fp, "logperptrain = %lf\n", scale * logprob);
+      yap_message("log_2(train perp) = %lf\n", scale * logprob);    
+    }
     if ( ddN.TEST>0 ) { 
 #ifdef EXPERIMENTAL
       if ( ddP.lrsiter>0 ) {

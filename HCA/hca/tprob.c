@@ -96,24 +96,20 @@ void tprob_report(char *resstem, double epsilon) {
   free(fname);
 }
 
-void tprob_load(char *resstem) {
+void prob_load(char *resstem, char *suff, float **mat) {
   FILE *fp;
   int n;
   char *buf;
   int bufsize = 20*ddN.T+10;
   char *fname;
   buf = malloc(bufsize+1);
-  ddP.theta = fmat(ddN.D-ddN.DT,ddN.T);
   if ( !ddP.theta || !buf)
     yap_quit("Out of memory in tprob_load()\n");
-  if ( ddP.teststem )
-    fname = yap_makename(ddP.teststem,".testprob");
-  else
-    fname = yap_makename(resstem,".testprob");
+  fname = yap_makename(resstem,suff);
   fp = fopen(fname,"r");
   if ( !fp )
     yap_sysquit("Cannot open doc-topic input file '%s'\n", fname);
-  for (n=0; n<ddN.D-ddN.DT; n++) {
+  for (n=0; n<ddN.DT; n++) {
     float f;
     int nin;
     char *bufptr;
@@ -130,19 +126,11 @@ void tprob_load(char *resstem) {
     bufptr = strchr(bufptr,':');
     if ( !bufptr ) 
       yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
-    bufptr = strrchr(bufptr,' ');
-    if ( !bufptr ) 
-      yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
-    bufptr ++;
-    while ( sscanf(bufptr,"%d:%f", &nin, &f)==2 ) {
-      ddP.theta[n][nin] = f;
+    bufptr = strchr(bufptr,' ');
+    while ( bufptr && sscanf(bufptr," %d:%f", &nin, &f)==2 ) {
+      mat[n][nin] = f;
+      bufptr = strchr(bufptr,':');
       bufptr = strchr(bufptr,' ');
-      if ( !bufptr ) 
-        break;
-      bufptr = strrchr(bufptr,' ');
-      if ( !bufptr ) 
-        yap_quit("Bad line %d from input file '%s'\n", n+1, fname);
-      bufptr ++;
     }
   }
   fclose(fp);
