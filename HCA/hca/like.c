@@ -81,6 +81,25 @@ double likelihood_DIRalpha() {
   return likelihood;
 }
 
+double likelihood_DIRalphavec() {
+  /*
+   *   Dirichlet for topics
+   */
+  int i,t;
+  double likelihood = 0;
+  assert(ddP.apar==0);
+  for (i=0; i<ddN.DT; i++) {
+    for (t=0; t<ddN.T; t++) {
+      if ( ddS.Ndt[i][t]>0 )
+      likelihood += gammadiff((int)ddS.Ndt[i][t], 
+                              ddP.bpar*ddP.fixalpha[t], 0.0);
+    }
+    likelihood -= gammadiff((int)ddS.NdT[i], ddP.bpar, 0.0);
+  }
+  yap_infinite(likelihood);
+  return likelihood;
+}
+
 double likelihood_PYalpha() {
   int i,t;
   double likelihood = 0;
@@ -134,6 +153,21 @@ double likelihood_PYalpha_PDP() {
   for (t=0; t<ddN.T; t++) {
     if ( ddS.TDt[t]>0 ) {
       likelihood += ddS.TDt[t]*log(1.0/ddN.T);
+    }
+  }      
+  yap_infinite(likelihood);
+  return likelihood;
+}
+double likelihood_PYalpha_fixalpha() {
+  /*
+   *    the constant prior with a vector
+   */
+  int t;
+  double likelihood = 0;
+  for (t=0; t<ddN.T; t++) {
+    if ( ddS.TDt[t]>0 ) {
+      assert(ddP.fixalpha[t]>0);
+      likelihood += ddS.TDt[t]*log(ddP.fixalpha[t]);
     }
   }      
   yap_infinite(likelihood);
@@ -326,19 +360,25 @@ double likelihood() {
    *  doc X topic part
    */
   if ( ddP.PYalpha ) {
-    likelihood += likelihood_PYalpha();
-    /*
-     *  term for root node
-     */
-    if ( ddP.PYalpha==H_PDP )
-      likelihood += likelihood_PYalpha_PDP();
-    else if ( ddP.PYalpha==H_HDP ) 
-      likelihood += likelihood_PYalpha_HDP();
-    else 
-      likelihood += likelihood_PYalpha_HPDD();
+    if ( PCTL_NOALPHASTATS() ) {
+      likelihood += likelihood_DIRalphavec();
+    } else {
+      likelihood += likelihood_PYalpha();
+      /*
+       *  term for root node
+       */
+      if ( ddP.fixalpha )
+        likelihood += likelihood_PYalpha_fixalpha();
+      else if ( ddP.PYalpha==H_PDP )
+        likelihood += likelihood_PYalpha_PDP();
+      else if ( ddP.PYalpha==H_HDP ) 
+        likelihood += likelihood_PYalpha_HDP();
+      else 
+        likelihood += likelihood_PYalpha_HPDD();
+    }
   } else 
     likelihood += likelihood_DIRalpha();
-
+  
   /*
    *  word X topic part
    */

@@ -236,6 +236,9 @@ void phi_load(char *resstem) {
 #endif
 }
 
+/*
+ *    load from binary file .alpha into ddP.fixalpha[]
+ */
 void alpha_load(char *resstem) {
   uint32_t cnt, dim;
   FILE *fp=NULL;

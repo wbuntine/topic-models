@@ -121,6 +121,7 @@ typedef struct D_pars_s {
 } D_pars_t;
 
 #define PCTL_BURSTY()          (ddP.bdk!=NULL)
+#define PCTL_NOALPHASTATS()          (ddP.fixalpha && ddP.apar==0)
 
 /*
  *  hyperparameters control

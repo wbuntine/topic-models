@@ -730,8 +730,8 @@ int main(int argc, char* argv[])
   if ( dopmi )
     load_vocab = 1;
 
-  if ( loadalpha && loadphi==0 ) 
-    yap_quit("If using -ralpha/-Falpha, should use -rphi/-Fphi\n");
+  if ( loadalpha && loadphi==0 && restart==0 ) 
+    yap_quit("If using -ralpha/-Falpha, should use -rphi/-Fphi or restart\n");
 
   if ( noerrorlog==0 ) {
     char *wname = yap_makename(resstem, ".log");
@@ -879,10 +879,10 @@ int main(int argc, char* argv[])
       score = ST_phi;
     }
     phi_load(resstem);
-    if ( loadalpha ) {
-      alpha_load(resstem);
-    }
   } 
+  if ( loadalpha ) {
+    alpha_load(resstem);
+  }
   if ( loadtheta ) {
     ddP.theta = fmat(ddN.D,ddN.T);
     prob_load(resstem,".theta",ddP.theta);

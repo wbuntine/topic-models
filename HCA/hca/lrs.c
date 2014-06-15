@@ -380,7 +380,9 @@ double lp_test_Pred(char *resstem) {
       /*
        *  do this to predict the topic proportions for this round
        */
-      if ( ddP.PYalpha) Td_ = comp_Td(i); else Td_ = 1;
+      if ( ddP.PYalpha && !PCTL_NOALPHASTATS()) 
+        Td_ = comp_Td(i); 
+      else Td_ = 1;
       for (t=0; t<ddN.T; t++) 
 	ptot += fact[t] = topicprob(i, t, Td_);
       /*

@@ -108,7 +108,7 @@ int remove_doc(int d, enum GibbsType fix) {
   for (t=0; t<ddN.T; t++) 
     ddS.Ndt[d][t] = 0;
   ddS.NdT[d] = 0;
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
 #ifdef CACHE_ABTP
     alphabasetopicprob(-(ddN.T+1));
 #endif
@@ -186,7 +186,7 @@ int add_doc(int d, enum GibbsType fix) {
     }
     if ( (ddP.bdk!=NULL) && M_multi(i) ) mi++;
   }
-  if ( ddP.PYalpha) {
+  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
     /*  initialise ddS.Tdt[d][*]  */ 
 #ifdef CACHE_ABTP
     alphabasetopicprob(-(ddN.T+1));

@@ -543,7 +543,7 @@ void pctl_fixbeta(char *file, char *resstem) {
 void pctl_report() {
   yap_message("PYbeta  = %d\n", (int)ddP.PYbeta);
   if ( ddP.beta>0 )
-    yap_message("beta  = %lf  # total over words\n", ddP.beta);
+    yap_message("beta  = %lf  # total over W=%d words\n", ddP.beta, ddN.W);
   if ( ddP.betapr && ddP.betac==0 ) 
     yap_message("# beta from file\n");
   if ( ddP.PYbeta ) {
@@ -667,9 +667,10 @@ static void *pctl_sample_thread(void *pin) {
 }
 
 void pctl_sample(int iter, int procs) {
-  int p, index;
+  int index;
   struct pst_data pd;
 #ifdef H_THREADS
+  int p;
   pthread_t thread[procs];
 #endif
   
@@ -766,7 +767,7 @@ static void printpar(FILE *fp, enum ParType par) {
 }
 
 void pctl_print(FILE *fp) {
-  fprintf(fp, "#  beta is the total over W word\n");
+  fprintf(fp, "#  beta is the total over W=%d words\n",ddN.W);
   printpar(fp,ParBeta);
   fprintf(fp, "PYbeta  = %d\n", (int)ddP.PYbeta);
   if ( ddP.PYbeta ) {

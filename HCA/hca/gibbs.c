@@ -53,7 +53,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
    *    this doc contributes data to TM (not just doc PYP)
    */
   // check_Ndt(did);
-  if ( ddP.PYalpha && 
+  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() &&
        ((ddS.Ndt[did][t]==1) ||
 	ddS.Tdt[did][t]>ddS.Ndt[did][t]*rng_unit(rngp) ) )
     ud = 1;
@@ -138,7 +138,7 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
   /*
    *   figure out reassigning table id
    */
-  if ( ddP.PYalpha && 
+  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() &&
        (ddS.Ndt[did][t]==1 || rng_unit(rngp) < ttip) ) {
     (*Td_)++;
     fix_tableidtopic(did, t);
@@ -210,7 +210,7 @@ double gibbs_lda(/*
     assert(ddM.multiind[mi]<ddM.dim_Mi);
     assert(mi<ddM.dim_multiind || did==ddN.D-1);
   }
-  if ( ddP.PYalpha )
+  if ( ddP.PYalpha && !PCTL_NOALPHASTATS())
     Td_ = comp_Td(did);
   /*
    *  assign memory for table indicator probabilities out of p[]

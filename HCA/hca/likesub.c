@@ -189,6 +189,8 @@ void wordtableindicatorprob(int j, int t, double *uone, double *uzero) {
  *       Ttot - total tables
  */
 double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
+  if ( PCTL_NOALPHASTATS() ) 
+    return (double)ddS.Ndt[d][t] + ddP.bpar*ddP.fixalpha[t];
   if ( ddP.PYalpha ) {
     double p;
     if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL ) {
@@ -242,7 +244,10 @@ double topicprob(int d, int t, int Ttot) {
     return ddP.theta[d][t];
   if ( !ddP.PYalpha ) 
     return ((double)ddS.Ndt[d][t]+ddP.alpha)/((double)ddS.NdT[d]+ddN.T*ddP.alpha);
-  if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL ) {
+  if ( PCTL_NOALPHASTATS() ) 
+    return ((double)ddS.Ndt[d][t] + ddP.bpar*ddP.fixalpha[t])/((double)ddS.NdT[d] + ddP.bpar);
+
+  if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL) {
     /*
      *  special case for HPDD with a topic with 0 occupancy
      *  to handle the introduction of a new topic into a document

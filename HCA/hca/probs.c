@@ -34,7 +34,7 @@
  *   in fact its meaningless statistically, just a
  *   useful diagnostic
  */
-void get_probs_alpha(double *vp) {
+static void get_probs_alpha(double *vp) {
   int t, d, NWT=0;
   for (d=0; d<ddN.DT; d++)
     NWT += ddS.NdT[d];
@@ -45,6 +45,12 @@ void get_probs_alpha(double *vp) {
     vp[t] = (ddP.alpha+tot)/(ddP.alpha*ddN.T+NWT);
   }
 }
+static void get_probs_alphavec(double *vp) {
+  int t;
+  for (t=0; t<ddN.T; t++) {
+    vp[t] = ddP.fixalpha[t];
+  }
+}
 
 void get_probs(double *vp) {
   int zerod = 1;
@@ -52,6 +58,10 @@ void get_probs(double *vp) {
   double tot = 0;
   if ( ddP.PYalpha==0 ) {
     get_probs_alpha(vp);
+    return;
+  } 
+  if ( PCTL_NOALPHASTATS() ) {
+    get_probs_alphavec(vp);
     return;
   } 
   for (t=0; t<ddN.T; t++) {
