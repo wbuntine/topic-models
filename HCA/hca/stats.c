@@ -57,7 +57,7 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
       if ( !fp )
         yap_sysquit("Cannot open output '%s' file:", fname);
     }
-    if ( ddP.hold_all==0 ) {
+    if ( ddP.hold_all==0 && ddP.phi==NULL ) {
       if ( !showlike )
 	scale = -M_LOG2E /ddN.NT;
       logprob = likelihood();
