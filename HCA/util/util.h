@@ -46,6 +46,7 @@ unsigned countntot(char *fname);
 void read_didwid(char *wfile, char *dfile, int N, uint32_t *d, uint32_t *w);
 void read_dvec(char *dfile, int N, double *d);
 void read_u16vec(char *dfile, int N, uint16_t *d);
+void write_fvec(char *dfile, int N, float *d);
 void write_dvec(char *dfile, int N, double *d);
 void write_dmat(char *dfile, int N, int C, double **d);
 void write_u16sparse(int nr, int nc, uint16_t **x, char *fname);

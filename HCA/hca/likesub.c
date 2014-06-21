@@ -38,60 +38,14 @@
  *     routines for sampling or probability estimation
  */
 
-/*
- *     alphabasetopicprob(-(t+1))  resets the cache for t
- *     alphabasetopicprob(-(ddN.T+1))  resets all caches
- *     alphabasetopicprob(-1)  to initialise
- *     alphabasetopicprob(t)   check from cache and set if needed
- *
- ************************************/
-#ifdef CACHE_ABTP
-double alphabasetopicprob(int t) {
-  static double *cache = NULL;
-  if ( t<0 ) {
-    if ( cache==NULL ) {
-      cache = dvec(ddN.T);
-      for (t=0; t<ddN.T; t++)
-	cache[t] = -1;
-    } else if ( t<=-3*ddN.T ) {
-      free(cache);
-    } else if ( t<=-(ddN.T+1) ) {
-      for (t=0; t<ddN.T; t++)
-	cache[t] = -1;
-    } else
-      cache[-(t+1)] = -1;
-  } else if ( cache[t]>=0 )
-    return cache[t];
-  else {
-    if ( ddP.fixalpha )
-      return ddP.fixalpha[t];
-    if ( ddP.PYalpha==H_PDP) {
-      return cache[t]=1.0/ddN.T;
-    }
-    if ( ddP.PYalpha==H_HDP ) {
-      assert(ddP.a0==0);
-      return  cache[t]=( (double)ddS.TDt[t]+ddP.b0/ddN.T)
-	/((double)ddS.TDT+ddP.b0);
-    }
-    if ( ddS.TDt[t]==0 ) 
-      return  cache[t]=(ddP.b0+ddP.a0*ddS.TDTnz) / ((double)ddS.TDT+ddP.b0);
-    else if ( ddS.TDTnz==ddN.T ) 
-      return  cache[t]=((double)ddS.TDt[t]-ddP.a0)
-	/((double)ddS.TDT-ddN.T*ddP.a0);
-    return  cache[t]=((double)ddS.TDt[t]-ddP.a0)/((double)ddS.TDT+ddP.b0);
-  }
-  return 0;
-}
-#else
 double alphabasetopicprob(int t) {
   assert(t>=0);
-  if ( ddP.fixalpha )
-    return ddP.fixalpha[t];
-  if ( ddP.PYalpha==H_PDP)
-    return 1.0/ddN.T;
+  if ( ddP.alphapr )
+    return ddP.alphapr[t];
+  assert( ddP.PYalpha!=H_PDP);
   if ( ddP.PYalpha==H_HDP ) {
     assert(ddP.a0==0);
-    return  ( (double)ddS.TDt[t]+ddP.b0/ddN.T)
+    return  ( (double)ddS.TDt[t]+ddP.b0*ddP.alphapr[t] )
       /((double)ddS.TDT+ddP.b0);
   }
   if ( ddS.TDt[t]==0 ) 
@@ -104,7 +58,6 @@ double alphabasetopicprob(int t) {
     return ((double)ddS.TDt[t]-ddP.a0)/((double)ddS.TDT-ddN.T*ddP.a0);
   return  ((double)ddS.TDt[t]-ddP.a0)/((double)ddS.TDT+ddP.b0);	 
 }
-#endif
 
 /*
  *  care must be taken when using this:
@@ -189,13 +142,11 @@ void wordtableindicatorprob(int j, int t, double *uone, double *uzero) {
  *       Ttot - total tables
  */
 double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
-  if ( PCTL_NOALPHASTATS() ) 
-    return (double)ddS.Ndt[d][t] + ddP.bpar*ddP.fixalpha[t];
   if ( ddP.PYalpha ) {
     double p;
-    if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL ) {
+    if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 ) {
       /*
-        *  special case for HPDD with a topic with 0 occupancy
+       *  special case for HPDD with a topic with 0 occupancy
        *  to handle the introduction of a new topic into a document
        */
       if ( *zerod ) {
@@ -233,7 +184,7 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
     }
     return p;
   }
-  return ((double)ddS.Ndt[d][t]+ddP.alpha);
+  return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);
 }
 
 /*
@@ -242,12 +193,9 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 double topicprob(int d, int t, int Ttot) {
   if ( ddP.theta ) 
     return ddP.theta[d][t];
-  if ( !ddP.PYalpha ) 
-    return ((double)ddS.Ndt[d][t]+ddP.alpha)/((double)ddS.NdT[d]+ddN.T*ddP.alpha);
-  if ( PCTL_NOALPHASTATS() ) 
-    return ((double)ddS.Ndt[d][t] + ddP.bpar*ddP.fixalpha[t])/((double)ddS.NdT[d] + ddP.bpar);
-
-  if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 && ddP.fixalpha==NULL) {
+  if ( ddP.PYalpha==H_None ) 
+    return ((double)ddS.Ndt[d][t]+ddP.alphapr[t])/((double)ddS.NdT[d]+ddP.alphatot);
+  if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 ) {
     /*
      *  special case for HPDD with a topic with 0 occupancy
      *  to handle the introduction of a new topic into a document
@@ -271,10 +219,9 @@ double topicprob(int d, int t, int Ttot) {
  *   but we need to add it in when doing the doc PYP
  */
 double topicnorm(int d) {
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha ) 
     return ((double)ddS.NdT[d]+ddP.bpar);
-  }
-  return ((double)ddS.NdT[d]+ddP.alpha);
+  return ((double)ddS.NdT[d]+ddP.alphatot);
 }
 
 /*
@@ -294,7 +241,7 @@ double wordprob(int j, int t) {
       pold = (double)ddS.Nwt[j][t]-ddS.Twt[j][t]*ddP.awpar;
     return (pnew+pold)/((double)ddS.NWt[t]+ddP.bwpar);
   }
-  return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.beta);
+  return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.betatot);
 }
 
 /*
@@ -324,7 +271,7 @@ double wordfact(int j, int t, float *tip) {
     }
     return p/((double)ddS.NWt[t]+ddP.bwpar);
   }
-  return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.beta);
+  return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.betatot);
 }
 
 /*****************************************************

@@ -36,8 +36,8 @@
  *     * extracts appear in sampleX.c
  *
  *     uses:   X tables, Y tables and caches
- *             lgba, lgb, lgalpha, lgtotalpha, lgbaw, lgbw, lgbetac
- *             lgbeta
+ *             lgba, lgb, lgalphac, lgalphatot, lgbaw, lgbw, lgbetac
+ *             lgbetatot
  *
  *     NB.    No prior terms for hyperparameters used.
  *
@@ -64,37 +64,20 @@ double likelihood_DIRalpha() {
   double likelihood = 0;
   for (i=0; i<ddN.DT; i++) {
     for (t=0; t<ddN.T; t++) {
-      if ( ddS.Ndt[i][t]>0 )
+      if ( ddS.Ndt[i][t]>0 ) {
 #ifdef L_CACHE
-	likelihood += gcache_value(&ddC.lgalpha, (int)ddS.Ndt[i][t]);
-#else
-      likelihood += gammadiff((int)ddS.Ndt[i][t], ddP.alpha, 0.0);
+        if ( ddP.alphac>0 )
+          likelihood += gcache_value(&ddC.lgalphac, (int)ddS.Ndt[i][t]);
+        else
 #endif
+          likelihood += gammadiff((int)ddS.Ndt[i][t], ddP.alphapr[t], 0.0);
+      }
     }
 #ifdef L_CACHE
-    likelihood -= gcache_value(&ddC.lgtotalpha, (int)ddS.NdT[i]);
+    likelihood -= gcache_value(&ddC.lgalphatot, (int)ddS.NdT[i]);
 #else
-    likelihood -= gammadiff((int)ddS.NdT[i], ddN.T*ddP.alpha, 0.0);
+    likelihood -= gammadiff((int)ddS.NdT[i], ddP.alphatot, 0.0);
 #endif
-  }
-  yap_infinite(likelihood);
-  return likelihood;
-}
-
-double likelihood_DIRalphavec() {
-  /*
-   *   Dirichlet for topics
-   */
-  int i,t;
-  double likelihood = 0;
-  assert(ddP.apar==0);
-  for (i=0; i<ddN.DT; i++) {
-    for (t=0; t<ddN.T; t++) {
-      if ( ddS.Ndt[i][t]>0 )
-      likelihood += gammadiff((int)ddS.Ndt[i][t], 
-                              ddP.bpar*ddP.fixalpha[t], 0.0);
-    }
-    likelihood -= gammadiff((int)ddS.NdT[i], ddP.bpar, 0.0);
   }
   yap_infinite(likelihood);
   return likelihood;
@@ -136,7 +119,7 @@ double likelihood_PYalpha_HDP() {
   assert(ddP.a0==0);
   for (t=0; t<ddN.T; t++) {
     if ( ddS.TDt[t]>0 ) {
-      likelihood += gammadiff((int)ddS.TDt[t], ddP.b0/ddN.T, 0.0);
+      likelihood += gammadiff((int)ddS.TDt[t], ddP.b0*ddP.alphapr[t], 0.0);
     }
   }      
   likelihood -= lgamma(ddP.b0+ddS.TDT) - lgamma(ddP.b0);
@@ -152,22 +135,8 @@ double likelihood_PYalpha_PDP() {
   double likelihood = 0;
   for (t=0; t<ddN.T; t++) {
     if ( ddS.TDt[t]>0 ) {
-      likelihood += ddS.TDt[t]*log(1.0/ddN.T);
-    }
-  }      
-  yap_infinite(likelihood);
-  return likelihood;
-}
-double likelihood_PYalpha_fixalpha() {
-  /*
-   *    the constant prior with a vector
-   */
-  int t;
-  double likelihood = 0;
-  for (t=0; t<ddN.T; t++) {
-    if ( ddS.TDt[t]>0 ) {
-      assert(ddP.fixalpha[t]>0);
-      likelihood += ddS.TDt[t]*log(ddP.fixalpha[t]);
+      assert(ddP.alphapr[t]>0);
+      likelihood += ddS.TDt[t]*log(ddP.alphapr[t]);
     }
   }      
   yap_infinite(likelihood);
@@ -217,19 +186,17 @@ double likelihood_DIRbeta() {
       if ( ddS.Nwt[j][t]>0 ) {
 	assert(ddP.betapr[j]>0);
 #ifdef L_CACHE
-	if ( ddP.betac>0 ) {
+	if ( ddP.betac>0 )
 	  val += gcache_value(&ddC.lgbetac, (int)ddS.Nwt[j][t]);
-	} else
-	  val += gammadiff((int)ddS.Nwt[j][t], ddP.betapr[j], 0.0);
-#else
-	val += gammadiff((int)ddS.Nwt[j][t], ddP.betapr[j], 0.0);
+	else
 #endif
+          val += gammadiff((int)ddS.Nwt[j][t], ddP.betapr[j], 0.0);
       }      
     }
 #ifdef L_CACHE
-    val -= gcache_value(&ddC.lgbeta, (int)ddS.NWt[t]);
+    val -= gcache_value(&ddC.lgbetatot, (int)ddS.NWt[t]);
 #else
-    val -= gammadiff((int)ddS.NWt[t], ddP.beta, 0.0);
+    val -= gammadiff((int)ddS.NWt[t], ddP.betatot, 0.0);
 #endif
   }
   likelihood += val;
@@ -360,22 +327,16 @@ double likelihood() {
    *  doc X topic part
    */
   if ( ddP.PYalpha ) {
-    if ( PCTL_NOALPHASTATS() ) {
-      likelihood += likelihood_DIRalphavec();
-    } else {
-      likelihood += likelihood_PYalpha();
-      /*
-       *  term for root node
-       */
-      if ( ddP.fixalpha )
-        likelihood += likelihood_PYalpha_fixalpha();
-      else if ( ddP.PYalpha==H_PDP )
-        likelihood += likelihood_PYalpha_PDP();
-      else if ( ddP.PYalpha==H_HDP ) 
-        likelihood += likelihood_PYalpha_HDP();
-      else 
-        likelihood += likelihood_PYalpha_HPDD();
-    }
+    likelihood += likelihood_PYalpha();
+    /*
+     *  term for root node
+     */
+    if ( ddP.PYalpha==H_PDP )
+      likelihood += likelihood_PYalpha_PDP();
+    else if ( ddP.PYalpha==H_HDP ) 
+      likelihood += likelihood_PYalpha_HDP();
+    else 
+      likelihood += likelihood_PYalpha_HPDD();
   } else 
     likelihood += likelihood_DIRalpha();
   

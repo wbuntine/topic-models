@@ -46,14 +46,6 @@
 // #define H_THREADS
 
 /*
- *   define this to set up the cache in alphabasetopicprob()
- *   doesn't work with threads
- */
-#ifndef H_THREADS
-// #define CACHE_ABTP
-#endif
-
-/*
  *   when defined does tracking of changes to a single Nwt
  *   during sampling
  */

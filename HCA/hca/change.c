@@ -59,9 +59,6 @@ void unfix_tableidtopic(int d, int t) {
     atomic_decr(ddS.TDTnz);
     ddS.Tlife[t] = 0;
   }
-#ifdef CACHE_ABTP
-  alphabasetopicprob(-(ddN.T+1));
-#endif
 }
 
 void fix_tableidtopic(int d, int t) {
@@ -72,9 +69,6 @@ void fix_tableidtopic(int d, int t) {
   if ( val==1 )
     atomic_incr(ddS.TDTnz);
   atomic_incr(ddS.TDT);
-#ifdef CACHE_ABTP
-  alphabasetopicprob(-(ddN.T+1));
-#endif
 }
 
 void unfix_tableidword(int w, int t) {
@@ -109,9 +103,6 @@ int remove_doc(int d, enum GibbsType fix) {
     ddS.Ndt[d][t] = 0;
   ddS.NdT[d] = 0;
   if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
-#ifdef CACHE_ABTP
-    alphabasetopicprob(-(ddN.T+1));
-#endif
     for (t=0; t<ddN.T; t++) 
       if ( ddS.Tdt[d][t]>0 ) {
         int val;
@@ -188,9 +179,6 @@ int add_doc(int d, enum GibbsType fix) {
   }
   if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
     /*  initialise ddS.Tdt[d][*]  */ 
-#ifdef CACHE_ABTP
-    alphabasetopicprob(-(ddN.T+1));
-#endif
     /*
      *   adjust table count stats based on Ndt[d]
      */

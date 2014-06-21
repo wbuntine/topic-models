@@ -61,7 +61,6 @@ void pctl_init() {
   ddP.memory = 0;
   ddP.theta = NULL;
   ddP.phi = NULL;
-  ddP.fixalpha = NULL;
   for (par=0; par<=ParBeta; par++) {
     ddT[par].samplerk = NULL;
     ddT[par].sampler = NULL;
@@ -82,8 +81,8 @@ void pctl_init() {
   ddT[ParBW].name = "bw";
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
-  ddT[ParAlpha].name = "alpha";
-  ddT[ParBeta].name = "beta";
+  ddT[ParAlpha].name = "alpha";  //  actually, alphatot
+  ddT[ParBeta].name = "betatot";  
   ddT[ParA].ptr = &ddP.apar;
   ddT[ParAW].ptr = &ddP.awpar;
   ddT[ParA0].ptr = &ddP.a0;
@@ -92,9 +91,8 @@ void pctl_init() {
   ddT[ParBW].ptr = &ddP.bwpar;
   ddT[ParB0].ptr = &ddP.b0;
   ddT[ParBW0].ptr = &ddP.bw0;
-  ddT[ParAlpha].ptr = &ddP.alpha;
-  ddT[ParBeta].ptr = &ddP.beta;
-  ddT[ParAlpha].ptr = &ddP.alpha;
+  ddT[ParAlpha].ptr = &ddP.alphatot;
+  ddT[ParBeta].ptr = &ddP.betatot;
   ddT[ParAD].ptr = &ddP.ad;
   ddT[ParBDK].ptr = NULL;
   ddT[ParA].sampler = &sample_a;
@@ -110,10 +108,12 @@ void pctl_init() {
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
 
-  ddP.alpha = 1;
+  ddP.alphatot = 0;
+  ddP.alphac = 0;
+  ddP.alphapr = NULL;
   ddP.betapr = NULL;
-  ddP.betac = 1;
-  ddP.beta = 0;
+  ddP.betac = 0;
+  ddP.betatot = 0;
   ddP.PYalpha = H_HPDD;
   ddP.PYbeta = H_HPDD;
   ddP.apar = APAR;
@@ -249,7 +249,9 @@ static int *readiv(char *type, int dim) {
   return NULL;
 }
 
-
+/*
+ *  reads parameters, not dimensions
+ */
 void pctl_read(char *resstem, char *buf) {
   mystem = resstem;
   mybuf = buf;
@@ -262,7 +264,7 @@ void pctl_read(char *resstem, char *buf) {
 	ddP.bw0 = readf("bw0");
       }
    } else {
-     ddP.beta = readf("beta");
+     ddP.betatot = readf("betatot");
    }
    ddP.PYalpha = readi("PYalpha");
    if ( ddP.PYalpha ) {
@@ -273,7 +275,7 @@ void pctl_read(char *resstem, char *buf) {
 	ddP.b0 = readf("b0");
       }
    } else {
-     ddP.alpha = readf("alpha");
+     ddP.alphac = readf("alpha");
    }
    mybuf = malloc(ddN.T*15+100);
    if ( !mybuf ) 
@@ -305,46 +307,10 @@ void pctl_read(char *resstem, char *buf) {
 }
 
 /*
- *    fix pars based on data dims
+ *    fix pars based on data dims ..
+ *    called with pctl_fixbeta() at initialisation
  */
 void pctl_dims() {
-  if ( ddP.PYalpha==H_None ) {
-    if ( ddP.alpha==0 ) {
-      ddP.alpha = 0.05*ddN.NT/(ddN.DT*ddN.T);
-    }
-    if ( ddP.alpha< DIR_MIN )
-      ddP.alpha = DIR_MIN;
-    if ( ddP.alpha> DIR_MAX )
-      ddP.alpha = DIR_MAX;
-  }
-  if ( ddP.PYbeta==H_None ) {
-    double betain;
-    betain = ddP.betac;
-    if ( ddP.betac< DIR_MIN ) 
-      ddP.betac = DIR_MIN;
-    if ( ddP.betac>DIR_MAX ) 
-      ddP.betac = DIR_MAX;
-    if ( ddP.betac>DIR_TOTAL_MAX/ddN.W )
-      ddP.betac = DIR_TOTAL_MAX/ddN.W;
-    if ( verbose>=1 && betain!=ddP.betac ) {
-      yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
-		  betain, ddP.betac);
-    }
-  }
-  if ( ddP.window>0 ) {
-    if ( ddP.window>=ddN.DT )
-      ddP.window = 0;
-    ddP.window_left = 0;
-    ddP.window_right = ddP.window;
-  }
-}
-
-/*  needs to know ddN.T to work */
-void pctl_fix(char *betafile, int ITER) {
-  ddP.betapr = NULL;
-  if ( ddP.ad==0 ) {
-    ddT[ParAD].fix = 1;
-  }
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
     if ( ddT[ParBDK].fix==0 && ddP.kbatch==0 ) {
@@ -355,10 +321,127 @@ void pctl_fix(char *betafile, int ITER) {
     }
     if (  ddP.kbatch > ddN.T )
       ddP.kbatch = ddN.T;
-  } else {
+  }
+  if ( ddP.PYalpha==H_None ) {
+    if ( ddP.alphac==0 ) {
+      ddP.alphac = 0.05*ddN.NT/(ddN.DT*ddN.T);
+    }
+    if ( ddP.alphac< DIR_MIN )
+      ddP.alphac = DIR_MIN;
+    if ( ddP.alphac> DIR_MAX )
+      ddP.alphac = DIR_MAX;
+  }
+  if ( ddP.PYbeta==H_None ) {
+    /*
+     *  reset betatot according to constraints
+     */
+    double betain = ddP.betatot/ddN.W;
+    double betac = betain;
+    assert(betac>0);
+    if ( betac< DIR_MIN ) 
+      betac = DIR_MIN;
+    if ( betac>DIR_MAX ) 
+      betac = DIR_MAX;
+    if ( betac>DIR_TOTAL_MAX/ddN.W )
+      betac = DIR_TOTAL_MAX/ddN.W;
+    if ( verbose>=1 && betain!=betac ) {
+      yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
+		  betain, betac);
+      ddP.betatot = betac*ddN.W;
+    }
+    ddP.betac = betac;
+  }
+  if ( ddP.window>0 ) {
+    if ( ddP.window>=ddN.DT )
+      ddP.window = 0;
+    ddP.window_left = 0;
+    ddP.window_right = ddP.window;
+  }
+  if ( ddP.Tinit==0 )
+    ddP.Tinit = ddN.T;
+}
+
+/*
+ *   initialising or ddP.beta is changed
+ *      file = where to grab beta
+ *      resstem = only set if beta to be saved as ".beta"
+ *
+ *   when .betac in use, reset .betac and .betapr[] based in .betatot
+ *   otherwise if .betapr[] in use, renormalise to get .betatot
+ */
+void pctl_fixbeta(char *file, char *resstem) {
+  int c;
+  if ( ddP.PYbeta!=H_HPDD && !ddP.betapr ) 
+    ddP.betapr = dvec(ddN.W);
+  if ( ddP.PYbeta!=H_HPDD && file ) {
+    /*
+     *   only read on initialisation
+     */
+    ddP.betac = 0;
+    if ( strcmp(file,"data")==0 ) {
+      /*
+       *  initialise according to occurrence in data
+       *  but with Laplace smoothing
+       */
+      for (c=0; c<ddN.W; c++)
+        ddP.betapr[c] = 0.5;
+      for (c=0; c<ddN.NT; c++) 
+        ddP.betapr[ddD.w[c]]++;
+    } else if ( strcmp(file,"uniform")==0 ) {
+      /*
+       *  initialise uniform
+       */
+      for (c=0; c<ddN.W; c++)
+        ddP.betapr[c] = 1.0;
+    } else {
+      /*
+       *  initialise from file
+       */
+      read_dvec(file,ddN.W,ddP.betapr);
+    }
+    if ( resstem ) {
+      /*
+       *  however, always record the result used
+       */
+      char *fname;
+      fname = yap_makename(resstem,".beta");
+      write_dvec(fname,ddN.W,ddP.betapr);
+      free(fname);
+    }
+  }
+  if ( ddP.betac!=0 && ddP.PYbeta==H_None ) {
+    /*
+     *  .betac  and .betapr set from .betatot
+     */
+    assert(ddP.betatot>0);
+    ddP.betac = ddP.betatot/ddN.W;
+    assert(ddP.beta>0);
+    for (c=0; c<ddN.W; c++)
+      ddP.betapr[c] = ddP.betac;
+  } else if ( ddP.betapr ) {
+    /*
+     *  renormalise .betapr[] so it adds to .betatot
+     */
+    double lastbeta = 0;
+    for (c=0; c<ddN.W; c++)
+      lastbeta += ddP.betapr[c];
+    for (c=0; c<ddN.W; c++)
+      ddP.betapr[c] *= ddP.betatot/lastbeta;
+  }
+}
+
+/*
+ *    called before the general dimensions have been set;
+ *    as some parameters need to know dimensions to be set
+ *    further fixes done by pctl_dims() and pctl_fixbeta()
+ */
+void pctl_fix(int ITER) {
+  ddP.betapr = NULL;
+  if ( ddP.ad==0 ) {
+    ddT[ParAD].fix = 1;
+  }
+  if ( ddP.bdk==NULL) {
     ddT[ParBDK].fix = 1;   
-  } 
-  if ( ddP.bdk==NULL ) {
     ddT[ParAD].fix = 1;
   }
   if ( ddP.PYalpha==H_None ) {
@@ -394,18 +477,15 @@ void pctl_fix(char *betafile, int ITER) {
     if ( ddP.PYbeta==H_PDP ) {
       ddT[ParAW0].fix = 1;    
       ddT[ParBW0].fix = 1;    
-      ddP.beta = 1;
     }
-    if ( ddP.PYbeta==H_HDP ) {
-      ddP.beta = 1;
-      if ( betafile==NULL )
-	yap_quit("Option -Bhdp needs a '-u' too\n");
+    if ( ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP ) {
+      /*
+       *    in this case .betapr[] must be a prob vector
+       */
+      ddP.betatot = 1;
     }
     ddP.betac = 0;
     ddT[ParBeta].fix = 1;
-    if ( betafile && ddP.PYbeta==H_HDP && ddP.aw0>0 ) {
-      yap_quit("Only use '-u' when aw0==0\n");
-    }
   }
   if ( ddP.phi!=NULL ) {
     /*
@@ -417,11 +497,11 @@ void pctl_fix(char *betafile, int ITER) {
     ddT[ParBW0].fix = 1;
     ddT[ParBeta].fix = 1;
   }
-  if ( ddP.fixalpha!=NULL ) {
+  if ( ddP.alphapr!=NULL ) {
     /*
-     *   PYtheta and beta are not used!!
+     *   PYalpha is not used not used!!
      */
-    ddT[ParAlpha].fix = 1;
+    ddT[ParAlpha].fix = 1;  // ????
     ddT[ParA0].fix = 1;
     ddT[ParB0].fix = 1;
   }
@@ -468,8 +548,6 @@ void pctl_fix(char *betafile, int ITER) {
   if ( ddP.alphaiter==1 )
     ddP.alphaiter = 2;
 
-  if ( ddP.Tinit==0 )
-    ddP.Tinit = ddN.T;
   if ( ddP.Tfree<0 )
     ddP.Tfree = ITER;
 }
@@ -485,67 +563,13 @@ int pctl_Tmax(int Tmax, int iter) {
   }
   return Tmax;
 }
-/*
- *   initialising or ddP.beta is changed
- */
-void pctl_fixbeta(char *file, char *resstem) {
-  int c;
-  if ( ((ddP.PYbeta==H_PDP||ddP.PYbeta==H_HDP) && file) 
-       || (ddP.PYbeta==H_None && !ddP.betapr) ) {
-    /*
-     *   only read on initialisation
-     */
-    ddP.betapr = dvec(ddN.W);
-    if ( file ) {
-      if ( strcmp(file,"file")==0 ) {
-	for (c=0; c<ddN.W; c++)
-	  ddP.betapr[c] = 0.5;
-	for (c=0; c<ddN.N; c++) 
-	  ddP.betapr[ddD.w[c]]++;
-	for (c=0; c<ddN.W; c++)
-	  ddP.betapr[c] /= ddN.N;
-      } else if ( strcmp(file,"uniform")==0 ) {
-	for (c=0; c<ddN.W; c++)
-	  ddP.betapr[c] = 1.0/ddN.W;
-      } else {
-	double lastbeta = 0;
-	assert(ddP.betac==0);
-	read_dvec(file,ddN.W,ddP.betapr);
-	//  normalise
-	for (c=0; c<ddN.W; c++)
-	  lastbeta += ddP.betapr[c];
-	for (c=0; c<ddN.W; c++)
-	  ddP.betapr[c] /= lastbeta;
-      }
-      if ( resstem ) {
-	char *fname;
-	fname = yap_makename(resstem,".beta");
-	write_dvec(fname,ddN.W,ddP.betapr);
-	free(fname);
-      }
-    }
-  }
-  if ( ddP.betac!=0 && ddP.PYbeta==H_None ) {
-    ddP.beta = ddP.betac*ddN.W;
-    assert(ddP.beta>0);
-    for (c=0; c<ddN.W; c++)
-      ddP.betapr[c] = ddP.betac;
-  } else if ( ddP.betapr ) {
-    double lastbeta = 0;
-    for (c=0; c<ddN.W; c++)
-      lastbeta += ddP.betapr[c];
-    for (c=0; c<ddN.W; c++)
-      ddP.betapr[c] *= ddP.beta/lastbeta;
-  }
-}
-
 
 void pctl_report() {
   yap_message("PYbeta  = %d\n", (int)ddP.PYbeta);
-  if ( ddP.beta>0 )
-    yap_message("beta  = %lf  # total over W=%d words\n", ddP.beta, ddN.W);
+  if ( ddP.betatot>0 )
+    yap_message("betatot  = %lf # total over W=%d words\n", ddP.betatot, ddN.W);
   if ( ddP.betapr && ddP.betac==0 ) 
-    yap_message("# beta from file\n");
+    yap_message("# beta read from file\n");
   if ( ddP.PYbeta ) {
     yap_message("aw     = %lf\n", ddP.awpar);
     yap_message("bw     = %lf\n", ddP.bwpar);
@@ -563,7 +587,7 @@ void pctl_report() {
       yap_message("b0     = %lf\n", ddP.b0);
     }
   } else {
-    yap_message("alpha = %lf\n", ddP.alpha);
+    yap_message("alpha = %lf\n", ddP.alphac);
   }
   if ( ddP.bdk!=NULL ) {
     int t;
@@ -817,10 +841,7 @@ void pctl_free() {
   if ( ddP.theta ) {
     free(ddP.theta[0]); free(ddP.theta);
   }
-  if ( ddP.fixalpha ) {
-    free(ddP.fixalpha);
-  }
-  if ( ddP.n_excludetopic ) {
+ if ( ddP.n_excludetopic ) {
     free(ddP.excludetopic);
     free(ddP.bits_et);
   }
@@ -832,5 +853,6 @@ void pctl_free() {
   }
   if ( ddP.betapr )
     free(ddP.betapr);
-  
+  if ( ddP.alphapr )
+    free(ddP.alphapr);
 }

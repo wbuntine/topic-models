@@ -70,7 +70,6 @@ void alpha_init(char *resstem);
 void alpha_update();
 void alpha_save();
 void alpha_free();
-void alpha_load(char *resstem);
 double alpha_entropy();
 
 /*

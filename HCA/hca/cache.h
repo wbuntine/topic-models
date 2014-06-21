@@ -35,8 +35,8 @@ typedef struct D_cache_s {
   stable_t *SX;
   struct gcache_s lgbw, lgbaw, qdaw;
   stable_t *SY;
-  struct gcache_s lgalpha, lgtotalpha;  
-  struct gcache_s lgbetac, lgbeta;
+  struct gcache_s lgalphac, lgalphatot;  
+  struct gcache_s lgbetac, lgbetatot;
   stable_t *SD;  
   /*  used if one/some have a=0 */
   stable_t *S0;

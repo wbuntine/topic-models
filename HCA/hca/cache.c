@@ -29,10 +29,6 @@
 
 #define mymax(A,B) ((A>B)?(A):(B))
 
-#ifdef CACHE_ABTP
-double alphabasetopicprob(int t);
-#endif
-
 void cache_init(int maxM, int maxW) {
   /*
    *   now the libstb library has its own separate error handling,
@@ -110,9 +106,6 @@ void cache_init(int maxM, int maxW) {
      *    in a document use the passed in limit for T
      */
     int maxD = ddD.NdTmax*1.5;
-#ifdef CACHE_ABTP
-    alphabasetopicprob(-1);
-#endif
     if ( ddP.apar!=0 ) {
       ddC.SX = S_make(maxD+1, 100, maxD+1, maxM, ddP.apar, 
 #ifdef H_THREADS
@@ -127,8 +120,11 @@ void cache_init(int maxM, int maxW) {
     if ( ddP.apar>0 )
       gcache_init(&ddC.lgba, ddP.bpar/ddP.apar);
   } else {
-    gcache_init(&ddC.lgalpha, ddP.alpha);
-    gcache_init(&ddC.lgtotalpha, ddN.T*ddP.alpha);
+    if ( ddP.alphac>0 ) {
+      assert(ddP.alphapr==NULL);
+      gcache_init(&ddC.lgalphac, ddP.alphac);
+    }
+    gcache_init(&ddC.lgalphatot, ddP.alphatot);
   }
   if ( ddP.PYbeta ) {
     if ( ddP.awpar!=0 ) {
@@ -147,14 +143,11 @@ void cache_init(int maxM, int maxW) {
   } else {
     if ( ddP.betac>0 )
       gcache_init(&ddC.lgbetac, ddP.betac);
-    gcache_init(&ddC.lgbeta, ddP.beta);
+    gcache_init(&ddC.lgbetatot, ddP.betatot);
   }
 }
 
 void cache_free() {
-#ifdef CACHE_ABTP
-  alphabasetopicprob(-5*ddN.T);
-#endif
   if ( ddP.PYbeta &&  ddP.awpar!=0 ) {
     S_free(ddC.SY);
   }  
@@ -186,14 +179,10 @@ void cache_update(char *par) {
       if ( ddC.SX->a != ddP.apar )
 	S_remake(ddC.SX,ddP.apar);
     } 
-#ifdef CACHE_ABTP
-    else if ( strcmp(par,"b0")==0 || strcmp(par,"a0")==0 ) {
-      alphabasetopicprob(-(ddN.T+1));
-    }
-#endif
   } else if ( strcmp(par,"alpha")==0 ) { 
-    gcache_init(&ddC.lgalpha, ddP.alpha);
-    gcache_init(&ddC.lgtotalpha, ddN.T*ddP.alpha);
+    if ( ddP.alphac>0 )
+      gcache_init(&ddC.lgalphac, ddP.alphac);
+    gcache_init(&ddC.lgalphatot, ddP.alphatot);
   }
   if ( ddP.PYbeta ) {
     if ( strcmp(par,"bw")==0 ) { 
@@ -207,12 +196,11 @@ void cache_update(char *par) {
 	S_remake(ddC.SY, ddP.awpar);
     } 
   } else {
-    if ( strcmp(par,"beta")==0 ) {
+    if ( strcmp(par,"betatot")==0 ) {
       pctl_fixbeta(NULL, NULL);
-      if ( ddP.betac>0) {
-	gcache_init(&ddC.lgbeta, ddP.betac);
-      }
-      gcache_init(&ddC.lgbeta, ddP.beta);
+      if ( ddP.betac>0) 
+	gcache_init(&ddC.lgbetac, ddP.betac);
+      gcache_init(&ddC.lgbetatot, ddP.betatot);
     }
   }
 }

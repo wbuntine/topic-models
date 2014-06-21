@@ -308,6 +308,21 @@ void read_dvec(char *dfile, int N, double *d) //
     yap_sysquit("Error on reading file '%s' ", dfile);
   fclose(fp);
 }
+void write_fvec(char *dfile, int N, float *d) //
+{
+  int i;
+  FILE *fp = fopen(dfile ,"w");
+  if ( !fp ) 
+    yap_sysquit( "Cannot open file '%s' for write\n", dfile);
+  for (i = 0; i < N; i++) {
+    if ( !fprintf(fp,"%g\n",d[i]) ) {
+      yap_sysquit( "Cannot write to '%s' position %d\n", dfile, i);
+    }
+  }
+  if ( ferror(fp) )
+    yap_sysquit("Error on writing file '%s' ", dfile);
+  fclose(fp);
+}
 void write_dvec(char *dfile, int N, double *d) //
 {
   int i;

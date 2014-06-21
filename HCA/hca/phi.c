@@ -107,30 +107,7 @@ void phi_save() {
 }
 
 void alpha_save() {
-  uint32_t cnt, dim;
-  FILE *fpout=NULL;
-  fpout = fopen(alpha_file,"wb");
-  if ( !fpout ) 
-    yap_sysquit("Cannot open file '%s' for write in alpha_save()\n", 
-		alpha_file);
-  dim = ddN.T;
-  if ( fwrite(&dim, sizeof(dim), 1, fpout) !=1 )
-    yap_sysquit("Cannot write dim to '%s' in alpha_save()\n", alpha_file);
-  cnt = ddG.alpha_cnt+1;
-  if ( fwrite(&cnt, sizeof(cnt), 1, fpout) !=1 )
-    yap_sysquit("Cannot write count to '%s' in alpha_save()\n", alpha_file);
-  if ( fwrite(ddS.alpha, sizeof(ddS.alpha[0]), ddN.T, fpout) 
-       !=ddN.T )
-    yap_sysquit("Cannot write matrix to '%s' in alpha_save()\n", alpha_file);
-  fclose(fpout);
-#ifndef NDEBUG
-  {
-    int t;
-    for (t=0; t<ddN.T; t++)
-      if ( ddS.alpha[t]<=0 )
-	  yap_message(" saving ddS.alpha[%d]<=0\n", t);
-  } 
-#endif
+  write_fvec(alpha_file,ddN.T,ddS.alpha);
   if ( verbose>1 ) {
     int t;
     yap_message("Saving ddS.alpha:");
@@ -231,47 +208,6 @@ void phi_load(char *resstem) {
 	bad++;
 	break;
       }
-    }
-  }
-#endif
-}
-
-/*
- *    load from binary file .alpha into ddP.fixalpha[]
- */
-void alpha_load(char *resstem) {
-  uint32_t cnt, dim;
-  FILE *fp=NULL;
-  alpha_file = yap_makename(resstem,".alpha");
-  ddP.fixalpha = fvec(ddN.T);
-  fp = fopen(alpha_file,"rb");
-  if ( !fp ) 
-    yap_sysquit("Cannot open file '%s' for read in alpha_load()\n", 
-		alpha_file);
-  if ( fread(&dim, sizeof(dim), 1, fp) !=1 )
-    yap_sysquit("Cannot read dim to '%s' in alpha_load()\n", alpha_file);
-  if ( dim != ddN.T ) 
-    yap_quit("Bad topic dim in alpha_load()\n");
-  if ( fread(&cnt, sizeof(cnt), 1, fp) !=1 )
-    yap_sysquit("Cannot read count to '%s' in alpha_load()\n", alpha_file);
-  ddG.alpha_cnt = cnt;
-  if ( fread(ddP.fixalpha, sizeof(ddP.fixalpha[0]), ddN.T, fp) 
-       !=ddN.T )
-    yap_sysquit("Cannot read vector from '%s' in alpha_load()\n", alpha_file);
-  fclose(fp);
-  if ( verbose )
-     yap_message("Read vector from '%s' in alpha_load()\n", alpha_file);
-  free(alpha_file);
-  alpha_file = NULL;
-#ifndef NDEBUG
-  if ( verbose>0 ) {
-    /*  check how well normalises */
-    double tot = 0;
-    int t;
-    for (t=0; t<ddN.T; t++)
-      tot += ddP.fixalpha[t];
-    if ( fabs(tot-1.0)>1e-5  ) {
-      yap_message("alpha_load():  ddP.fixalpha[*] sums to %lf\n", tot);
     }
   }
 #endif

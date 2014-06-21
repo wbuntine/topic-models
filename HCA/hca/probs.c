@@ -36,19 +36,19 @@
  */
 static void get_probs_alpha(double *vp) {
   int t, d, NWT=0;
-  for (d=0; d<ddN.DT; d++)
-    NWT += ddS.NdT[d];
-  for (t=0; t<ddN.T; t++) {
-    int tot=0;
+  if ( ddS.Ndt ) {
     for (d=0; d<ddN.DT; d++)
-      tot += ddS.Ndt[d][t];
-    vp[t] = (ddP.alpha+tot)/(ddP.alpha*ddN.T+NWT);
-  }
-}
-static void get_probs_alphavec(double *vp) {
-  int t;
-  for (t=0; t<ddN.T; t++) {
-    vp[t] = ddP.fixalpha[t];
+      NWT += ddS.NdT[d];
+    for (t=0; t<ddN.T; t++) {
+      int tot=0;
+      for (d=0; d<ddN.DT; d++)
+        tot += ddS.Ndt[d][t];
+      vp[t] = (ddP.alphapr[t]+tot)/(ddP.alphatot+NWT);
+    }
+  } else if ( ddP.alphapr ) {
+    for (t=0; t<ddN.T; t++) {
+      vp[t] = ddP.alphapr[t];
+    }
   }
 }
 
@@ -56,12 +56,8 @@ void get_probs(double *vp) {
   int zerod = 1;
   int t;
   double tot = 0;
-  if ( ddP.PYalpha==0 ) {
+  if ( ddP.PYalpha==H_None ) {
     get_probs_alpha(vp);
-    return;
-  } 
-  if ( PCTL_NOALPHASTATS() ) {
-    get_probs_alphavec(vp);
     return;
   } 
   for (t=0; t<ddN.T; t++) {
@@ -85,11 +81,9 @@ void yap_probs() {
   int t;
   int empty = 0;
   double ent = 0;
-  double factor = 0;
   double *vp = malloc(sizeof(*vp)*ddN.T);
   get_probs(vp);
   yap_message("probs = ");
-  factor = ddP.alpha;
   for (t=0; t<ddN.T; t++) 
     if ( vp[t]>0 ) {
       yap_message(" %lf", vp[t]);
@@ -99,7 +93,8 @@ void yap_probs() {
       yap_message(" -");
     }
   yap_message("\nfactor = %lf, empty = %d, ent = %lf\n", 
-	      factor, empty, exp(ent));
+	      (ddP.PYalpha)?ddP.bpar:ddP.alphatot,
+              empty, exp(ent));
   free(vp);
 }
 
@@ -107,7 +102,8 @@ void print_probs(FILE *fp) {
   int t, num = 0;
   double *vp = malloc(sizeof(*vp)*ddN.T);
   get_probs(vp);
-  fprintf(fp, "factor = %lf\nprobs = ", ddP.alpha);
+  fprintf(fp, "factor = %lf\nprobs = ", 
+          (ddP.PYalpha)?ddP.bpar:ddP.alphatot);
   for (t=0; t<ddN.T; t++) 
     if ( vp[t]>0 ) {
       fprintf(fp, " %lf", vp[t]);

@@ -129,13 +129,14 @@ static void usage() {
   fprintf(stderr,
           "  OPTION is choice of:\n"
 	  "  setting hyperparameters:\n"
-          "   -A value       #  use simple alpha prior and this value for it\n"
-          "   -B value       #  use simple beta prior and this value for it\n"
-          "   -A/B hdp/hpdd/pdp  #  for alpha or beta posn use this prior\n"
+          "   -A/B value[,file] #  use simple alpha prior and this value for it\n"
+          "   -A/B hdp[,file] #  for alpha/beta prior use DP with mean 'file'\n"
+          "   -A/B pdp[,file] #  for alpha/beta prior use mean 'file'\n"
+          "   -A/B hpdd      #  for alpha/beta prior use truncated GEM\n"
           "   -S var=value   #  initialise var=a,b,a0,b0,aw,bw,aw0,bw0,\n"
 	  "                  #  ad,bdk\n"
-	  "   -u bfile       #  beta proportions read from file\n"
-	  "                  #     or use reserved words 'uniform' or 'file'\n"
+	  "   -u bfile       #  beta props initialised from file for hdp,pdp\n"
+	  "                  #     or use reserved words 'uniform' or 'data'\n"
 	  "  sampling hyperparameters:\n"
           "   -D cycles,start   #  sample alpha every this many cycles\n"
           "   -E cycles,start  #  sample beta every this many cycles\n"
@@ -323,6 +324,7 @@ int main(int argc, char* argv[])
 #endif
   char *resstem;
   char *betafile = NULL;
+  double betacin = 0;
   int noerrorlog = 0;
   double probepsilon = 0;
   int displayed = 0;
@@ -352,7 +354,6 @@ int main(int argc, char* argv[])
   int loadhdp = 0;
   int loadtheta = 0;
   int loadphi = 0;
-  int loadalpha = 0;
   int nosample = 0;
   int maxW = 0;
 #ifdef QUERY
@@ -380,7 +381,7 @@ int main(int argc, char* argv[])
 	ddP.PYalpha = H_HPDD;
       else if ( strcmp(optarg,"pdp")==0 ) 
 	ddP.PYalpha = H_PDP;
-      else if ( sscanf(optarg,"%lf",&ddP.alpha)==1 )
+      else if ( sscanf(optarg,"%lf",&ddP.alphac)==1 )
 	ddP.PYalpha = H_None;
       else
 	yap_quit("Need a valid 'A' argument\n");
@@ -394,9 +395,9 @@ int main(int argc, char* argv[])
 	ddP.PYbeta = H_HPDD;
       else if ( strcmp(optarg,"pdp")==0 ) 
 	ddP.PYbeta = H_PDP;
-      else if ( sscanf(optarg,"%lf",&ddP.betac)==1 )
+      else if ( sscanf(optarg,"%lf",&betacin)==1 ) {
 	ddP.PYbeta = H_None;
-      else
+      } else
 	yap_quit("Need a valid 'B' argument\n");
       break;
     case 'c':
@@ -443,8 +444,6 @@ int main(int argc, char* argv[])
 	for (par=ParA; par<=ParBeta; par++) 
 	  ddT[par].fix = 1;
 	nosample = 1;
-      } else if ( strcmp(optarg,"alpha")==0 ) {
-	loadalpha++;
       } else if ( strcmp(optarg,"phi")==0 ) {
 	loadphi++;
       } else {
@@ -620,9 +619,7 @@ int main(int argc, char* argv[])
       restart++;
       if ( !optarg )
 	yap_quit("Need a valid 'r' argument\n");
-      if ( strcmp(optarg,"alpha")==0 ) {
-	loadalpha++;
-      } else if ( strcmp(optarg,"theta")==0 ) {
+      if ( strcmp(optarg,"theta")==0 ) {
 	loadtheta++;
       } else if ( strcmp(optarg,"phi")==0 ) {
 	loadphi++;
@@ -630,7 +627,6 @@ int main(int argc, char* argv[])
 	loadhdp++;
 	if ( ddP.PYbeta != H_None ) {
 	  ddP.PYbeta = H_None;
-	  ddP.beta = 1;
 	}
       } else if ( sscanf(optarg,"%d",&restart_offset)!=1 )
 	yap_quit("Need a valid 'r' argument\n");
@@ -686,7 +682,6 @@ int main(int argc, char* argv[])
       }
       break;
     case 'u':
-      ddP.betac = 0;
       betafile = optarg;
       break;
     case 'v':
@@ -730,8 +725,8 @@ int main(int argc, char* argv[])
   if ( dopmi )
     load_vocab = 1;
 
-  if ( loadalpha && loadphi==0 && restart==0 ) 
-    yap_quit("If using -ralpha/-Falpha, should use -rphi/-Fphi or restart\n");
+  if ( restart && maxW>0 ) 
+    yap_quit("Cannot change dimension with option -W if restart is done\n");
 
   if ( noerrorlog==0 ) {
     char *wname = yap_makename(resstem, ".log");
@@ -761,12 +756,8 @@ int main(int argc, char* argv[])
       if ( pv ) 
 	 ddP.training = atoi(pv);
     } 
-    {
-	int tryW = atoi(readpar(resstem,"W",buf,50));
-        if ( maxW==0 )
-      	    maxW = tryW;
-        if ( ddP.PYbeta==H_None  )
-	    ddP.betac = ddP.beta/tryW;
+    if ( restart || maxW==0 ) {
+      maxW = atoi(readpar(resstem,"W",buf,50));
     }
     if ( doexclude==0 ) {
       if ( ddP.n_excludetopic ) {
@@ -786,12 +777,7 @@ int main(int argc, char* argv[])
     for (t=0; t<ddN.T; t++)
       ddP.bdk[t]  = BDKval;
   }
-  if ( ddP.PYbeta==H_PDP && betafile==NULL )
-    betafile = "uniform";
-  if ( restart && betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP)) 
-    pctl_fix("restart", ITER);
-  else
-    pctl_fix(betafile, ITER);
+  pctl_fix(ITER);
   pctl_samplereport();
   Tmax = ddP.Tinit;
   
@@ -802,8 +788,6 @@ int main(int argc, char* argv[])
     yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
   if ( loadtheta && ddP.probiter>0 )
     yap_quit("Options '-l theta,...' and '-r theta' incompatible\n");
-  if ( loadalpha && ddP.alphaiter>0 )
-    yap_quit("Options '-l alpha,...' and '-r alpha' incompatible\n");
 
   /*
    *   set random number generator
@@ -868,96 +852,104 @@ int main(int argc, char* argv[])
       *  test handling, which includes the hold-out handling
       */
      yap_quit("Option '-ltestprob,...' must not do hold out testing\n");
-	
-  /*
-   *   all data structures
-   */
-  pctl_dims();
-  if ( loadphi ) {
-    if ( score!=ST_phi ) {
-      yap_message("Setting scoring to be 'phi' due to '-r phi' option\n");
-      score = ST_phi;
-    }
-    phi_load(resstem);
-  } 
-  if ( loadalpha ) {
-    alpha_load(resstem);
-  }
-  if ( loadtheta ) {
-    ddP.theta = fmat(ddN.D,ddN.T);
-    prob_load(resstem,".theta",ddP.theta);
-    prob_load(resstem,".testprob",&ddP.theta[ddN.DT]);
-  }
-  data_alloc();
-  if ( ddP.phiiter>0 )
-    phi_init(resstem);
-  else 
-    ddS.phi = NULL;
-  if ( ddP.alphaiter>0 )
-    alpha_init(resstem);
-  else 
-    ddS.alpha = NULL;
-  if ( doclass )
-    data_class(stem);
+   
+   /*
+    *   finalise pctl stuff, needs to be called after dims set
+    */
+   pctl_dims();
+   if ( betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP)) {
+     if ( restart ) {
+       /*
+        *  use stored version of beta
+        */
+       char *fname=yap_makename(resstem,".beta");
+       //   the NULL stops it from rewriting the file back
+       pctl_fixbeta(fname, NULL);
+       free(fname);
+     } else {
+       pctl_fixbeta("uniform", resstem);
+     } 
+   } else {
+     pctl_fixbeta(betafile, resstem);
+   }
+
+   if ( loadphi ) {
+     if ( score!=ST_phi ) {
+       /*
+        *  scoring gives errors otherwise since it uses data counts
+        */
+       yap_message("Setting scoring to be 'phi' due to '-r phi' option\n");
+       score = ST_phi;
+     }
+     phi_load(resstem);
+   } 
+   if ( loadtheta ) {
+     ddP.theta = fmat(ddN.D,ddN.T);
+     prob_load(resstem,".theta",ddP.theta);
+     prob_load(resstem,".testprob",&ddP.theta[ddN.DT]);
+   }
+   data_alloc();
+   if ( ddP.phiiter>0 )
+     phi_init(resstem);
+   else 
+     ddS.phi = NULL;
+   if ( ddP.alphaiter>0 )
+     alpha_init(resstem);
+   else 
+     ddS.alpha = NULL;
+   if ( doclass )
+     data_class(stem);
 #ifdef QUERY
-  if ( queryfile ) {
-    if ( loadphi==0  ) 
-      yap_quit("Querying with -Q needs phi (using -r phi) and no test\n");
-    query_read(queryfile);
-    if ( ddP.queryiter==0 )
-      ddP.queryiter = 10;
-  }
+   if ( queryfile ) {
+     if ( loadphi==0  ) 
+       yap_quit("Querying with -Q needs phi (using -r phi) and no test\n");
+     query_read(queryfile);
+     if ( ddP.queryiter==0 )
+       ddP.queryiter = 10;
+   }
 #endif
-  hca_alloc();
-  if ( ddP.bdk!=NULL ) 
-    dmi_init(&ddM, ddS.z, ddD.w, ddD.NdTcum,
-             ddN.T, ddN.N, ddN.W, ddN.D, ddN.DT,
-	     (fix_hold==GibbsHold)?pctl_hold:NULL);
-  if ( load_vocab ) {
-    data_vocab(stem);
-  }
+   hca_alloc();
+   if ( ddP.bdk!=NULL ) 
+     dmi_init(&ddM, ddS.z, ddD.w, ddD.NdTcum,
+              ddN.T, ddN.N, ddN.W, ddN.D, ddN.DT,
+              (fix_hold==GibbsHold)?pctl_hold:NULL);
+   if ( load_vocab ) {
+     data_vocab(stem);
+   }
+   
+   if ( probepsilon<=0 )
+     probepsilon = 0.001/ddN.T;
+   
+   /*
+    *    check if there are words to report sparsity on
+    */
+   if ( ddP.spiter>0 ) {
+     char *fname = yap_makename(stem,".smap");
+     FILE *fp = fopen(fname,"r");
+     if ( fp ) {
+       sparsemap_init(fp, procs);
+       fclose(fp);
+     } 
+     free(fname);
+   }
+   if ( ddP.probiter>0 || ddP.tprobiter>0 ) {
+     tprob_init();
+   } 
+   
+   if ( ddP.phi==NULL && ddS.phi==NULL && score==ST_phi ) 
+     yap_quit("Option '-o phi' needs a loaded phi matrix\n");
 
-  if ( probepsilon<=0 )
-    probepsilon = 0.001/ddN.T;
-
-  /*
-   *    check if there are words to report sparsity on
-   */
-  if ( ddP.spiter>0 ) {
-    char *fname = yap_makename(stem,".smap");
-    FILE *fp = fopen(fname,"r");
-    if ( fp ) {
-      sparsemap_init(fp, procs);
-      fclose(fp);
-    } 
-    free(fname);
-  }
-  if ( ddP.probiter>0 || ddP.tprobiter>0 ) {
-    tprob_init();
-  } 
-
-  if ( ddP.phi==NULL && ddS.phi==NULL && score==ST_phi ) 
-    yap_quit("Option '-o phi' needs a loaded phi matrix\n");
-
-  /*
-   *   setup the caches
-   */
-  if ( restart && betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP)) {
-    char *fname=yap_makename(resstem,".beta");
-    //   the NULL stops it from rewriting the file back
-    pctl_fixbeta(fname, NULL);
-    free(fname);
-  } else {
-    pctl_fixbeta(betafile, resstem);
-  }
-  cache_init(maxT, maxNwt);
-  
-  /*
-   *  yap some details
-   */
-  data_report(ITER, seed);
-  pctl_report();
- 
+   /*
+    *   setup the caches
+    */
+   cache_init(maxT, maxNwt);
+   
+   /*
+    *  yap some details
+    */
+   data_report(ITER, seed);
+   pctl_report();
+   
   /*
    *  load/init topic assignments and prepare statistics
    */

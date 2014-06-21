@@ -42,13 +42,13 @@ typedef struct D_pars_s {
    */
   float **theta;
   float **phi;
-  float *fixalpha;
   /*
    *    hyperparameters
    */
-  double alpha;           // individual, so total is T*alpha
+  double *alphapr, alphac;  // individual, vector or constant
+  double alphatot;          // total of above or alphac*T
   double *betapr, betac;  // individual, vector or constant
-  double beta;            // total of above or betac*W
+  double betatot;           // total of above or betac*W
   char   PYalpha;         // non-zero if using a/b/a0/b0, 1 if PDD, 2 if DP
   double apar, bpar;
   double a0, b0;          // PDD/PDP params for root
@@ -148,7 +148,7 @@ extern D_pctl_t ddT[];
 enum ParType findpar(char *name);
 void pctl_init();
 void pctl_read(char *resstem, char *buf);
-void pctl_fix(char *betafile, int ITER);
+void pctl_fix(int ITER);
 void pctl_report();
 void pctl_sample(int iter, int procs);
 void pctl_update(int iter);

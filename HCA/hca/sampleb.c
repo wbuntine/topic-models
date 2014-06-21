@@ -111,6 +111,7 @@ static double bdkterms(double b, void *mydata) {
 }
 
 /*
+ *    assumes ddP.PYbeta==H_None
  */
 static double betaterms(double mytbeta, void *mydata) {
   int j,t;
@@ -132,7 +133,7 @@ static double betaterms(double mytbeta, void *mydata) {
 #ifdef B_DEBUG
   yap_message("Eval betaterms(%lf) = %lf", mytbeta, val);
   ddP.beta = mytbeta;
-  cache_update("beta");
+  cache_update("betatot");
   old_beta = mytbeta;
   like = likelihood();
   if ( last_val != 0 ) {
@@ -270,18 +271,14 @@ void sample_bdk(double *b, int k) {
  *  so optimisation done on total weight;
  */
 void sample_beta(double *mytbeta) {
-  double bmax =  DIR_MAX*ddN.W;
-  double old_beta = ddP.beta;
+  double old_beta = ddP.betatot;
 #ifdef B_DEBUG
   last_val = 0;
   last_like = 0;
 #endif
-  // if ( bmax > DIR_TOTAL_MAX )  bmax = DIR_TOTAL_MAX;
-  /*
-   *  beta is set using ddP.beta, so need to factor it out
-   */
-  myarmsMH(DIR_MIN*ddN.W, bmax, &betaterms, &old_beta, mytbeta, "beta",1);
-  cache_update("beta");
+  myarmsMH(DIR_MIN*ddN.W, DIR_MAX*ddN.W, 
+           &betaterms, &old_beta, mytbeta, "betatot",1);
+  cache_update("betatot");
 }
 
 

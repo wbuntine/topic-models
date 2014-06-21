@@ -364,9 +364,6 @@ void hca_reset_stats(char *resstem,
     }
   }
   if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
-#ifdef CACHE_ABTP
-    alphabasetopicprob(-(ddN.T+1));
-#endif
      if ( restart ) {
       char *fname = yap_makename(resstem,".tdt");
       read_u16sparse(ddN.DT,ddN.T,ddS.Tdt,fname);
