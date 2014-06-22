@@ -140,7 +140,7 @@ void hca_alloc() {
     ddS.TwT = u32vec(ddN.W);
     ddS.TWt = u32vec(ddN.T);
   } 
-  if ( ddP.PYalpha  && !PCTL_NOALPHASTATS()) {
+  if ( ddP.PYalpha ) {
     ddS.Tdt = u16mat(ddN.D,ddN.T);
     ddS.TDt = u32vec(ddN.T);
     ddS.Tlife = u32vec(ddN.T);
@@ -170,7 +170,7 @@ void hca_free() {
     free(ddS.TWt);
     free(ddS.Twt[0]);  free(ddS.Twt);
   } 
-  if ( ddP.PYalpha && !PCTL_NOALPHASTATS()) {
+  if ( ddP.PYalpha ) {
     free(ddS.TDt);
     free(ddS.Tlife);
     u16mat_free(ddS.Tdt, ddN.D, ddN.T);
@@ -289,7 +289,7 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.TWt, 0, sizeof(ddS.TWt[0])*ddN.T);
     memset((void*)ddS.Twt[0], 0, sizeof(ddS.Twt[0][0])*ddN.W*ddN.T);
   }
-  if ( ddP.PYalpha && !PCTL_NOALPHASTATS()) {
+  if ( ddP.PYalpha ) {
     memset((void*)ddS.TDt, 0, sizeof(ddS.TDt[0])*ddN.T);
     memset((void*)ddS.Tlife, 0, sizeof(ddS.Tlife[0])*ddN.T);
     for (i=0; i<ddN.D; i++)
@@ -363,7 +363,7 @@ void hca_reset_stats(char *resstem,
       ddS.TWT += ddS.TWt[t];
     }
   }
-  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
+  if ( ddP.PYalpha  ) {
      if ( restart ) {
       char *fname = yap_makename(resstem,".tdt");
       read_u16sparse(ddN.DT,ddN.T,ddS.Tdt,fname);

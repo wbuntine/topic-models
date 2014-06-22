@@ -61,12 +61,15 @@ void get_probs(double *vp) {
     return;
   } 
   for (t=0; t<ddN.T; t++) {
-    if ( ddP.PYalpha!=H_HPDD || ddS.TDt[t]>0 || zerod ) 
+    /*
+     *   all this trickery so only the first NULL topic
+     *   gets the remainder probability
+     */
+    if ( ddP.PYalpha!=H_HPDD || ddS.TDt[t]>0 || zerod ) {
       tot += vp[t] = alphabasetopicprob(t);
-    else
+      if (zerod) zerod = 0;
+    } else
       vp[t] = 0;
-    if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 ) 
-      zerod = 0;
   }
 #ifndef NDEBUG
   if ( fabs(tot-1.0)>1e-4 ) {

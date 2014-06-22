@@ -102,7 +102,7 @@ int remove_doc(int d, enum GibbsType fix) {
   for (t=0; t<ddN.T; t++) 
     ddS.Ndt[d][t] = 0;
   ddS.NdT[d] = 0;
-  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
+  if ( ddP.PYalpha ) {
     for (t=0; t<ddN.T; t++) 
       if ( ddS.Tdt[d][t]>0 ) {
         int val;
@@ -177,7 +177,7 @@ int add_doc(int d, enum GibbsType fix) {
     }
     if ( (ddP.bdk!=NULL) && M_multi(i) ) mi++;
   }
-  if ( ddP.PYalpha && !PCTL_NOALPHASTATS() ) {
+  if ( ddP.PYalpha ) {
     /*  initialise ddS.Tdt[d][*]  */ 
     /*
      *   adjust table count stats based on Ndt[d]

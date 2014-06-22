@@ -81,7 +81,7 @@ void pctl_init() {
   ddT[ParBW].name = "bw";
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
-  ddT[ParAlpha].name = "alpha";  //  actually, alphatot
+  ddT[ParAlpha].name = "alphatot"; 
   ddT[ParBeta].name = "betatot";  
   ddT[ParA].ptr = &ddP.apar;
   ddT[ParAW].ptr = &ddP.awpar;
@@ -256,54 +256,64 @@ void pctl_read(char *resstem, char *buf) {
   mystem = resstem;
   mybuf = buf;
   ddP.PYbeta = readi("PYbeta");
-   if ( ddP.PYbeta ) {
-     ddP.awpar = readf("aw");
-     ddP.bwpar = readf("bw");
-      if ( ddP.PYbeta!=H_PDP ) {
-	ddP.aw0 = readf("aw0");
-	ddP.bw0 = readf("bw0");
-      }
-   } else {
-     ddP.betatot = readf("betatot");
-   }
-   ddP.PYalpha = readi("PYalpha");
-   if ( ddP.PYalpha ) {
-     ddP.apar = readf("a");
-     ddP.bpar = readf("b");
-     if ( ddP.PYalpha!=H_PDP ) {
-	ddP.a0 = readf("a0");
-	ddP.b0 = readf("b0");
-      }
-   } else {
-     ddP.alphac = readf("alpha");
-   }
-   mybuf = malloc(ddN.T*15+100);
-   if ( !mybuf ) 
-     yap_quit("Out of memory reading 'bdk' in pctl_read()\n");
-   ddP.bdk = readfv("bdk", ddN.T);
-   if ( ddP.bdk!=NULL ) {
-     ddP.ad = readf("ad");
-   } else
-     ddP.ad = 0;
-   free(mybuf);
-   mybuf = buf;
-   ddP.n_excludetopic = readi("Nexcludetopic");
-   if ( ddP.n_excludetopic>0 ) {
-     int t, n_t;
-     mybuf = malloc(ddP.n_excludetopic*10+100);
-     ddP.excludetopic = readiv("excludetopic", ddP.n_excludetopic);
-     /*  set the bit vector */
-     n_t = ((ddN.T-1U)/32U+1U);
-     ddP.bits_et = malloc(sizeof(ddP.bits_et[0])*n_t);
-     for (t=0; t<n_t; t++) 
-       ddP.bits_et[t] = 0;
-     for (t=0; t<ddP.n_excludetopic; t++) {
-       uint32_t x = ddP.excludetopic[t];
-       ddP.bits_et[x/32U] |= (1U << (x%32U));
-     }
-     free(mybuf);
-     mybuf = buf;
-   }
+  if ( ddP.PYbeta ) {
+    ddP.awpar = readf("aw");
+    ddP.bwpar = readf("bw");
+    if ( ddP.PYbeta!=H_PDP ) {
+      ddP.aw0 = readf("aw0");
+      ddP.bw0 = readf("bw0");
+    }
+    if ( ddP.PYalpha!=H_HPDD )
+      ddP.betatot = 1.0;
+    else
+      ddP.betatot = 0;
+    ddP.betac = 0.0;
+  } else {
+    ddP.betatot = readf("betatot");
+  }
+  ddP.PYalpha = readi("PYalpha");
+  if ( ddP.PYalpha ) {
+    ddP.apar = readf("a");
+    ddP.bpar = readf("b");
+    if ( ddP.PYalpha!=H_PDP ) {
+      ddP.a0 = readf("a0");
+      ddP.b0 = readf("b0");
+    }
+    if ( ddP.PYalpha!=H_HPDD )
+      ddP.alphatot = 1.0;
+    else
+      ddP.alphatot = 0;
+    ddP.alphac = 0.0;
+  } else {
+    ddP.alphatot = readf("alphatot");
+  }
+  mybuf = malloc(ddN.T*15+100);
+  if ( !mybuf ) 
+    yap_quit("Out of memory reading 'bdk' in pctl_read()\n");
+  ddP.bdk = readfv("bdk", ddN.T);
+  if ( ddP.bdk!=NULL ) {
+    ddP.ad = readf("ad");
+  } else
+    ddP.ad = 0;
+  free(mybuf);
+  mybuf = buf;
+  ddP.n_excludetopic = readi("Nexcludetopic");
+  if ( ddP.n_excludetopic>0 ) {
+    int t, n_t;
+    mybuf = malloc(ddP.n_excludetopic*10+100);
+    ddP.excludetopic = readiv("excludetopic", ddP.n_excludetopic);
+    /*  set the bit vector */
+    n_t = ((ddN.T-1U)/32U+1U);
+    ddP.bits_et = malloc(sizeof(ddP.bits_et[0])*n_t);
+    for (t=0; t<n_t; t++) 
+      ddP.bits_et[t] = 0;
+    for (t=0; t<ddP.n_excludetopic; t++) {
+      uint32_t x = ddP.excludetopic[t];
+      ddP.bits_et[x/32U] |= (1U << (x%32U));
+    }
+    free(mybuf);
+    mybuf = buf;
+  }
 }
 
 /*
@@ -314,31 +324,43 @@ void pctl_dims() {
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
     if ( ddT[ParBDK].fix==0 && ddP.kbatch==0 ) {
-	if ( ddN.T>=20 )
-      		ddP.kbatch = ddN.T/5;
-	else
-		ddP.kbatch = ddN.T/2;
+      if ( ddN.T>=20 )
+	ddP.kbatch = ddN.T/5;
+      else
+	ddP.kbatch = ddN.T/2;
     }
     if (  ddP.kbatch > ddN.T )
       ddP.kbatch = ddN.T;
   }
   if ( ddP.PYalpha==H_None ) {
-    if ( ddP.alphac==0 ) {
+    /*
+     *  reset .alphatot according to constraints;
+     *  if.alphatot== then .alphac==0.05*(NT/DT)/T;
+     */
+    double alphain = ddP.alphatot/ddN.T;
+    double alphac = alphain;
+    if ( alphac==0 )
       ddP.alphac = 0.05*ddN.NT/(ddN.DT*ddN.T);
+    if ( alphac< DIR_MIN ) 
+      alphac = DIR_MIN;
+    if ( alphac>DIR_MAX ) 
+      alphac = DIR_MAX;
+    if ( alphac>DIR_TOTAL_MAX/ddN.T )
+      alphac = DIR_TOTAL_MAX/ddN.T;
+    if ( verbose>=1 && alphain!=alphac ) {
+      yap_message("alpha changed from %lf to %lf due to Dirichlet constrains\n",
+		  alphain, alphac);
+      ddP.alphatot = alphac*ddN.T;
     }
-    if ( ddP.alphac< DIR_MIN )
-      ddP.alphac = DIR_MIN;
-    if ( ddP.alphac> DIR_MAX )
-      ddP.alphac = DIR_MAX;
   }
   if ( ddP.PYbeta==H_None ) {
     /*
-     *  reset betatot according to constraints
+     *  reset .betatot according to constraints;
+     *  if.betatot== then .betac==DIR_MIN;
      */
     double betain = ddP.betatot/ddN.W;
     double betac = betain;
-    assert(betac>0);
-    if ( betac< DIR_MIN ) 
+     if ( betac< DIR_MIN ) 
       betac = DIR_MIN;
     if ( betac>DIR_MAX ) 
       betac = DIR_MAX;
@@ -349,7 +371,6 @@ void pctl_dims() {
 		  betain, betac);
       ddP.betatot = betac*ddN.W;
     }
-    ddP.betac = betac;
   }
   if ( ddP.window>0 ) {
     if ( ddP.window>=ddN.DT )
@@ -362,7 +383,7 @@ void pctl_dims() {
 }
 
 /*
- *   initialising or ddP.beta is changed
+ *   initialising or ddP.betatot is changed
  *      file = where to grab beta
  *      resstem = only set if beta to be saved as ".beta"
  *
@@ -373,6 +394,8 @@ void pctl_fixbeta(char *file, char *resstem) {
   int c;
   if ( ddP.PYbeta!=H_HPDD && !ddP.betapr ) 
     ddP.betapr = dvec(ddN.W);
+  if ( ddP.PYbeta==H_None && file==NULL && resstem )
+    ddP.betac = 1;
   if ( ddP.PYbeta!=H_HPDD && file ) {
     /*
      *   only read on initialisation
@@ -401,7 +424,7 @@ void pctl_fixbeta(char *file, char *resstem) {
     }
     if ( resstem ) {
       /*
-       *  however, always record the result used
+       *  however, record the result used
        */
       char *fname;
       fname = yap_makename(resstem,".beta");
@@ -415,7 +438,7 @@ void pctl_fixbeta(char *file, char *resstem) {
      */
     assert(ddP.betatot>0);
     ddP.betac = ddP.betatot/ddN.W;
-    assert(ddP.beta>0);
+    assert(ddP.betapr>0);
     for (c=0; c<ddN.W; c++)
       ddP.betapr[c] = ddP.betac;
   } else if ( ddP.betapr ) {
@@ -427,6 +450,68 @@ void pctl_fixbeta(char *file, char *resstem) {
       lastbeta += ddP.betapr[c];
     for (c=0; c<ddN.W; c++)
       ddP.betapr[c] *= ddP.betatot/lastbeta;
+  }
+}
+
+/*
+ *   initialising or ddP.alphatot is changed
+ *      file = where to grab alpha
+ *      resstem = only set if alpha to be saved as ".alpha"
+ *
+ *   when .alphac in use, reset .alphac and .alphapr[] based in .alphatot
+ *   otherwise if .alphapr[] in use, renormalise to get .alphatot
+ */
+void pctl_fixalpha(char *file, char *resstem) {
+  int c;
+  if ( ddP.PYalpha!=H_HPDD && !ddP.alphapr ) 
+    ddP.alphapr = dvec(ddN.T);
+  if ( ddP.PYalpha==H_None && file==NULL && resstem )
+    ddP.alphac = 1;
+  if ( ddP.PYalpha!=H_HPDD && file ) {
+    /*
+     *   only read on initialisation
+     */
+    ddP.alphac = 0;
+    if ( strcmp(file,"uniform")==0 ) {
+      /*
+       *  initialise uniform
+       */
+      for (c=0; c<ddN.T; c++)
+        ddP.alphapr[c] = 1.0;
+    } else {
+      /*
+       *  initialise from file
+       */
+      read_dvec(file,ddN.T,ddP.alphapr);
+    }
+    if ( resstem ) {
+      /*
+       *  however, record the result used
+       */
+      char *fname;
+      fname = yap_makename(resstem,".alpha");
+      write_dvec(fname,ddN.T,ddP.alphapr);
+      free(fname);
+    }
+  }
+  if ( ddP.alphac!=0 && ddP.PYalpha==H_None ) {
+    /*
+     *  .alphac  and .alphapr set from .alphatot
+     */
+    assert(ddP.alphatot>0);
+    ddP.alphac = ddP.alphatot/ddN.T;
+    assert(ddP.alphapr>0);
+    for (c=0; c<ddN.T; c++)
+      ddP.alphapr[c] = ddP.alphac;
+  } else if ( ddP.alphapr ) {
+    /*
+     *  renormalise .alphapr[] so it adds to .alphatot
+     */
+    double lastalpha = 0;
+    for (c=0; c<ddN.T; c++)
+      lastalpha += ddP.alphapr[c];
+    for (c=0; c<ddN.T; c++)
+      ddP.alphapr[c] *= ddP.alphatot/lastalpha;
   }
 }
 
@@ -457,10 +542,18 @@ void pctl_fix(int ITER) {
       ddP.a0 = 0;
     if ( ddP.apar==0 )
       ddT[ParA].fix = 1;
-    if ( ddP.a0==0 || ddP.PYalpha==H_PDP )
+    if ( ddP.a0==0 )
       ddT[ParA0].fix = 1;    
-    if ( ddP.PYalpha==H_PDP )
-      ddT[ParB0].fix = 1;    
+    if ( ddP.PYalpha==H_PDP ) {
+      ddT[ParA0].fix = 1;    
+      ddT[ParB0].fix = 1;   
+    }
+    if ( ddP.PYalpha==H_HDP||ddP.PYalpha==H_PDP ) 
+      /*
+       *    in this case .alphapr[] must be a prob vector
+       */
+      ddP.alphatot = 1;
+    ddP.alphac = 0;
   }
   if ( ddP.PYbeta==H_None ) {
     ddT[ParAW].fix = 1;
@@ -478,12 +571,11 @@ void pctl_fix(int ITER) {
       ddT[ParAW0].fix = 1;    
       ddT[ParBW0].fix = 1;    
     }
-    if ( ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP ) {
+    if ( ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP ) 
       /*
        *    in this case .betapr[] must be a prob vector
        */
       ddP.betatot = 1;
-    }
     ddP.betac = 0;
     ddT[ParBeta].fix = 1;
   }
@@ -497,15 +589,6 @@ void pctl_fix(int ITER) {
     ddT[ParBW0].fix = 1;
     ddT[ParBeta].fix = 1;
   }
-  if ( ddP.alphapr!=NULL ) {
-    /*
-     *   PYalpha is not used not used!!
-     */
-    ddT[ParAlpha].fix = 1;  // ????
-    ddT[ParA0].fix = 1;
-    ddT[ParB0].fix = 1;
-  }
-  
   {
     enum ParType par;
     for (par=ParA; par<=ParBeta; par++) 

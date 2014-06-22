@@ -45,10 +45,12 @@ typedef struct D_pars_s {
   /*
    *    hyperparameters
    */
-  double *alphapr, alphac;  // individual, vector or constant
-  double alphatot;          // total of above or alphac*T
-  double *betapr, betac;  // individual, vector or constant
-  double betatot;           // total of above or betac*W
+  double *alphapr;        // vector normalises to 1 when PYalpha!=H_None
+  double alphac;          // individual constant, set from alphatot
+  double alphatot;        // total of above or alphac*T
+  double *betapr;         // vector normalises to 1 when PYbeta!=H_None
+  double betac;           // individual constant, set from betatot
+  double betatot;         // total of above or betac*W
   char   PYalpha;         // non-zero if using a/b/a0/b0, 1 if PDD, 2 if DP
   double apar, bpar;
   double a0, b0;          // PDD/PDP params for root
@@ -121,7 +123,6 @@ typedef struct D_pars_s {
 } D_pars_t;
 
 #define PCTL_BURSTY()          (ddP.bdk!=NULL)
-#define PCTL_NOALPHASTATS()          (ddP.fixalpha && ddP.apar==0)
 
 /*
  *  hyperparameters control
@@ -161,6 +162,7 @@ int pctl_training(int D);
 void pctl_free();
 
 void pctl_fixbeta(char *file, char *resstem);
+void pctl_fixalpha(char *file, char *resstem);
 double pctl_gammaprior(double x);
 
 #endif

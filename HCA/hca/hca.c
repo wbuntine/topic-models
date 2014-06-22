@@ -129,14 +129,14 @@ static void usage() {
   fprintf(stderr,
           "  OPTION is choice of:\n"
 	  "  setting hyperparameters:\n"
-          "   -A/B value[,file] #  use simple alpha prior and this value for it\n"
+          "   -A/B val[,file] #  alpha/beta Dir. prior and mean is val \n"
+          "   -A/B dir[,file] #  alpha/beta Dir. prior and mean is default \n"
           "   -A/B hdp[,file] #  for alpha/beta prior use DP with mean 'file'\n"
           "   -A/B pdp[,file] #  for alpha/beta prior use mean 'file'\n"
+	  "      file = 'uniform' (default), 'data' or a filename\n"
           "   -A/B hpdd      #  for alpha/beta prior use truncated GEM\n"
           "   -S var=value   #  initialise var=a,b,a0,b0,aw,bw,aw0,bw0,\n"
 	  "                  #  ad,bdk\n"
-	  "   -u bfile       #  beta props initialised from file for hdp,pdp\n"
-	  "                  #     or use reserved words 'uniform' or 'data'\n"
 	  "  sampling hyperparameters:\n"
           "   -D cycles,start   #  sample alpha every this many cycles\n"
           "   -E cycles,start  #  sample beta every this many cycles\n"
@@ -159,7 +159,6 @@ static void usage() {
 #endif
 	  "   -r offset      #  restart using data from offset on (usually 0)\n"
           "                  #  load training statistics previously saved\n"
-	  "   -r alpha       #  keyword 'alpha' means load '.alpha' file\n"
 	  "   -r phi         #  keyword 'phi' means load '.phi' file\n"
 	  "   -r tprob       #  keyword 'tprob' means load '.tprob' file\n"
 	  "   -r hdp         #  keyword 'hdp' means load saved data from HDP,\n"
@@ -324,7 +323,9 @@ int main(int argc, char* argv[])
 #endif
   char *resstem;
   char *betafile = NULL;
+  char *alphafile = NULL;
   double betacin = 0;
+  double alphacin = 0;
   int noerrorlog = 0;
   double probepsilon = 0;
   int displayed = 0;
@@ -370,35 +371,56 @@ int main(int argc, char* argv[])
   pctl_init();
   diag_alloc();
 
-  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:u:vVw:W:xX"))>=0 ) {
+  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:vVw:W:xX"))>=0 ) {
     switch ( c ) {
     case 'A':
       if ( !optarg )
 	yap_quit("Need a valid 'A' argument\n");
-      if ( strcmp(optarg,"hdp")==0 ) 
+      if ( strncmp(optarg,"hdp",3)==0 ) 
 	ddP.PYalpha = H_HDP;
-      else if ( strcmp(optarg,"hpdd")==0 ) 
+      else if ( strncmp(optarg,"hpdd",4)==0 ) 
 	ddP.PYalpha = H_HPDD;
-      else if ( strcmp(optarg,"pdp")==0 ) 
+      else if ( strncmp(optarg,"pdp",3)==0 ) 
 	ddP.PYalpha = H_PDP;
-      else if ( sscanf(optarg,"%lf",&ddP.alphac)==1 )
+      else if ( strncmp(optarg,"dir",3)==0 ) 
+	ddP.PYalpha = H_None;
+      else if ( sscanf(optarg,"%lf",&alphacin)==1 )
 	ddP.PYalpha = H_None;
       else
 	yap_quit("Need a valid 'A' argument\n");
+      if ( ddP.PYalpha != H_HPDD ) {
+	/*  get file part */
+	char *farg = strchr(optarg,',');
+	if ( farg!=NULL )
+	  alphafile = farg+1;
+	if ( ddP.PYalpha==H_None && strcmp(alphafile,"uniform") )
+	  alphafile = NULL;
+      }
       break;
     case 'B':
       if ( !optarg )
 	yap_quit("Need a valid 'B' argument\n");
-      if ( strcmp(optarg,"hdp")==0 ) 
+      if ( strncmp(optarg,"hdp",3)==0 ) 
 	ddP.PYbeta = H_HDP;
-      else if ( strcmp(optarg,"hpdd")==0 ) 
+      else if ( strncmp(optarg,"hpdd",4)==0 ) 
 	ddP.PYbeta = H_HPDD;
-      else if ( strcmp(optarg,"pdp")==0 ) 
+      else if ( strncmp(optarg,"pdp",3)==0 ) 
 	ddP.PYbeta = H_PDP;
+      else if ( strncmp(optarg,"dir",3)==0 ) 
+	ddP.PYbeta = H_None;
       else if ( sscanf(optarg,"%lf",&betacin)==1 ) {
 	ddP.PYbeta = H_None;
       } else
 	yap_quit("Need a valid 'B' argument\n");
+      if ( ddP.PYbeta != H_HPDD ) {
+	/*  get file part */
+	char *farg = strchr(optarg,',');
+	if ( farg!=NULL ) {
+	  betafile = farg+1;
+	  if ( ddP.PYbeta==H_None && strcmp(betafile,"uniform") )
+	    betafile = NULL;
+	}
+      }
       break;
     case 'c':
       if ( !optarg || sscanf(optarg,"%d",&checkpoint)!=1 )
@@ -681,9 +703,6 @@ int main(int argc, char* argv[])
 	  yap_quit("Need a valid 'T' argument\n");
       }
       break;
-    case 'u':
-      betafile = optarg;
-      break;
     case 'v':
       verbose++;
       break;
@@ -856,8 +875,31 @@ int main(int argc, char* argv[])
    /*
     *   finalise pctl stuff, needs to be called after dims set
     */
+   if ( betacin>0 )
+     ddP.betatot = betacin*ddN.W;
+   if ( alphacin>0 )
+     ddP.alphatot = alphacin*ddN.T;
+   /*
+    *   if ddP.betatot or ddP.alphatot ==0 they'll be set to defaults
+    *   when PY=H_None
+    */
    pctl_dims();
-   if ( betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP)) {
+   if ( alphafile==NULL && (ddP.PYalpha==H_HDP||ddP.PYalpha==H_PDP) ) {
+     if ( restart ) {
+       /*
+        *  use stored version of alpha
+        */
+       char *fname=yap_makename(resstem,".alpha");
+       //   the NULL stops it from rewriting the file back
+       pctl_fixalpha(fname, NULL);
+       free(fname);
+     } else {
+       pctl_fixalpha("uniform", resstem);
+     } 
+   } else {
+     pctl_fixalpha(alphafile, resstem);
+   }
+   if ( betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP) ) {
      if ( restart ) {
        /*
         *  use stored version of beta

@@ -139,10 +139,10 @@ double phi_entropy(int k) {
 double alpha_entropy() {
   double ent = 0;
   int k;
-  assert(ddP.fixalpha || ddS.alpha);
-  if ( ddP.fixalpha ) {
+  assert(ddP.alphapr || ddS.alpha);
+  if ( ddP.alphapr ) {
     for (k=0; k<ddN.T; k++) {
-      double p = ddP.fixalpha[k];
+      double p = ddP.alphapr[k];
       if ( p>0.00001 ) 
 	ent -= p * log(p);
     }
@@ -328,18 +328,20 @@ void phi_update() {
 }
 
 void alpha_update() {
+  int zerod = 1;
   int t;
-  double totvec;
-  
+  double totvec = 0;
   /*
    *    now compute
    */
-  totvec = 0;
   for (t=0; t<ddN.T; t++) {
-    double val = alphabasetopicprob(t);
+    double val;
+    if ( ddP.PYalpha!=H_HPDD || ddS.TDt[t]>0 || zerod ) {
+      val = alphabasetopicprob(t);
+      if (zerod) zerod = 0;
+    } else
+      val = 0;   
     totvec += val;
-    if ( val<=0 )
-      yap_message("alpha_update for alpha[%d] zero\n",t);
     ddS.alpha[t] = (ddG.alpha_cnt*ddS.alpha[t] + val) / (ddG.alpha_cnt+1);
   }
 #ifndef NDEBUG

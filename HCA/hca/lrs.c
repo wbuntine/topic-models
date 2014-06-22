@@ -346,7 +346,7 @@ double lp_test_Pred(char *resstem) {
   /*
    *  must account for other totals over docs
    *  which would be modified by adding the test doc
-   *    Nwt[], Nt[] - we don't change these, usd in wordfact()
+   *    Nwt[], Nt[] - we don't change these, used in wordfact()
    *    TDt[t]  = \sum_d Tdt[d][t]
    *    TDT = \sum_t TDt[t]
    *  HENCE we use fix_Td()
@@ -380,7 +380,7 @@ double lp_test_Pred(char *resstem) {
       /*
        *  do this to predict the topic proportions for this round
        */
-      if ( ddP.PYalpha && !PCTL_NOALPHASTATS()) 
+      if ( ddP.PYalpha ) 
         Td_ = comp_Td(i); 
       else Td_ = 1;
       for (t=0; t<ddN.T; t++) 

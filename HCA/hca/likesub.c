@@ -38,51 +38,85 @@
  *     routines for sampling or probability estimation
  */
 
+/*
+ *     Base distribution for alpha
+ *
+ *     alpha_update() and get_probs() call this and
+ *     expect all mass on first empty topic for H_PDD
+ *        i.e., no spreading, and do not call for subsequent empty topics
+ *     topic_fact() and topic_prob() will not call when empty topic for H_PDD
+ */
 double alphabasetopicprob(int t) {
   assert(t>=0);
-  if ( ddP.alphapr )
+  if ( ddP.PYalpha==H_PDP ) 
     return ddP.alphapr[t];
-  assert( ddP.PYalpha!=H_PDP);
   if ( ddP.PYalpha==H_HDP ) {
     assert(ddP.a0==0);
     return  ( (double)ddS.TDt[t]+ddP.b0*ddP.alphapr[t] )
       /((double)ddS.TDT+ddP.b0);
   }
+  /*
+   *    for the HPDD we need to deal with the truncation
+   *     =>  in sampling, if empty topics exist, act as if its 
+   *         not truncated, 
+   *     =>  once all topics in use ensure normalisation
+   */
   if ( ddS.TDt[t]==0 ) 
+    /*
+     *   will only encounter on new topic;
+     *   rest are forced to zero by external logic
+     */
     return  (ddP.b0+ddP.a0*ddS.TDTnz) / ((double)ddS.TDT+ddP.b0);
   else if ( ddS.TDTnz==ddN.T ) 
     /*
      *  this cases fudges the situation when *all* topics in use
-     *  so we normalise
+     *  so we normalise differently;
+     *  i.e.    the empty topic at K+1 is inaccessible so we
+     *          cannot make it possible
      */
     return ((double)ddS.TDt[t]-ddP.a0)/((double)ddS.TDT-ddN.T*ddP.a0);
+  /*
+   *   normal situation when empty topics exist
+   */
   return  ((double)ddS.TDt[t]-ddP.a0)/((double)ddS.TDT+ddP.b0);	 
 }
 
 /*
+ *  Base distribution for beta
+ *
  *  care must be taken when using this:
  *  in H_PDD case,
  *  if we have zero or multiple cases of TwT[j]==0 
- *  then it doesn't normalise ... so we fudge things
+ *  then it wouldn't normalise ... so we arrange things to make it
+ *  NB.   no special case of zeroing subsequent null words
+ *        as per alphabasetopicprob()
  */
 double betabasewordprob(int j) {
-  double val;
-  if ( ddP.PYbeta==H_PDP) {
+  if ( ddP.PYbeta==H_PDP) 
     return ddP.betapr[j];
-  }
   if ( ddP.PYbeta==H_HDP ) {
     assert(ddP.aw0==0);
-    val = (double)ddS.TwT[j]+ddP.bw0*ddP.betapr[j];
-  } else if ( ddS.TwT[j]==0 ) {
+    return ((double)ddS.TwT[j]+ddP.bw0*ddP.betapr[j])/((double)ddS.TWT+ddP.bw0);
+  } 
+  if ( ddS.TwT[j]==0 ) {
+    /*
+     *    the GEM remainder is distributed evenly over
+     *    all the NULL topics
+     */
     assert(ddN.W-ddS.TWTnz>0);
-    val = (ddP.bw0+ddP.aw0*(double)ddS.TWTnz)/((double)(ddN.W-ddS.TWTnz));
-  } else {
-    val = ((double)ddS.TwT[j]-ddP.aw0);
-    if ( ddN.W==ddS.TWTnz )
-      val *= ((double)ddS.TWT+ddP.bw0) /
-        ((double)ddS.TWT-ddP.aw0*(double)ddN.W);
-  }	 
-  return val/((double)ddS.TWT+ddP.bw0);
+    return  (ddP.bw0+ddP.aw0*(double)ddS.TWTnz)
+      /((double)(ddN.W-ddS.TWTnz))/((double)ddS.TWT+ddP.bw0);
+  } else if ( ddN.W==ddS.TWTnz ) {
+    /*
+     *  there are no NULL topics so normalise differently
+     */
+    return ((double)ddS.TwT[j]-ddP.aw0)/
+      ((double)ddS.TWT-ddP.aw0*(double)ddN.W);
+  }
+  /*
+   *   regular GEM estimate
+   */
+  return((double)ddS.TwT[j]-ddP.aw0)/((double)ddS.TWT+ddP.bw0);
 }
 
 /*
@@ -194,17 +228,21 @@ double topicprob(int d, int t, int Ttot) {
   if ( ddP.theta ) 
     return ddP.theta[d][t];
   if ( ddP.PYalpha==H_None ) 
-    return ((double)ddS.Ndt[d][t]+ddP.alphapr[t])/((double)ddS.NdT[d]+ddP.alphatot);
+    return ((double)ddS.Ndt[d][t]+ddP.alphapr[t])
+      / ((double)ddS.NdT[d]+ddP.alphatot);
   if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 ) {
     /*
      *  special case for HPDD with a topic with 0 occupancy
-     *  to handle the introduction of a new topic into a document
-     *  spread probability over all possible 0 cases
+     *  to handle the introduction of a new topic into a document;
+     *  spread probability over all possible NULL cases
      */
-    return (ddP.bpar+ddP.apar*Ttot) 
-      * (ddP.b0+ddP.a0*ddS.TDTnz)/(ddP.b0+ddS.TDT)/(ddN.T-ddS.TDTnz)
-      / ((double)ddP.bpar+ddS.NdT[d]);
+    return (ddP.bpar+ddP.apar*Ttot)/((double)ddP.bpar+ddS.NdT[d])
+      * (ddP.b0+ddP.a0*ddS.TDTnz)/(ddP.b0+ddS.TDT)
+      /(ddN.T-ddS.TDTnz);
   }
+  /*
+   *    standard PYP result using parent base rate
+   */
   if ( ddS.Tdt[d][t]==0 ) {
     return ((double)ddP.bpar+ddP.apar*Ttot) * alphabasetopicprob(t)
       / ((double)ddP.bpar+ddS.NdT[d]);
@@ -225,15 +263,14 @@ double topicnorm(int d) {
 }
 
 /*
- *   probability of word given topic used in LRS sampler,
+ *   probability of word given topic used for estimation,
  *   which means the topic parts are fixed!
  *   unseen words can still be in the topic, just with
  *   less probability
  */
 double wordprob(int j, int t) {
-  if ( ddP.phi!=NULL ) {
+  if ( ddP.phi!=NULL )
     return ddP.phi[t][j];
-  } 
   if ( ddP.PYbeta ) {
     double pnew = ((double)ddP.bwpar+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j);
     double pold = 0;

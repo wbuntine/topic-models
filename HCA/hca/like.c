@@ -110,6 +110,7 @@ double likelihood_PYalpha() {
   }  
   return likelihood;
 }
+
 double likelihood_PYalpha_HDP() {
   /*
    *    the DP prior, a0==0, its a Dirichlet
