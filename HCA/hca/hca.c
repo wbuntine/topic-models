@@ -393,7 +393,8 @@ int main(int argc, char* argv[])
 	char *farg = strchr(optarg,',');
 	if ( farg!=NULL )
 	  alphafile = farg+1;
-	if ( ddP.PYalpha==H_None && strcmp(alphafile,"uniform") )
+	if ( ddP.PYalpha==H_None && alphafile 
+	     && strcmp(alphafile,"uniform")==0 )
 	  alphafile = NULL;
       }
       break;
@@ -417,7 +418,8 @@ int main(int argc, char* argv[])
 	char *farg = strchr(optarg,',');
 	if ( farg!=NULL ) {
 	  betafile = farg+1;
-	  if ( ddP.PYbeta==H_None && strcmp(betafile,"uniform") )
+	  if ( ddP.PYbeta==H_None && betafile 
+	       && strcmp(betafile,"uniform")==0 )
 	    betafile = NULL;
 	}
       }
@@ -899,6 +901,9 @@ int main(int argc, char* argv[])
    } else {
      pctl_fixalpha(alphafile, resstem);
    }
+   if ( verbose && alphafile!=NULL && strcmp(alphafile,"uniform")!=0 ) {
+     yap_message("Probability file for alpha prior is '%s'\n", alphafile);
+   }
    if ( betafile==NULL && (ddP.PYbeta==H_HDP||ddP.PYbeta==H_PDP) ) {
      if ( restart ) {
        /*
@@ -913,6 +918,9 @@ int main(int argc, char* argv[])
      } 
    } else {
      pctl_fixbeta(betafile, resstem);
+   }
+   if ( verbose && betafile!=NULL && strcmp(betafile,"uniform")!=0 ) {
+     yap_message("Probability file for beta prior is '%s'\n", betafile);
    }
 
    if ( loadphi ) {
