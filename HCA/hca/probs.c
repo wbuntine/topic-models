@@ -34,8 +34,9 @@
  *   in fact its meaningless statistically, just a
  *   useful diagnostic
  */
-static void get_probs_alpha(double *vp) {
+static int get_probs_alpha(double *vp) {
   int t, d, NWT=0;
+  int empty = 0;
   if ( ddS.Ndt ) {
     for (d=0; d<ddN.DT; d++)
       NWT += ddS.NdT[d];
@@ -43,22 +44,30 @@ static void get_probs_alpha(double *vp) {
       int tot=0;
       for (d=0; d<ddN.DT; d++)
         tot += ddS.Ndt[d][t];
+      if ( tot==0 )
+	empty++;
       vp[t] = (ddP.alphapr[t]+tot)/(ddP.alphatot+NWT);
     }
   } else if ( ddP.alphapr ) {
     for (t=0; t<ddN.T; t++) {
       vp[t] = ddP.alphapr[t];
+      if ( vp[t]==0 )
+	empty++;
     }
+  } else {	
+    for (t=0; t<ddN.T; t++)
+       vp[t] = 0;
   }
+  return empty;
 }
 
-void get_probs(double *vp) {
+int get_probs(double *vp) {
   int zerod = 1;
   int t;
+  int empty = 0;
   double tot = 0;
   if ( ddP.PYalpha==H_None ) {
-    get_probs_alpha(vp);
-    return;
+    return get_probs_alpha(vp);
   } 
   for (t=0; t<ddN.T; t++) {
     /*
@@ -68,8 +77,10 @@ void get_probs(double *vp) {
     if ( ddP.PYalpha!=H_HPDD || ddS.TDt[t]>0 || zerod ) {
       tot += vp[t] = alphabasetopicprob(t);
       if (zerod) zerod = 0;
-    } else
+    } else {
+      empty++;
       vp[t] = 0;
+    }
   }
 #ifndef NDEBUG
   if ( fabs(tot-1.0)>1e-4 ) {
@@ -78,43 +89,44 @@ void get_probs(double *vp) {
 #endif
   for (t=0; t<ddN.T; t++) 
     vp[t] /= tot;
+  return empty;
 }
 
 void yap_probs() {
   int t;
-  int empty = 0;
+  int empty;
   double ent = 0;
   double *vp = malloc(sizeof(*vp)*ddN.T);
-  get_probs(vp);
+  empty = get_probs(vp);
   yap_message("probs = ");
   for (t=0; t<ddN.T; t++) 
     if ( vp[t]>0 ) {
       yap_message(" %lf", vp[t]);
       ent -= vp[t]*log(vp[t]);
     } else {
-      empty++;
       yap_message(" -");
     }
-  yap_message("\nfactor = %lf, empty = %d, ent = %lf\n", 
+  yap_message("\nconc. = %lf, empty = %d, exp.ent = %lf\n", 
 	      (ddP.PYalpha)?ddP.bpar:ddP.alphatot,
               empty, exp(ent));
   free(vp);
 }
 
 void print_probs(FILE *fp) {
-  int t, num = 0;
+  int t, empty;
+  double ent = 0;
   double *vp = malloc(sizeof(*vp)*ddN.T);
-  get_probs(vp);
+  empty = get_probs(vp);
   fprintf(fp, "factor = %lf\nprobs = ", 
           (ddP.PYalpha)?ddP.bpar:ddP.alphatot);
   for (t=0; t<ddN.T; t++) 
     if ( vp[t]>0 ) {
       fprintf(fp, " %lf", vp[t]);
-      num++;
+      ent -= vp[t]*log(vp[t]);
     } else
       fprintf(fp, " -");
   fprintf(fp, "\n");
-  fprintf(fp, "# topics: %d\n", num);
+  fprintf(fp, "# empty=%d, exp.ent=%lf\n", empty, exp(ent));
   free(vp);
 }
 

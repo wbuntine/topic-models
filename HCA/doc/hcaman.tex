@@ -535,12 +535,111 @@ vectors (i.e., topics) with this value;
 \item[``data.ch'':] stem for data file;
 \item[``c1'':] stem for results file.
 \end{description}
-The parameters as they are sampled will be
-printed on a line beginning wth ``Par:''.
+Before the runtime logging starts, initial details are printed:
+\begin{verbatim}
+Version 0.5, H.Pitman-Yor sampler for topics, Dirichlet sampler for words
+Sampling pars: b(3), b0(3), betatot(4),
+Setting seed = 1403582987
+Read from ldac file: D=395, W=4258, N=84010
+S-table 'a, ad,  all zero PYP': a=0.000000, N=812/1000, M=100/1000, +S+U/V float mem=626k
+mem   = 1.3 (MByte)
+seed  = 1403582987
+N     = 84010
+W     = 4258
+D     = 395
+TRAIN   = 395
+TEST    = 0
+T     = 20
+ITER  = 100
+PYbeta  = 0
+betatot  = 4.258000 # total over W=4258 words
+PYalpha  = 2
+a     = 0.000000
+b     = 10.000000
+a0     = 0.000000
+b0     = 10.000000
+Initialised with 20 classes
+\end{verbatim}
+Note the following:
+\begin{itemize}
+\item
+the hyperparameters being sampled are 
+{\tt b}, {\tt b0}, {\tt betatot}, with
+{\tt b} and {\tt b0} being sampled every 3 major cycles and {\tt betatot}
+every 4 major cycles;
+\item
+in this case {\tt a} and {\tt a0} are not sampled because they are fixed at 0,
+meaning the alpha side is modelled with a Dirichlet process;
+\item
+the memory allocated is approximately 1.3Mb,
+actual usage will vary with stack memory and some items not recorded;
+\item
+the seed for the random number generator is 1403582987
+so use ``-s1403582987'' to repeat the same sampling;
+\item
+there are 395 documents, 4258 different words/tokens in the dictionary and
+a total of 84010 words/tokens in the documents;
+\item
+{\tt PYbeta=0} means the beta side is a Dirichlet;
+\item
+{\tt PYalpha=2}  means the alpha side is a truncated GEM prior at the top
+level and Pitman-Yor process or Dirichlet process at the document level;
+\item
+and {\tt TEST=0} means there is no test data.
+\end{itemize}
+By default, every 5 cycles, a short report is printed:
+\begin{verbatim}
+[26/05/2014:10:01:38] cycles:  81 82 83 84 85
+log_2(perp)=11.5182,9.9503
+Pars:  b=2.041296, b0=3.007822, betatot=301.019289
+\end{verbatim}
+The report frequency is modified with the \OptArg{-l}{prob,...}
+option, and the report can be extended by adding verbosity with 
+ \Opt{-v}.  The entry in square brackets is the system clock time
+at the start of cycle 81.
+Here cycles 81-85 are run.
+The two perplexities reported are normalised per token and then given in
+log to base 2.  The first is from the posterior probability with all
+real-valued probability vectors marginalised out using Pitman-Yor process
+theory but with the latent count variables 
+(counts of tables, not full table configurations) included.
+The second is the running total of word probabilities encountered
+during sampling.  This does not include the probability cost of latent
+variables (for instance, the topics) so always less.
+After {\tt Pars:} appears the list of hyperparameters being sampled and their
+current values.  Note the parameter {\tt bdk}, the
+concentration for the bursiness per topic, is
+a vector over topics, so only the first entry is printed.
+
+Adding an extra level of verbosity using an addition \Opt{-v}, one gets
+a brief one line report for every hyperparameter being sampled,
+such as
+\begin{verbatim}
+  myarmsMH(b) = 3.272891<-3.432078, w 37 calls 
+\end{verbatim}
+This means the adaptive rejection sampler took 37 calls
+to sample {\tt b}.  The initial value was 3.432078
+and the final value was 3.272891.
+This line will be printed every time a sampling step is done, sometimes multiple
+ones per major Gibbs cycle.
+Moreover, topic probabilities are printed.
+These are estimated (with standard smoothing) from
+training data.  For instance,
+\begin{verbatim}
+probs =  0.041541 0.062400 0.083437 0.060447 0.025652 0.069235 ....
+conc. = 10.225621, empty = 0, exp.ent = 19.049888
+\end{verbatim}
+The three diagnostics give additional details about the probabilities.
+The concentration (inverse of variance) applies to these,
+and it is computed differently depending on the model.
+If some topics have no data in them, {\tt empty} will tell how much.
+The effective number of topics is {\tt 19.049888},
+which is the exponential of the entropy of the probability vector
+(ignoring empty topics).
+
 At the end, the top 20 words will be printed and the
 final training perplexity printed.  This is based on
-the posterior probability, not word probability
-estimates.
+the posterior probability as previous.
 
 If you have the multicore version compiled, 
 and you have an 8-core CPU, then run with 8 threads:

@@ -404,6 +404,7 @@ void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts) {
    */
   if ( ddP.n_excludetopic>0 ) {
     double *tprob = malloc(sizeof(tprob[0])*ddN.T);
+    assert(ddS.Ndt);
     get_probs(tprob);
     yap_probs();
     if ( verbose>1 )

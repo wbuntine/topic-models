@@ -13,8 +13,8 @@
  *
  */
 
-void yap_probs();
+int yap_probs();
 void print_probs(FILE *fp);
-void get_probs(double *vp);
+int get_probs(double *vp);
 
 

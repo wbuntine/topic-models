@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Wed Jun  4 11:41:50 EST 2014
+.\" Manual page created with latex2man on Thu Jun 26 16:02:06 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -832,313 +832,32 @@ stem for data file;
 ``c1\&'': 
 stem for results file. 
 .PP
-The parameters as they are sampled will be 
-printed on a line beginning wth ``Par:\&''\&. 
-At the end, the top 20 words will be printed and the 
-final training perplexity printed. This is based on 
-the posterior probability, not word probability 
-estimates. 
-.PP
-If you have the multicore version compiled, 
-and you have an 8\-core CPU, then run with 8 threads: 
+Before the runtime logging starts, initial details are printed: 
 .Vb
-   hca \-v \-e \-K20 \-B0.001 \-C100 \-q8 data/ch c1
+Version 0.5, H.Pitman\-Yor sampler for topics, Dirichlet sampler for words
+Sampling pars: b(3), b0(3), betatot(4),
+Setting seed = 1403582987
+Read from ldac file: D=395, W=4258, N=84010
+S\-table 'a, ad,  all zero PYP': a=0.000000, N=812/1000, M=100/1000, +S+U/V float mem=626k
+mem   = 1.3 (MByte)
+seed  = 1403582987
+N     = 84010
+W     = 4258
+D     = 395
+TRAIN   = 395
+TEST    = 0
+T     = 20
+ITER  = 100
+PYbeta  = 0
+betatot  = 4.258000 # total over W=4258 words
+PYalpha  = 2
+a     = 0.000000
+b     = 10.000000
+a0     = 0.000000
+b0     = 10.000000
+Initialised with 20 classes
 .Ve
+Note the following: 
 .TP
-``\-q8\&'': 
-use 8 threads for Gibbs sampling. 
-.PP
-This just repeats the above but should be faster! 
-.PP
-.SS RESTART AND PRINT WORDS FOR THE TOPICS
-Restart from checkpoint after the previous run but run no cycles. 
-Input the tokens from 
-data/ch.tokens,
-and print top 10 words for each topic. 
-.Vb
-   hca \-v \-v \-r0 \-e \-V \-C0 data/ch c1
-.Ve
-The command line means: 
-.TP
-``\-v \-v\&'': 
-use level two verbosity; 
-.TP
-``\-r0\&'': 
-restart from document 0, i.e., on all documents; 
-.TP
-``\-V\&'': 
-input the tokens from 
-``data/ch.tokens,\&'' and print top 10 words for each topic. 
-Note must have at least level two verbosity; 
-.TP
-``\-C0\&'': 
-do not run any cycles, just do reporting. 
-.PP
-This will have lines like: 
-.Vb
-Topic 15 (p=5.88%,ws=71.8%,ds=69.4%) words =,museum,salonika,byzantine
-.Ve
-which means the topic is observed in 5.88% of word occurrences, 
-word sparsity for the topic is 71.8% 
-(71.8% of the words have zero data for this topic), 
-and document sparsity for the topic is 69.4% 
-(69.4% of the documents have zero data for this topic). 
-.PP
-.SS PRODUCE SPARSITY MAPPINGS AND DOCUMENT TOPIC PROBABILITIES
-Restart again and build a topic probability vector for each document, 
-as well as sparsity mappings for the words in 
-data/ch.smap
-file. 
-This you need to create/edit ahead of time. 
-This must run a number of cycles because the estimates are done 
-during the Gibbs sampling. 
-.Vb
-hca \-v \-r0 \-e \-lsp,2,1 \-ltheta,2,1,0.001 \-C20 data/ch c1
-.Ve
-.TP
-``\-lsp2,1\&'': 
-sample for sparsity every 2nd cycle 
-starting at the 1st. 
-.TP
-``\-ltheta,2,1,0.001\&'': 
-sample probabilities per document 
-(theta) every 2nd cycle 
-starting at the 1st. 
-Only report probabilities above 0.001. 
-.TP
-``\-C20\&'': 
-sampling done for 20 cycles. 
-.PP
-Now view the sparsity report at c1.smap
-and 
-the topic probabilities at c1.theta,
-and the values saved in the parameter file c1.par\&.
-Again, add the \fB\-q\fP\fI8\fP
-option to run this faster, 
-with 8 threads (if you have 8 cores). 
-.PP
-Read lines in the sparsity report, c1.smap,
-as follows: 
-.Vb
-\-\-(12): 5/2.6 14/1.3 19/219.0 perp=1.149816
-.Ve
-Token with index 12 occurs in topics 5, 14 and 19. 
-It has 2.6 counts (its a sample average so counts can be a fraction) 
-in topic 5 and 219.0 in topic 19. 
-The log\-2 entropy of the topic distribution based on these 
-counts is 1.149816. 
-.PP
-Read lines in the topic probabilities report, c1.theta,
-as follows: 
-.Vb
-15: 16:0.006699 17:0.088948 19:0.902410
-.Ve
-Document 15 has 0.006699 for topic 15 and 0.902410 for topic 17. 
-The three topics only add to 0.998057 because some 
-smaller topics must have been dropped. 
-.PP
-.SS RUN WITH TESTING
-.PP
-Run basic LDA with training and parameter fitting on a subset 
-and testing on the final 100 documents. 
-The training subset is the full dataset minus the test data. 
-Logging now to c1.log\&.
-Checkpoint every 20 cycles 
-(note, we usually only do this for cycles taking over 10 minutes each). 
-.Vb
-hca \-v \-K20 \-C100 \-c20 \-T100 data/ch c1
-.Ve
-Again run multi\-core with \fB\-q\fP\fI8\fP
-if needed. 
-.TP
-``\-c20\&'': 
-do a checkpoint with any reporting every 
-20 cycles. 
-.TP
-``\-T100\&'': 
-use the last 100 documents for testing, 
-so the first (datasetsize\-100) are used for training. 
-The documents must be ordered so the test data is at the end. 
-Alternatively, a file stem can be given if test data is in a 
-separate file, so loaded from there. 
-.PP
-View the end of the log file to get the test perplexity, 
-which is printed after ``log_2(test perpML)\&''\&. 
-.PP
-Now restart but use document completion (every 4th word) to 
-get perplexity, with no more Gibbs cycles. 
-Without \fB\-h\fP
-the default is to use 
-a standard likelihood calculation so will be biased. 
-.Vb
-hca \-v \-e \-r0 \-C0 \-hdoc,4 \-T100 data/ch c1
-.Ve
-.TP
-``\-hdoc,4\&'': 
-hold out every 4\-th word in 
-the document. 
-.TP
-``\-T100\&'': 
-the test set size must be repeated, since it is not 
-reloaded with the restart. 
-.PP
-View the end of the log file to get the test perplexity, 
-which is printed after ``log_2(test perpHold)\&''\&. 
-Note it is also recorded in the parameter file. 
-.PP
-Restart and record the 
-PMI and the classification details on test data. 
-.Vb
-hca \-v \-v \-V \-r0 \-C0 \-Llike,0,0 \-X \-p \-T100 data/ch c1
-.Ve
-.TP
-``\-Llike,0,0\&'': 
-prevent it 
-doing test likelihood calculations, which are potentially slow 
-on larger data sets. 
-.TP
-``\-X\&'': 
-load up class data from data/ch.clas
-file to 
-enable classification on test data. 
-.TP
-``\-p\&'': 
-initiate PMI calculation. 
-.PP
-The PMI data has a value printed for each topic as well as a 
-final average. It bases its calculations on the matrix 
-data/ch.pmi.gz
-created explicitly for this test set. 
-For other datasets, you will need to download prepared 
-PMI matrices from the project homepage. 
-The PMI output in the log file is: 
-.Vb
-PMI ::  0:2.051 1:3.172 2:5.170 3:0.353 ...
-PMI = 1.257
-.Ve
-The first line gives the PMI per topic. 
-The second line gives the mean PMI. 
-.PP
-.SS BURSTINESS
-.PP
-The burstiness version significantly improves everything. 
-Our best bet, currently, is to run 
-with optimisation of the hyperparameters: 
-.Vb
-hca \-v \-v \-e \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
-.Ve
-.TP
-``\-Sbdk=100\&'': 
-burstiness document concentration is different 
-for every topic. This initialises all of them to 100. 
-Default has no burstiness. 
-.TP
-``\-Sad=0.5\&'': 
-burstiness document discount set to 
-0.5, same for all topics. Default is zero. 
-.PP
-The initial discount for the bursty topics is 
-0.5. The concentration we set quite high initially, 
-and these will be sampled separately with 
-each topic in batches, so bdk
-is a vector in the 
-parameter file. 
-The hyperparameter sampling slows it down quite a bit but seems to 
-make a significant difference. Unused topics sometimes 
-get a very low concentration. 
-Alternatively, fix the burstiness discount with 
-\fB\-F\fP\fIad\fP
-and continue sampling burstiness concentration only, 
-which is quite a lot faster. 
-.PP
-.SH ERRORS
-
-.PP
-There is some error reporting on failure. 
-.PP
-If the software quits during a run on larger data with an 
-error message like: 
-.Vb
-    S_V(N,M,A) tagged 'XXX' hit bounds (BN,BM)
-.Ve
-for integers N,M
-and label XXX
-then you 
-need to increase the bounds BN,BM\&.
-If only the BM
-bound is violated, 
-then set BN
-to its default (10000) and increase 
-BM
-to, say 5000 (your choice) with the 
-option \fB\-N\fP\fI10000,5000\fP\&.
-The BN
-bound should only be violated 
-when the Beta side table is affected, 
-in which case the label will be 
-XXX=\&''SB, topicXword PYP". 
-Now increase BN
-to, say 30000 (your choice) with the 
-option \fB\-N\fP\fI30000,1000\fP,
-leaving BM
-as it was. 
-.PP
-For other errors, please report to the maintainer. 
-Best bet is to recompile 
-with ``MYDEBUG=\-g\&'' set in the Makefile 
-and possibly run under a memory checker to get details of 
-the reason for the crash. 
-.PP
-.SH SEE ALSO
-
-.PP
-The command \fIlinkBags\fP(1)
-is available from text\-bags
-at 
-\fBhttps://github.com/wbuntine/text\-bags\fP
-and was previously released at \fBhttp://mloss.org\fP\&.
-The extended library libstb,
-parts of which are included, is available 
-individually from \fBhttp://mloss.org\fP
-also at 
-\fBhttps://github.com/wbuntine/libstb\fP
-\&. 
-.PP
-.SH VERSION
-
-.PP
-This programme is version 0.5 of 2014/06/03\&.
-This incorporates parts of the library libstb
-version 1.8 
-also of 2014/06/03\&.
-.PP
-.SH LICENSE AND COPYRIGHT
-
-.PP
-.TP
-Copyright 
-(C)2011\-2014, Prof. Wray Buntine, 
-NICTA, Canberra, Australia (to 2013), and Monash 
-University (from 2014), 
-\fBwray.buntine@monash.edu\fP\&.
-Some parts also by Dr.  Jinjing Li (2013) and 
-Mr.  Swapnil Mishra (2013\-2014). 
-.PP
-.TP
-License 
-This Source Code Form is subject to the terms of the Mozilla 
-Public License, v. 2.0. If a copy of the MPL was not 
-distributed with this file, You can obtain one at 
-\fBhttp://mozilla.org/MPL/2.0/\fP\&.
-.PP
-.SH AUTHOR
-
-.PP
-Prof. Wray Buntine 
-.br
-Email: \fBWray.Buntine@monash.edu\fP
-.PP
-Some parts also done by Dr.  Jinjing Li and 
-Mr.  Swapnil Mishra. 
-.PP
-.\" NOTE: This file is generated, DO NOT EDIT.
+.B *
+the hyperparameters being sampled are 

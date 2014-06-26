@@ -1231,9 +1231,8 @@ int main(int argc, char* argv[])
 		    testlp * (showlike?1:-M_LOG2E/testNd));
       yap_message("\n");
       pctl_update(iter);
-      if ( verbose && iter%10==0 )
-	yap_probs();
       if ( iter>0 && verbose>1 ) {
+	if ( ddS.Ndt ) yap_probs();
 	if ( ddN.tokens ) {
             hca_displaytopics(resstem,20,score);
 	    displayed++;
@@ -1296,7 +1295,7 @@ int main(int argc, char* argv[])
     hca_displayclass(resstem);
   }
   
-  yap_probs();
+  if ( ddS.Ndt ) yap_probs();
 
   if ( ITER>0 && nosave==0 ) 
 	data_checkpoint(resstem, stem, ITER);
