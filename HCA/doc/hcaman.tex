@@ -6,8 +6,8 @@
 
 \usepackage[fancyhdr]{latex2man}
 
-\setDate{2014/06/03}
-\setVersion{0.5}
+\setDate{2014/06/28}
+\setVersion{0.6}
 
 \begin{document}
 
@@ -111,9 +111,18 @@ or by default sampled
 using adaptive rejection sampling.
 
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
-\item[\OptArg{-A}{value}]  Use a symmetric Dirichlet prior on theta
-using this \texttt{value} for each dimension.  The value must be a positive float.
-\item[\OptArg{-A}{type}]  A second version of the
+\item[{-A}{value[,file]}]  Use a symmetric Dirichlet prior on theta
+using this \texttt{value} for each dimension.  The value must be a positive float.  With the optional \texttt{file} argument, the file
+specifies the probability vector to use as the mean vector of the
+Dirichlet. The file is in text format representing  \texttt{T} 
+(the number of topics) floats.
+Then multiply the mean vector by \texttt{T*value} 
+to get the Dirichlet parameter vector.
+i.e, the mean of the \texttt{T} values 
+in the Dirichlet parameter vector is \texttt{value}.
+\item[{-A}{dir[,file]}]  Same as \OptArg{-A}{value[,file]} but
+\texttt{value} is set to a default.
+\item[{-A}{type[,file]}]  A second version of the
 \Opt{-A} option with a string argument.
 It defines a distribution on theta and its prior mean (a vector) 
  \texttt{alpha} of \texttt{type} as follows:
@@ -123,23 +132,40 @@ theta is modelled with a Dirichlet Process
 with mean \texttt{alpha} and concentration \texttt{b},
 and alpha is modelled with a symmetric Dirichlet with concentration
 \texttt{b0}.
+If the \texttt{file} optional argument is used
+then it specifies an input file giving the
+mean of the Dirichlet over \texttt{alpha}.
+By default the mean is a uniform vector.
 \item[hpdd] theta is modelled with a Pitman-Yor Process
 with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
 and alpha is modelled with a (truncated) GEM 
 with discount \texttt{a0} and concentration \texttt{b0}.
 This is the default.
+The \texttt{file} optional argument is ignored.
 \item[pdp] theta is modelled with a Pitman-Yor Process
 with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
-and alpha is uniform.
+and the alpha vector is uniform.
 This is not hierarchical because alpha is constant.
+If the \texttt{file} optional argument is used
+then it specifies \texttt{alpha}.
 \end{Description}
-\item[\OptArg{-B}{value}]  Use a symmetric Dirichlet prior with
+\item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
 \emph{Warning:}
  the value stored internally and printed is the total of this over the
-number of words W.
-\item[\OptArg{-B}{type}] 
+number of words \texttt{W}.
+With the optional \texttt{file} argument, the file
+specifies the probability vector to use as the mean vector of the
+Dirichlet. The file is in text format representing  \texttt{W} 
+(the number of words) floats.
+Then multiply the mean vector by \texttt{W*value} 
+to get the Dirichlet parameter vector.
+i.e, the mean of the \texttt{W} values 
+in the Dirichlet parameter vector is \texttt{value}.
+\item[{-B}{dir[,file]}]  Same as \OptArg{-B}{value[,file]} but
+\texttt{value} is set to a default.
+\item[{-B}{type[,file]}] 
 Second form of the \Opt{-B} option.
 Use a prior beta of \texttt{type}
 ``hdp'' ``hpdd'' or ``pdp''.  Similar to the \Opt{-A} option.
@@ -148,18 +174,22 @@ Use a prior beta of \texttt{type}
 with mean \texttt{beta} and concentration \texttt{bw} and 
 beta is modelled with a Dirichlet with concentration \texttt{bw0}
 by default symmetric (a uniform mean)
-or its mean can be set with the \Opt{-u} option.
+or its mean can be set with the \texttt{file} optional argument above.
+Setting \texttt{file} to the reserved word ``data''
+uses the observed word frequencies as the mean.
 \item[hpdd] 
 phi is modelled with a Pitman-Yor Process
 with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
-and beta is modelled with a (truncated) GEM 
+and \texttt{beta} is modelled with a (truncated) GEM 
 and discount \texttt{aw0} and concentration \texttt{bw0}.
 This is the default.
 \item[pdp]
  phi is modelled with a Pitman-Yor Process
 with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
 and beta is by default uniform,
-or it can be set with the \Opt{-u} option.
+or its mean can be set with the \texttt{file} optional argument above.
+Setting \texttt{file} to the reserved word ``data''
+uses the observed word frequencies as the mean.
 This is not hierarchical because beta is constant.
 \end{Description}
 \item[\OptArg{-S}{var=value}]  Set variable \texttt{var} to float \texttt{value},
@@ -564,11 +594,11 @@ Note the following:
 \begin{itemize}
 \item
 the hyperparameters being sampled are 
-{\tt b}, {\tt b0}, {\tt betatot}, with
-{\tt b} and {\tt b0} being sampled every 3 major cycles and {\tt betatot}
+\texttt{b}, \texttt{b0}, \texttt{betatot}, with
+\texttt{b} and \texttt{b0} being sampled every 3 major cycles and \texttt{betatot}
 every 4 major cycles;
 \item
-in this case {\tt a} and {\tt a0} are not sampled because they are fixed at 0,
+in this case \texttt{a} and \texttt{a0} are not sampled because they are fixed at 0,
 meaning the alpha side is modelled with a Dirichlet process;
 \item
 the memory allocated is approximately 1.3Mb,
@@ -580,12 +610,12 @@ so use ``-s1403582987'' to repeat the same sampling;
 there are 395 documents, 4258 different words/tokens in the dictionary and
 a total of 84010 words/tokens in the documents;
 \item
-{\tt PYbeta=0} means the beta side is a Dirichlet;
+\texttt{PYbeta=0} means the beta side is a Dirichlet;
 \item
-{\tt PYalpha=2}  means the alpha side is a truncated GEM prior at the top
+\texttt{PYalpha=2}  means the alpha side is a truncated GEM prior at the top
 level and Pitman-Yor process or Dirichlet process at the document level;
 \item
-and {\tt TEST=0} means there is no test data.
+and \texttt{TEST=0} means there is no test data.
 \end{itemize}
 By default, every 5 cycles, a short report is printed:
 \begin{verbatim}
@@ -606,8 +636,8 @@ theory but with the latent count variables
 The second is the running total of word probabilities encountered
 during sampling.  This does not include the probability cost of latent
 variables (for instance, the topics) so always less.
-After {\tt Pars:} appears the list of hyperparameters being sampled and their
-current values.  Note the parameter {\tt bdk}, the
+After \texttt{Pars:} appears the list of hyperparameters being sampled and their
+current values.  Note the parameter \texttt{bdk}, the
 concentration for the bursiness per topic, is
 a vector over topics, so only the first entry is printed.
 
@@ -618,7 +648,7 @@ such as
   myarmsMH(b) = 3.272891<-3.432078, w 37 calls 
 \end{verbatim}
 This means the adaptive rejection sampler took 37 calls
-to sample {\tt b}.  The initial value was 3.432078
+to sample \texttt{b}.  The initial value was 3.432078
 and the final value was 3.272891.
 This line will be printed every time a sampling step is done, sometimes multiple
 ones per major Gibbs cycle.
@@ -632,8 +662,8 @@ conc. = 10.225621, empty = 0, exp.ent = 19.049888
 The three diagnostics give additional details about the probabilities.
 The concentration (inverse of variance) applies to these,
 and it is computed differently depending on the model.
-If some topics have no data in them, {\tt empty} will tell how much.
-The effective number of topics is {\tt 19.049888},
+If some topics have no data in them, \texttt{empty} will tell how much.
+The effective number of topics is 19.049888,
 which is the exponential of the entropy of the probability vector
 (ignoring empty topics).
 
@@ -813,6 +843,30 @@ get a very low concentration.
 Alternatively, fix the burstiness discount with 
 \OptArg{-F}{ad} and continue sampling burstiness concentration only,
 which is quite a lot faster.
+Note burstiness works well with multi-core as does 
+sampling of hyperparameters.
+
+Diagnostics reported for burstiness, printed at the end, are as follows:
+\begin{verbatim}
+multis=55.45%,  tables=79.57%, tbls-in-multis=63.15%
+\end{verbatim}
+These are:
+\begin{description}
+\item[multis:] percentage of tokens in documents that occur more than
+once.  Only these are affected by burstiness processing. 
+So (100-\texttt{multis}) is proportion of tokens unique in
+their document.  
+\item[tables:] percentage of data being passed up by the burstiness
+sub-module to the topic model.  
+Note 100\% of the  (100-\texttt{multis})\% unique tokens will
+be passed up as unique tokens always go to the topic model.
+Of the remaining \texttt{multis}\% tokens, only 
+\texttt{tbls-in-multis}\% get passed up.
+\item[tbls-in-multis:] the percentage of 
+non-unique words in documents that are passed up by the burstiness
+sub-module to the topic model.  
+\end{description}
+
 
 \section{Errors}
 

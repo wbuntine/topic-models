@@ -360,6 +360,8 @@ void pctl_dims() {
      */
     double betain = ddP.betatot/ddN.W;
     double betac = betain;
+     if ( betac==0 ) 
+      betac = DIR_MIN*10;
      if ( betac< DIR_MIN ) 
       betac = DIR_MIN;
     if ( betac>DIR_MAX ) 

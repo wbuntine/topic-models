@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Thu Jun 26 16:02:06 EST 2014
+.\" Manual page created with latex2man on Fri Jun 27 13:40:51 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "HCA" "1" "2014/06/03" "Data Analysis Tools " "Data Analysis Tools "
+.TH "HCA" "1" "2014/06/28" "Data Analysis Tools " "Data Analysis Tools "
 .SH NAME
 
 .PP
@@ -134,13 +134,28 @@ or by default sampled
 using adaptive rejection sampling. 
 .PP
 .TP
-\fB\-A\fP\fIvalue\fP
- Use a symmetric Dirichlet prior on theta 
+{\-A}{value[,file 
+}] Use a symmetric Dirichlet prior on theta 
 using this value
-for each dimension. The value must be a positive float. 
+for each dimension. The value must be a positive float. With the optional file
+argument, the file 
+specifies the probability vector to use as the mean vector of the 
+Dirichlet. The file is in text format representing T
+(the number of topics) floats. 
+Then multiply the mean vector by T*value
+to get the Dirichlet parameter vector. 
+i.e, the mean of the T
+values 
+in the Dirichlet parameter vector is value\&.
 .TP
-\fB\-A\fP\fItype\fP
- A second version of the 
+{\-A}{dir[,file 
+}] Same as \fB\-A\fP\fIvalue[,file]\fP
+but 
+value
+is set to a default. 
+.TP
+{\-A}{type[,file 
+}] A second version of the 
 \fB\-A\fP
 option with a string argument. 
 It defines a distribution on theta and its prior mean (a vector) 
@@ -155,6 +170,11 @@ with mean alpha
 and concentration b,
 and alpha is modelled with a symmetric Dirichlet with concentration 
 b0\&.
+If the file
+optional argument is used 
+then it specifies an input file giving the 
+mean of the Dirichlet over alpha\&.
+By default the mean is a uniform vector. 
 .TP
 hpdd 
 theta is modelled with a Pitman\-Yor Process 
@@ -165,30 +185,52 @@ and alpha is modelled with a (truncated) GEM
 with discount a0
 and concentration b0\&.
 This is the default. 
+The file
+optional argument is ignored. 
 .TP
 pdp 
 theta is modelled with a Pitman\-Yor Process 
 with mean alpha,
 discount a
 and concentration b,
-and alpha is uniform. 
+and the alpha vector is uniform. 
 This is not hierarchical because alpha is constant. 
+If the file
+optional argument is used 
+then it specifies alpha\&.
 .RE
 .RS
 .PP
 .RE
 .TP
-\fB\-B\fP\fIvalue\fP
- Use a symmetric Dirichlet prior with 
+{\-B}{value[,file 
+}] Use a symmetric Dirichlet prior with 
 this value
 for each dimension. 
 The value must be a positive float. 
 \fIWarning:\fP
 the value stored internally and printed is the total of this over the 
-number of words W. 
+number of words W\&.
+With the optional file
+argument, the file 
+specifies the probability vector to use as the mean vector of the 
+Dirichlet. The file is in text format representing W
+(the number of words) floats. 
+Then multiply the mean vector by W*value
+to get the Dirichlet parameter vector. 
+i.e, the mean of the W
+values 
+in the Dirichlet parameter vector is value\&.
 .TP
-\fB\-B\fP\fItype\fP
- Second form of the \fB\-B\fP
+{\-B}{dir[,file 
+}] Same as \fB\-B\fP\fIvalue[,file]\fP
+but 
+value
+is set to a default. 
+.TP
+{\-B}{type[,file 
+}] 
+Second form of the \fB\-B\fP
 option. 
 Use a prior beta of type
 ``hdp\&'' ``hpdd\&'' or ``pdp\&''\&. Similar to the \fB\-A\fP
@@ -202,15 +244,19 @@ and concentration bw
 and 
 beta is modelled with a Dirichlet with concentration bw0
 by default symmetric (a uniform mean) 
-or its mean can be set with the \fB\-u\fP
-option. 
+or its mean can be set with the file
+optional argument above. 
+Setting file
+to the reserved word ``data\&'' 
+uses the observed word frequencies as the mean. 
 .TP
 hpdd 
 phi is modelled with a Pitman\-Yor Process 
 with mean beta,
 discount aw
 and concentration bw,
-and beta is modelled with a (truncated) GEM 
+and beta
+is modelled with a (truncated) GEM 
 and discount aw0
 and concentration bw0\&.
 This is the default. 
@@ -221,8 +267,11 @@ with mean beta,
 discount aw
 and concentration bw,
 and beta is by default uniform, 
-or it can be set with the \fB\-u\fP
-option. 
+or its mean can be set with the file
+optional argument above. 
+Setting file
+to the reserved word ``data\&'' 
+uses the observed word frequencies as the mean. 
 This is not hierarchical because beta is constant. 
 .RE
 .RS
@@ -861,3 +910,437 @@ Note the following:
 .TP
 .B *
 the hyperparameters being sampled are 
+b,
+b0,
+betatot,
+with 
+b
+and b0
+being sampled every 3 major cycles and betatot
+every 4 major cycles; 
+.TP
+.B *
+in this case a
+and a0
+are not sampled because they are fixed at 0, 
+meaning the alpha side is modelled with a Dirichlet process; 
+.TP
+.B *
+the memory allocated is approximately 1.3Mb, 
+actual usage will vary with stack memory and some items not recorded; 
+.TP
+.B *
+the seed for the random number generator is 1403582987 
+so use ``\-s1403582987\&'' to repeat the same sampling; 
+.TP
+.B *
+there are 395 documents, 4258 different words/tokens in the dictionary and 
+a total of 84010 words/tokens in the documents; 
+.TP
+.B *
+PYbeta=0
+means the beta side is a Dirichlet; 
+.TP
+.B *
+PYalpha=2
+means the alpha side is a truncated GEM prior at the top 
+level and Pitman\-Yor process or Dirichlet process at the document level; 
+.TP
+.B *
+and TEST=0
+means there is no test data. 
+.PP
+By default, every 5 cycles, a short report is printed: 
+.Vb
+[26/05/2014:10:01:38] cycles:  81 82 83 84 85
+log_2(perp)=11.5182,9.9503
+Pars:  b=2.041296, b0=3.007822, betatot=301.019289
+.Ve
+The report frequency is modified with the \fB\-l\fP\fIprob,...\fP
+option, and the report can be extended by adding verbosity with 
+\fB\-v\fP\&.
+The entry in square brackets is the system clock time 
+at the start of cycle 81. 
+Here cycles 81\-85 are run. 
+The two perplexities reported are normalised per token and then given in 
+log to base 2. The first is from the posterior probability with all 
+real\-valued probability vectors marginalised out using Pitman\-Yor process 
+theory but with the latent count variables 
+(counts of tables, not full table configurations) included. 
+The second is the running total of word probabilities encountered 
+during sampling. This does not include the probability cost of latent 
+variables (for instance, the topics) so always less. 
+After Pars:
+appears the list of hyperparameters being sampled and their 
+current values. Note the parameter bdk,
+the 
+concentration for the bursiness per topic, is 
+a vector over topics, so only the first entry is printed. 
+.PP
+Adding an extra level of verbosity using an addition \fB\-v\fP,
+one gets 
+a brief one line report for every hyperparameter being sampled, 
+such as 
+.Vb
+  myarmsMH(b) = 3.272891<\-3.432078, w 37 calls 
+.Ve
+This means the adaptive rejection sampler took 37 calls 
+to sample b\&.
+The initial value was 3.432078 
+and the final value was 3.272891. 
+This line will be printed every time a sampling step is done, sometimes multiple 
+ones per major Gibbs cycle. 
+Moreover, topic probabilities are printed. 
+These are estimated (with standard smoothing) from 
+training data. For instance, 
+.Vb
+probs =  0.041541 0.062400 0.083437 0.060447 0.025652 0.069235 ....
+conc. = 10.225621, empty = 0, exp.ent = 19.049888
+.Ve
+The three diagnostics give additional details about the probabilities. 
+The concentration (inverse of variance) applies to these, 
+and it is computed differently depending on the model. 
+If some topics have no data in them, empty
+will tell how much. 
+The effective number of topics is 19.049888, 
+which is the exponential of the entropy of the probability vector 
+(ignoring empty topics). 
+.PP
+At the end, the top 20 words will be printed and the 
+final training perplexity printed. This is based on 
+the posterior probability as previous. 
+.PP
+If you have the multicore version compiled, 
+and you have an 8\-core CPU, then run with 8 threads: 
+.Vb
+   hca \-v \-e \-K20 \-B0.001 \-C100 \-q8 data/ch c1
+.Ve
+.TP
+``\-q8\&'': 
+use 8 threads for Gibbs sampling. 
+.PP
+This just repeats the above but should be faster! 
+.PP
+.SS RESTART AND PRINT WORDS FOR THE TOPICS
+Restart from checkpoint after the previous run but run no cycles. 
+Input the tokens from 
+data/ch.tokens,
+and print top 10 words for each topic. 
+.Vb
+   hca \-v \-v \-r0 \-e \-V \-C0 data/ch c1
+.Ve
+The command line means: 
+.TP
+``\-v \-v\&'': 
+use level two verbosity; 
+.TP
+``\-r0\&'': 
+restart from document 0, i.e., on all documents; 
+.TP
+``\-V\&'': 
+input the tokens from 
+``data/ch.tokens,\&'' and print top 10 words for each topic. 
+Note must have at least level two verbosity; 
+.TP
+``\-C0\&'': 
+do not run any cycles, just do reporting. 
+.PP
+This will have lines like: 
+.Vb
+Topic 15 (p=5.88%,ws=71.8%,ds=69.4%) words =,museum,salonika,byzantine
+.Ve
+which means the topic is observed in 5.88% of word occurrences, 
+word sparsity for the topic is 71.8% 
+(71.8% of the words have zero data for this topic), 
+and document sparsity for the topic is 69.4% 
+(69.4% of the documents have zero data for this topic). 
+.PP
+.SS PRODUCE SPARSITY MAPPINGS AND DOCUMENT TOPIC PROBABILITIES
+Restart again and build a topic probability vector for each document, 
+as well as sparsity mappings for the words in 
+data/ch.smap
+file. 
+This you need to create/edit ahead of time. 
+This must run a number of cycles because the estimates are done 
+during the Gibbs sampling. 
+.Vb
+hca \-v \-r0 \-e \-lsp,2,1 \-ltheta,2,1,0.001 \-C20 data/ch c1
+.Ve
+.TP
+``\-lsp2,1\&'': 
+sample for sparsity every 2nd cycle 
+starting at the 1st. 
+.TP
+``\-ltheta,2,1,0.001\&'': 
+sample probabilities per document 
+(theta) every 2nd cycle 
+starting at the 1st. 
+Only report probabilities above 0.001. 
+.TP
+``\-C20\&'': 
+sampling done for 20 cycles. 
+.PP
+Now view the sparsity report at c1.smap
+and 
+the topic probabilities at c1.theta,
+and the values saved in the parameter file c1.par\&.
+Again, add the \fB\-q\fP\fI8\fP
+option to run this faster, 
+with 8 threads (if you have 8 cores). 
+.PP
+Read lines in the sparsity report, c1.smap,
+as follows: 
+.Vb
+\-\-(12): 5/2.6 14/1.3 19/219.0 perp=1.149816
+.Ve
+Token with index 12 occurs in topics 5, 14 and 19. 
+It has 2.6 counts (its a sample average so counts can be a fraction) 
+in topic 5 and 219.0 in topic 19. 
+The log\-2 entropy of the topic distribution based on these 
+counts is 1.149816. 
+.PP
+Read lines in the topic probabilities report, c1.theta,
+as follows: 
+.Vb
+15: 16:0.006699 17:0.088948 19:0.902410
+.Ve
+Document 15 has 0.006699 for topic 15 and 0.902410 for topic 17. 
+The three topics only add to 0.998057 because some 
+smaller topics must have been dropped. 
+.PP
+.SS RUN WITH TESTING
+.PP
+Run basic LDA with training and parameter fitting on a subset 
+and testing on the final 100 documents. 
+The training subset is the full dataset minus the test data. 
+Logging now to c1.log\&.
+Checkpoint every 20 cycles 
+(note, we usually only do this for cycles taking over 10 minutes each). 
+.Vb
+hca \-v \-K20 \-C100 \-c20 \-T100 data/ch c1
+.Ve
+Again run multi\-core with \fB\-q\fP\fI8\fP
+if needed. 
+.TP
+``\-c20\&'': 
+do a checkpoint with any reporting every 
+20 cycles. 
+.TP
+``\-T100\&'': 
+use the last 100 documents for testing, 
+so the first (datasetsize\-100) are used for training. 
+The documents must be ordered so the test data is at the end. 
+Alternatively, a file stem can be given if test data is in a 
+separate file, so loaded from there. 
+.PP
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpML)\&''\&. 
+.PP
+Now restart but use document completion (every 4th word) to 
+get perplexity, with no more Gibbs cycles. 
+Without \fB\-h\fP
+the default is to use 
+a standard likelihood calculation so will be biased. 
+.Vb
+hca \-v \-e \-r0 \-C0 \-hdoc,4 \-T100 data/ch c1
+.Ve
+.TP
+``\-hdoc,4\&'': 
+hold out every 4\-th word in 
+the document. 
+.TP
+``\-T100\&'': 
+the test set size must be repeated, since it is not 
+reloaded with the restart. 
+.PP
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpHold)\&''\&. 
+Note it is also recorded in the parameter file. 
+.PP
+Restart and record the 
+PMI and the classification details on test data. 
+.Vb
+hca \-v \-v \-V \-r0 \-C0 \-Llike,0,0 \-X \-p \-T100 data/ch c1
+.Ve
+.TP
+``\-Llike,0,0\&'': 
+prevent it 
+doing test likelihood calculations, which are potentially slow 
+on larger data sets. 
+.TP
+``\-X\&'': 
+load up class data from data/ch.clas
+file to 
+enable classification on test data. 
+.TP
+``\-p\&'': 
+initiate PMI calculation. 
+.PP
+The PMI data has a value printed for each topic as well as a 
+final average. It bases its calculations on the matrix 
+data/ch.pmi.gz
+created explicitly for this test set. 
+For other datasets, you will need to download prepared 
+PMI matrices from the project homepage. 
+The PMI output in the log file is: 
+.Vb
+PMI ::  0:2.051 1:3.172 2:5.170 3:0.353 ...
+PMI = 1.257
+.Ve
+The first line gives the PMI per topic. 
+The second line gives the mean PMI. 
+.PP
+.SS BURSTINESS
+.PP
+The burstiness version significantly improves everything. 
+Our best bet, currently, is to run 
+with optimisation of the hyperparameters: 
+.Vb
+hca \-v \-v \-e \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
+.Ve
+.TP
+``\-Sbdk=100\&'': 
+burstiness document concentration is different 
+for every topic. This initialises all of them to 100. 
+Default has no burstiness. 
+.TP
+``\-Sad=0.5\&'': 
+burstiness document discount set to 
+0.5, same for all topics. Default is zero. 
+.PP
+The initial discount for the bursty topics is 
+0.5. The concentration we set quite high initially, 
+and these will be sampled separately with 
+each topic in batches, so bdk
+is a vector in the 
+parameter file. 
+The hyperparameter sampling slows it down quite a bit but seems to 
+make a significant difference. Unused topics sometimes 
+get a very low concentration. 
+Alternatively, fix the burstiness discount with 
+\fB\-F\fP\fIad\fP
+and continue sampling burstiness concentration only, 
+which is quite a lot faster. 
+Note burstiness works well with multi\-core as does 
+sampling of hyperparameters. 
+.PP
+Diagnostics reported for burstiness, printed at the end, are as follows: 
+.Vb
+multis=55.45%,  tables=79.57%, tbls\-in\-multis=63.15%
+.Ve
+These are: 
+.TP
+multis: 
+percentage of tokens in documents that occur more than 
+once. Only these are affected by burstiness processing. 
+So (100\-multis)
+is proportion of tokens unique in 
+their document. 
+.TP
+tables: 
+percentage of data being passed up by the burstiness 
+sub\-module to the topic model. 
+Note 100% of the (100\-multis)%
+unique tokens will 
+be passed up as unique tokens always go to the topic model. 
+Of the remaining multis%
+tokens, only 
+tbls\-in\-multis%
+get passed up. 
+.TP
+tbls\-in\-multis: 
+the percentage of 
+non\-unique words in documents that are passed up by the burstiness 
+sub\-module to the topic model. 
+.PP
+.SH ERRORS
+
+.PP
+There is some error reporting on failure. 
+.PP
+If the software quits during a run on larger data with an 
+error message like: 
+.Vb
+    S_V(N,M,A) tagged 'XXX' hit bounds (BN,BM)
+.Ve
+for integers N,M
+and label XXX
+then you 
+need to increase the bounds BN,BM\&.
+If only the BM
+bound is violated, 
+then set BN
+to its default (10000) and increase 
+BM
+to, say 5000 (your choice) with the 
+option \fB\-N\fP\fI10000,5000\fP\&.
+The BN
+bound should only be violated 
+when the Beta side table is affected, 
+in which case the label will be 
+XXX=\&''SB, topicXword PYP". 
+Now increase BN
+to, say 30000 (your choice) with the 
+option \fB\-N\fP\fI30000,1000\fP,
+leaving BM
+as it was. 
+.PP
+For other errors, please report to the maintainer. 
+Best bet is to recompile 
+with ``MYDEBUG=\-g\&'' set in the Makefile 
+and possibly run under a memory checker to get details of 
+the reason for the crash. 
+.PP
+.SH SEE ALSO
+
+.PP
+The command \fIlinkBags\fP(1)
+is available from text\-bags
+at 
+\fBhttps://github.com/wbuntine/text\-bags\fP
+and was previously released at \fBhttp://mloss.org\fP\&.
+The extended library libstb,
+parts of which are included, is available 
+individually from \fBhttp://mloss.org\fP
+also at 
+\fBhttps://github.com/wbuntine/libstb\fP
+\&. 
+.PP
+.SH VERSION
+
+.PP
+This programme is version 0.6 of 2014/06/28\&.
+This incorporates parts of the library libstb
+version 1.8 
+also of 2014/06/28\&.
+.PP
+.SH LICENSE AND COPYRIGHT
+
+.PP
+.TP
+Copyright 
+(C)2011\-2014, Prof. Wray Buntine, 
+NICTA, Canberra, Australia (to 2013), and Monash 
+University (from 2014), 
+\fBwray.buntine@monash.edu\fP\&.
+Some parts also by Dr.  Jinjing Li (2013) and 
+Mr.  Swapnil Mishra (2013\-2014). 
+.PP
+.TP
+License 
+This Source Code Form is subject to the terms of the Mozilla 
+Public License, v. 2.0. If a copy of the MPL was not 
+distributed with this file, You can obtain one at 
+\fBhttp://mozilla.org/MPL/2.0/\fP\&.
+.PP
+.SH AUTHOR
+
+.PP
+Prof. Wray Buntine 
+.br
+Email: \fBWray.Buntine@monash.edu\fP
+.PP
+Some parts also done by Dr.  Jinjing Li and 
+Mr.  Swapnil Mishra. 
+.PP
+.\" NOTE: This file is generated, DO NOT EDIT.

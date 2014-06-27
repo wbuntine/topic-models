@@ -273,7 +273,7 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     for (w=0; w<ddN.W; w++) {
       if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
     }
-    topk(topword, cnt, indk, tscore);
+    topk(topword, cnt, indk, countscore);
     yap_message("\nTopic root words =");
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
