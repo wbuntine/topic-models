@@ -85,12 +85,11 @@ This should be used for collections with larger  numbers of
 documents, but its best to run first and on
 error, increase the bounds.
 
-
 \section{Options}
 %%%%%%%%%%%%%%%%%
 
 Options have a single letter followed by a possible
-single argument. Options are grouped under
+single argument.  Options are grouped under
 the following functions:
 \emph{setting of hyperparameters}, 
 \emph{controlling sampling of hyperparameters},
@@ -121,9 +120,13 @@ to get the Dirichlet parameter vector.
 i.e, the mean of the \texttt{T} values 
 in the Dirichlet parameter vector is \texttt{value}.
 \item[{-A}{dir[,file]}]  Same as \OptArg{-A}{value[,file]} but
-\texttt{value} is set to a default.
-\item[{-A}{type[,file]}]  A second version of the
-\Opt{-A} option with a string argument.
+\texttt{value} is set to a default,
+0.05*\texttt{ave-len}/\texttt{T} where
+\texttt{ave-len} is the average document length in the training set.
+\item[{-A}{type[,file]}]  This other version of the
+\Opt{-A} option  changes the Alpha side 
+Dirichlet on theta to a Pitman-Yor process, thus
+allowing estimation of hierarchical prior.
 It defines a distribution on theta and its prior mean (a vector) 
  \texttt{alpha} of \texttt{type} as follows:
 \begin{Description}[hpdd]
@@ -164,9 +167,11 @@ to get the Dirichlet parameter vector.
 i.e, the mean of the \texttt{W} values 
 in the Dirichlet parameter vector is \texttt{value}.
 \item[{-B}{dir[,file]}]  Same as \OptArg{-B}{value[,file]} but
-\texttt{value} is set to a default.
+\texttt{value} is set to a default, currently 0.001
+(10 times the current minimum allowed for a Dirichlet).
 \item[{-B}{type[,file]}] 
-Second form of the \Opt{-B} option.
+The other form of the \Opt{-B} option
+similar to the \Opt{-A} option.
 Use a prior beta of \texttt{type}
 ``hdp'' ``hpdd'' or ``pdp''.  Similar to the \Opt{-A} option.
 \begin{Description}[hpdd]
@@ -215,9 +220,6 @@ where \texttt{var} can be one of:
 \item[bdk] concentration parameter for burstiness, a constant initially
      but subsequent sampling will allow a different value per topic.
 \end{Description}
-\item[\OptArg{-u}{file}] 
-the value for the beta vector is given by the text \texttt{file}.
-It should contain $W$ floats, $W$ being the number of words.
 \end{Description}
 
 \subsection{Controlling sampling of hyperparameters}
@@ -502,9 +504,9 @@ index (offset by 0), one per line.
 With burstiness, gives one ``z,r'' per line where ``z'' is the
 topic index (offset by 0) and ``r'' is the burst table indicator, 
 which is 1 if the word
-contributes to standard LDA statistics, and
+contributes to standard topic model statistics, and
 0 if burstiness modelling says the word is a burst
-so does not contribute to LDA statistics.
+so does not contribute to topic model  statistics.
 \end{Description}
 These files along with \File{RepStem.par} are input
 on a restart using \OptArg{-r}{0}.
@@ -532,10 +534,11 @@ In addition, the float parameters allowed to be specified with the
 Finally, the type of model for alpha as specified by the
 \Opt{-A} option is coded in the
 \texttt{PYalpha} variable. 
-It is 0 if the mode is a symmetric Dirichlet,
+It is 0 if the model is a Dirichlet,
 the LDA default.
 It is 1 for hdp, 2 for hpdd and 3 for pdp.
 Likewise for the \texttt{PYbeta} variable and the \Opt{-B} option.
+
 
 \section{Examples}
 %%%%%%%%%%%%%%%%%%
@@ -548,17 +551,28 @@ However, you need to replace the executable,
 from the install directory where the \File{data/} directory is.
 For instance, on Windows that might be \texttt{hca/hca.exe}.
 
-Run basic HDP-LDA with parameter fitting on the full dataset and no testing,
+Run basic LDA with default parameters
+and full parameter fitting on the full dataset and no testing,
+sending logging to \Prog{stderr}.
+\begin{verbatim}
+   hca -v -e -K20 -Adir -Bdir -C100 data/ch c1
+\end{verbatim}
+Alternatively, 
+run basic HDP-LDA with parameter fitting on the full dataset and no testing,
 sending logging to \Prog{stderr}.
 \begin{verbatim}
    hca -v -e -K20 -B0.001 -C100 data/ch c1
 \end{verbatim}
-The command line means:
+The command lines mean:
 \begin{description}
 \item[``-v'':] use level one verbosity;
 \item[``-e'':] send the log file to  \texttt{stderr},
 not to ``c1.log'';
 \item[``-K20'':] use 20 topics (the truncation level);
+\item[``-Adir'':]  use a symmetric Dirichlet prior on topic probability
+vectors for documents with default value;
+\item[``-Bdir'':]  use a symmetric Dirichlet prior on word probability
+vectors (i.e., topics) with default value;
 \item[``-B0.001'':]  use a symmetric Dirichlet prior on word probability
 vectors (i.e., topics) with this value;
 \item[``-C100'':] run for 100 cycles;

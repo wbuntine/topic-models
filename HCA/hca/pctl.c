@@ -651,10 +651,8 @@ int pctl_Tmax(int Tmax, int iter) {
 
 void pctl_report() {
   yap_message("PYbeta  = %d\n", (int)ddP.PYbeta);
-  if ( ddP.betatot>0 )
-    yap_message("betatot  = %lf # total over W=%d words\n", ddP.betatot, ddN.W);
   if ( ddP.betapr && ddP.betac==0 ) 
-    yap_message("# beta read from file\n");
+    yap_message("# beta proportions read from file\n");
   if ( ddP.PYbeta ) {
     yap_message("aw     = %lf\n", ddP.awpar);
     yap_message("bw     = %lf\n", ddP.bwpar);
@@ -662,8 +660,13 @@ void pctl_report() {
       yap_message("aw0     = %lf\n", ddP.aw0);
       yap_message("bw0     = %lf\n", ddP.bw0);
     }
+  } else {
+    if ( ddP.betatot>0 )
+      yap_message("betatot  = %lf # total over W=%d words\n", ddP.betatot, ddN.W);
   }
   yap_message("PYalpha  = %d\n", (int)ddP.PYalpha);
+  if ( ddP.alphapr && ddP.alphac==0 ) 
+    yap_message("# alpha proportions read from file\n");
   if ( ddP.PYalpha ) {
     yap_message("a     = %lf\n", ddP.apar);
     yap_message("b     = %lf\n", ddP.bpar);
@@ -672,7 +675,8 @@ void pctl_report() {
       yap_message("b0     = %lf\n", ddP.b0);
     }
   } else {
-    yap_message("alpha = %lf\n", ddP.alphac);
+    yap_message("alphatot  = %lf # total over topics\n", 
+		ddP.alphatot);
   }
   if ( ddP.bdk!=NULL ) {
     int t;
@@ -876,14 +880,15 @@ static void printpar(FILE *fp, enum ParType par) {
 }
 
 void pctl_print(FILE *fp) {
-  fprintf(fp, "#  beta is the total over W=%d words\n",ddN.W);
-  printpar(fp,ParBeta);
   fprintf(fp, "PYbeta  = %d\n", (int)ddP.PYbeta);
   if ( ddP.PYbeta ) {
     printpar(fp,ParAW); printpar(fp,ParBW);
     if ( ddP.PYbeta !=H_PDP ) {
       printpar(fp,ParAW0); printpar(fp,ParBW0);
     }
+  } else {
+    fprintf(fp, "#  %s is the total over W=%d words\n",ddT[ParBeta].name,ddN.W);
+    printpar(fp,ParBeta);
   }
   fprintf(fp, "PYalpha  = %d\n", (int)ddP.PYalpha);
   if ( ddP.PYalpha ) {
@@ -892,6 +897,7 @@ void pctl_print(FILE *fp) {
       printpar(fp,ParA0); printpar(fp,ParB0);
     }
   } else {
+    fprintf(fp, "#  %s is the total over topics\n",ddT[ParAlpha].name);
     printpar(fp,ParAlpha);
   }
   if ( ddP.bdk!=NULL ) {

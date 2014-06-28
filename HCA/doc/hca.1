@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Fri Jun 27 13:40:51 EST 2014
+.\" Manual page created with latex2man on Sat Jun 28 22:54:39 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -152,12 +152,18 @@ in the Dirichlet parameter vector is value\&.
 }] Same as \fB\-A\fP\fIvalue[,file]\fP
 but 
 value
-is set to a default. 
+is set to a default, 
+0.05*ave\-len/T
+where 
+ave\-len
+is the average document length in the training set. 
 .TP
 {\-A}{type[,file 
-}] A second version of the 
+}] This other version of the 
 \fB\-A\fP
-option with a string argument. 
+option changes the Alpha side 
+Dirichlet on theta to a Pitman\-Yor process, thus 
+allowing estimation of hierarchical prior. 
 It defines a distribution on theta and its prior mean (a vector) 
 alpha
 of type
@@ -226,11 +232,14 @@ in the Dirichlet parameter vector is value\&.
 }] Same as \fB\-B\fP\fIvalue[,file]\fP
 but 
 value
-is set to a default. 
+is set to a default, currently 0.001 
+(10 times the current minimum allowed for a Dirichlet). 
 .TP
 {\-B}{type[,file 
 }] 
-Second form of the \fB\-B\fP
+The other form of the \fB\-B\fP
+option 
+similar to the \fB\-A\fP
 option. 
 Use a prior beta of type
 ``hdp\&'' ``hpdd\&'' or ``pdp\&''\&. Similar to the \fB\-A\fP
@@ -327,12 +336,9 @@ but subsequent sampling will allow a different value per topic.
 .RS
 .PP
 .RE
-.TP
-\fB\-u\fP\fIfile\fP
- the value for the beta vector is given by the text file\&.
-It should contain W floats, W being the number of words. 
 .PP
 .SS CONTROLLING SAMPLING OF HYPERPARAMETERS
+.RE
 .TP
 \fB\-D\fP\fIcycles,start\fP
  Start sampling alpha
@@ -789,9 +795,9 @@ index (offset by 0), one per line.
 With burstiness, gives one ``z,r\&'' per line where ``z\&'' is the 
 topic index (offset by 0) and ``r\&'' is the burst table indicator, 
 which is 1 if the word 
-contributes to standard LDA statistics, and 
+contributes to standard topic model statistics, and 
 0 if burstiness modelling says the word is a burst 
-so does not contribute to LDA statistics. 
+so does not contribute to topic model statistics. 
 .PP
 These files along with RepStem.par
 are input 
@@ -831,7 +837,7 @@ Finally, the type of model for alpha as specified by the
 option is coded in the 
 PYalpha
 variable. 
-It is 0 if the mode is a symmetric Dirichlet, 
+It is 0 if the model is a Dirichlet, 
 the LDA default. 
 It is 1 for hdp, 2 for hpdd and 3 for pdp. 
 Likewise for the PYbeta
@@ -851,7 +857,14 @@ from the install directory where the data/
 directory is. 
 For instance, on Windows that might be hca/hca.exe\&.
 .PP
-Run basic HDP\-LDA with parameter fitting on the full dataset and no testing, 
+Run basic LDA with default parameters 
+and full parameter fitting on the full dataset and no testing, 
+sending logging to stderr\&.
+.Vb
+   hca \-v \-e \-K20 \-Adir \-Bdir \-C100 data/ch c1
+.Ve
+Alternatively, 
+run basic HDP\-LDA with parameter fitting on the full dataset and no testing, 
 sending logging to stderr\&.
 .Vb
    hca \-v \-e \-K20 \-B0.001 \-C100 data/ch c1
@@ -867,6 +880,14 @@ not to ``c1.log\&'';
 .TP
 ``\-K20\&'': 
 use 20 topics (the truncation level); 
+.TP
+``\-Adir\&'': 
+use a symmetric Dirichlet prior on topic probability 
+vectors for documents with default value; 
+.TP
+``\-Bdir\&'': 
+use a symmetric Dirichlet prior on word probability 
+vectors (i.e., topics) with default value; 
 .TP
 ``\-B0.001\&'': 
 use a symmetric Dirichlet prior on word probability 
