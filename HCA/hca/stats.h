@@ -83,7 +83,7 @@ void hca_reset_stats(char *resstem, int restart, int zero,
 		     int firstdoc, int lastdoc);
 void hca_write_z(char *resstem);
 void hca_report(char *resstem, char *stem, int ITER, int procs,
-		enum GibbsType fix, int dopmi, int showlike, int nopar);
+		enum GibbsType fix, int showlike, int nopar);
 void hca_correct_twt();
 
 /*

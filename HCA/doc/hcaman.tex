@@ -365,12 +365,23 @@ option is used.
 Can also be instigated during run-time with the
 \Opt{-P} option.
 \end{Description}
-\item[\OptArg{-o}{score}]  Scoring rule to pick top words for printing.
+\item[{-o}{score[,count]}]  Scoring rule to pick top words for printing.
 Methods are `count', `idf', `cost' and `phi'.  Default is `idf'.
+Ranking done for top \texttt{count} words, default is 20.
+Methods are
+\begin{Description}
+\item[count:] rank by count in topic.
+\item[idf:] rank by fraction of the total occurrences of
+       this word  that are in this topic.
+\item[cost:] rank by proportion of this word in topic
+       minus estimated proportion assuming topic and word independent.
+\item[phi:] rank by computed phi value (if loaded).
+\end{Description}
 \item[\Opt{-O}] Report log likelihood, not log perplexity.  Both
 are done in base 2.
-\item[\Opt{-p}] Report topic coherency in the log file, and 
-save results in the parameter file.  This requires 
+\item[\Opt{-p}] Report topic coherency in the log file, 
+and save the detail (per topic) in the \File{RepStem.toppmi} file.
+This requires 
 a \File{DataStem.pmi} or \File{DataStem.pmi.gz} file exist
 in the right format.  This can be created with the 
 \Prog{mkmat.pl} and
@@ -380,6 +391,9 @@ of the form ``N M PMI'' for word indices
 (offset by 0) N and M and PMI value.
 \emph{WARNING:}  the file \File{DataStem.pmi} needs to be specifically built for 
 the dataset as the word indices must align.
+By default, PMI computed for top 10 words.
+Give option twice, and PMI will be done for all top words
+ranked (as per the \Opt{-o} option).
 \item[\OptArg{-P}{secs}]  
 Calculate test perplexity (using document completion)
 every interval in \texttt{secs} seconds.  If Gibbs cycles are long,
@@ -475,6 +489,8 @@ the \Opt{-X} option is used.
   for each topic.  If a hierarchical model in use, then the
 ``-1'' topic is for the base distribution of words.
 Word indices are offset from 0.
+\item[\File{RepStem.toppmi}] A simple text report giving the top word indices
+and the associated mean PMI for the word.
 \item[\File{RepStem.theta}] Estimated topic probabilities 
 for each training document
 written in a simple sparse form.  The class index

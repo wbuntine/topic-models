@@ -44,7 +44,7 @@
 #endif
 #include "atomic.h"
 
-void hca_displaytopics(char *resstem, int topword, enum ScoreType score);
+void hca_displaytopics(char *stem, char *resstem, int topword, enum ScoreType score, int pmicount);
 void hca_displayclass(char *resstem);
 
 //==================================================
@@ -190,9 +190,11 @@ static void usage() {
 	  "                  #  DIAG is one of 'class','like'\n"
 #endif
 #endif
-          "   -o SC          #  SC=score type, 'count', 'idf', 'cost', 'Q', 'phi'\n"
+          "   -o SC[,count]  #  SC=score type, 'count', 'idf', 'cost', 'Q', 'phi'\n"
+          "                  #     optionally add number of words to print\n"
 	  "   -O             #  report likelihood, not scaled perplexity\n"
 	  "   -p             #  report coherency via PMI of topics\n"
+          "                  #    use twice to set #topics to value set by -o\n"
 	  "   -P secs        #  calc test perplexity every interval in secs\n"
 #ifdef QUERY
 	  "   -Q nres,file   #  do queries using query file, must use '-rphi'\n"
@@ -322,13 +324,14 @@ int main(int argc, char* argv[])
   int qparts=0, this_qpart=0;
 #endif
   char *resstem;
+  int displaycount = 20;
+  int pmicount = 10;
   char *betafile = NULL;
   char *alphafile = NULL;
   double betacin = 0;
   double alphacin = 0;
   int noerrorlog = 0;
   double probepsilon = 0;
-  int displayed = 0;
   int load_vocab = 0;
   int checkpoint = 0;
   int restart_offset=0;
@@ -597,18 +600,22 @@ int main(int argc, char* argv[])
       break;
      case 'o':
       {
-        if ( strcmp(optarg,"idf")==0 )
+        char *cp;
+        if ( strncmp(optarg,"idf",3)==0 )
           score = ST_idf;
-        else if ( strcmp(optarg,"phi")==0 )
+        else if ( strncmp(optarg,"phi",3)==0 )
           score = ST_phi;
-        else if ( strcmp(optarg,"count")==0 )
+        else if ( strncmp(optarg,"count",5)==0 )
           score = ST_count;
-        else if ( strcmp(optarg,"Q")==0 )
+        else if ( strncmp(optarg,"Q",1)==0 )
           score = ST_Q;
-        else if ( strcmp(optarg,"cost")==0 )
+        else if ( strncmp(optarg,"cost",4)==0 )
           score = ST_cost;
         else
           yap_quit("Need a valid parameter for 'o' argument\n");
+        cp = strchr(optarg,',');
+        if ( cp && sscanf(&cp[1],"%d",&displaycount)<1 )
+          yap_quit("Need a second valid '-o' count argument\n");
       }
       break;
     case 'O':
@@ -745,6 +752,8 @@ int main(int argc, char* argv[])
 
   if ( dopmi )
     load_vocab = 1;
+  if ( dopmi>1 )
+    pmicount = displaycount;
 
   if ( restart && maxW>0 ) 
     yap_quit("Cannot change dimension with option -W if restart is done\n");
@@ -804,7 +813,10 @@ int main(int argc, char* argv[])
   
   assert(ddN.T>0);
   assert(ddN.TEST>=0);
-  assert(restart || ITER>0);
+  
+  if ( !restart && ITER==0 )
+    yap_quit("Zero iterations only allowed on restart\n");
+
   if ( loadphi && ddP.phiiter>0 )
     yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
   if ( loadtheta && ddP.probiter>0 )
@@ -1242,8 +1254,7 @@ int main(int argc, char* argv[])
       if ( iter>0 && verbose>1 ) {
 	if ( ddS.Ndt ) yap_probs();
 	if ( ddN.tokens ) {
-            hca_displaytopics(resstem,20,score);
-	    displayed++;
+          hca_displaytopics(stem, resstem, displaycount, score, 0);
 	}
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5,procs);
@@ -1263,8 +1274,9 @@ int main(int argc, char* argv[])
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");
-      hca_report(resstem, stem, ITER, procs, fix_hold, 
-		 (dopmi&&displayed>0)?1:0, showlike, nosave);
+      if ( ddN.tokens ) 
+        hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
+      hca_report(resstem, stem, ITER, procs, fix_hold, showlike, nosave);
     }
     if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
       phi_update();
@@ -1287,13 +1299,12 @@ int main(int argc, char* argv[])
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
     if ( ddN.tokens ) {
-       hca_displaytopics(resstem,20,score);
-       displayed++;
+      hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
     }
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5,procs);
   }
-
+  
   if ( ddG.didtprob )
     tprob_report(resstem,probepsilon);
   if ( ddG.didprob )
@@ -1307,11 +1318,8 @@ int main(int argc, char* argv[])
 
   if ( ITER>0 && nosave==0 ) 
 	data_checkpoint(resstem, stem, ITER);
-  /*
-   *   must have run hca_displaytopics() to create top words for PMI
-   */
-  hca_report(resstem, stem, ITER, procs, fix_hold, (dopmi&&displayed>0)?1:0, 
-             showlike, nosave);
+
+  hca_report(resstem, stem, ITER, procs, fix_hold, showlike, nosave);
 #ifdef QUERY
  FINISH:
 #endif

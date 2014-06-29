@@ -7,13 +7,13 @@ STB_HOME := /home/wbuntine/
 #  Add "-DH_THREADS" to get multi-core version
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
-# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
-MYDEBUG=-g 
+MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
+# MYDEBUG=-g 
 #  add "-g" for debugging libraries
 MYLIB=
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)
 CFLAGS = -Wall 
-LDFLAGS = -L../util -L$(STB_HOME)/lib -lddca -lstb$(MYLIB)  -lm -pthread
+LDFLAGS = -L../util -L$(STB_HOME)/lib -lhca -lstb$(MYLIB)  -lm -pthread
 
 ##  Mac OSX versions
 #CFLAGS = -D__WORDSIZE=64 -I/opt/local/include -Wall -g 

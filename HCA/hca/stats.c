@@ -29,24 +29,14 @@
 #include "diag.h"
 #include "pctl.h"
 #include "probs.h"
-
-/*
- *  print out the topic topk=10 words. report the PMI score. 
- */
-double report_pmi(char *topfile,   /* name of topics file */
-		  char *pmifile,  /* name of PMI file */
-		  int T,          /* total topics */
-		  int W,          /* total words */
-		  int E,
-		  int topk,
-		  double *tp);
+#include "pmi.h"
 
 /*
  *    computes various quality measures,
  *    sending them both to the log and to the ".par" file
  */
 void hca_report(char *resstem, char *stem, int ITER, int procs,
-		enum GibbsType fix, int dopmi, int showlike, int nopar) {
+		enum GibbsType fix, int showlike, int nopar) {
     double scale = 1;
     char *fname = NULL;
     double logprob;
@@ -88,21 +78,6 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
 	if ( fp )
           fprintf(fp, "test accuracy = %lf\n", logprob);
       }
-    }
-    if ( dopmi ) {
-      char *topfile, *pmifile;
-      double coh;
-      double *tp;
-      tp = dvec(ddN.T);
-      topfile=yap_makename(resstem,".top");
-      pmifile=yap_makename(stem,".pmi");
-      get_probs(tp);
-      coh = report_pmi(topfile, pmifile, ddN.T, ddN.W, 1, 10, tp);
-      free(topfile);
-      free(pmifile);
-      if ( fp )
-        fprintf(fp, "PMI_%d = %lf\n", ITER, coh);
-      free(tp);
     }
     if ( fp )
       fclose(fp);

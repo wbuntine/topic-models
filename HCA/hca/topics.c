@@ -28,6 +28,8 @@
 #include "util.h" 
 #include "yap.h" 
 #include "diag.h" 
+#include "probs.h" 
+#include "pmi.h" 
 
 /*
  *  find top-K by bubble sort
@@ -88,9 +90,8 @@ static double Qscore(int w) {
 }
 
 static double costscore(int w) {
-  double N = NwK[w];
   return getn(w)/((double)ddS.NWt[tscorek]) 
-    - (N*ddS.NWt[tscorek]/((double)ddN.NT))/((double)ddN.NT);
+    - (NwK[w]*ddS.NWt[tscorek]/((double)ddN.NT))/((double)ddN.NT);
 }
 
 static double countscore(int w) {
@@ -150,7 +151,8 @@ void hca_displayclass(char *resstem) {
   free(TbyC[0]); free(TbyC);
 }
 
-void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
+void hca_displaytopics(char *stem, char *resstem, int topword, 
+                       enum ScoreType scoretype, int pmicount) {
   int w,k;
   int *indk = NULL;
   int Nk_tot = 0;
@@ -158,10 +160,20 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   double sparsityword = 0;
   double sparsitydoc = 0;
   double underused = 0;
-  char *fname = yap_makename(resstem,".top");
   int nophi = (ddP.phi==NULL) && (ddS.phi==NULL);
   FILE *fp;
+  float *tpmi;
+  char *topfile;
 
+  /*
+   *  topic stats
+   */
+  double *spw;
+  double *spd; 
+  float *effcnt;
+
+  if ( pmicount>topword )
+    pmicount = topword;
   if ( scoretype == ST_idf ) {
     tscore = idfscore;
   } else if ( scoretype == ST_phi ) {
@@ -174,10 +186,6 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     tscore = Qscore;
     lowerQ = 1.0/ddN.T;
   }    
-
-  fp = fopen(fname,"w");
-  if ( !fp ) 
-    yap_sysquit("Cannot open file '%s' for write\n", fname);
 
   /*
    *  first collect counts of each word/term
@@ -204,14 +212,35 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     Nk_tot += ddS.NWt[k];
   }
 
+  if ( pmicount ) {
+    tpmi = malloc(sizeof(*tpmi)*(ddN.T+1));
+    if ( !tpmi )
+      yap_quit("Cannot allocate tpmi in hca_displaytopics()\n");
+  }
+  spd = malloc(sizeof(*spd)*ddN.T);
+  spw = malloc(sizeof(*spw)*ddN.T);
+  if ( !spw || !spd )
+    yap_quit("Cannot allocate spw,spd in hca_displaytopics()\n");
+  if ( !nophi ) {
+    effcnt = malloc(sizeof(*effcnt)*ddN.T);
+    if ( !effcnt )
+      yap_quit("Cannot allocate effcnt in hca_displaytopics()\n");
+  }
   indk = malloc(sizeof(*indk)*ddN.W);
   if ( !indk )
-    yap_quit("Cannot allocate indk\n");
-  
+    yap_quit("Cannot allocate indk in hca_displaytopics()\n");
+
+  /*
+   *   two passes through, 
+   *           first to build the top words and write to file
+   */
+  topfile = yap_makename(resstem,".top");
+  fp = fopen(topfile,"w");
+  if ( !fp ) 
+    yap_sysquit("Cannot open file '%s' for write\n", topfile);
+  yap_message("\n");
   for (k=0; k<ddN.T; k++) {
     int cnt;
-    double spw;
-    double spd; 
     tscorek = k;
     /*
      *    print top words
@@ -232,37 +261,30 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       }
     }
     topk(topword, cnt, indk, tscore);
-    spd = ((double)nonzero_Ndt(k))/((double)ddN.DT);
-    sparsitydoc += spd;
+    spd[k] = ((double)nonzero_Ndt(k))/((double)ddN.DT);
+    sparsitydoc += spd[k];
     if ( nophi ) {
-      spw = ((double)nonzero_Nwt(k))/((double)ddN.W);
-      sparsityword += spw;
+      spw[k] = ((double)nonzero_Nwt(k))/((double)ddN.W);
+      sparsityword += spw[k];
     }
     if ( ddS.NWt[k]*ddN.T*100<Nk_tot ) 
       underused++;
-    yap_message("\nTopic %d (", k);
-    if ( ddP.phi==NULL ) 
-      yap_message((ddN.T>200)?"p=%.3lf%%,":"p=%.2lf%%,", 
-		  100*((double)ddS.NWt[k])/(double)Nk_tot);   
-    if ( nophi ) 
-      yap_message("ws=%.1lf%%,", 100*(1-spw));
-    else
-      yap_message("#=%.0lf,", exp(phi_entropy(k)));
-    yap_message("ds=%.1lf%%", 100*(1-spd) );
+    if ( !nophi )
+      effcnt[k] = exp(phi_entropy(k));
     fprintf(fp,"%d: ", k);
-    yap_message(") words =");
+    yap_message("Topic %d words=", k);
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
+      if ( w>0 ) yap_message(",");
       if ( verbose>2 ) {
 	double score = tscore(indk[w]);
-	yap_message(",%s(%6lf)", ddN.tokens[indk[w]], score);
+	yap_message("%s(%6lf)", ddN.tokens[indk[w]], score);
       } else
-	yap_message(",%s", ddN.tokens[indk[w]]);
+	yap_message("%s", ddN.tokens[indk[w]]);
     }
-    yap_message("\n");
     fprintf(fp, "\n");
+    yap_message("\n");
   }
-	     
   if ( ddP.PYbeta && nophi ) {
     int cnt;
      /*
@@ -274,7 +296,7 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
     }
     topk(topword, cnt, indk, countscore);
-    yap_message("\nTopic root words =");
+    yap_message("Topic root words =");
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
@@ -287,13 +309,56 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     yap_message("\n");
     fprintf(fp, "\n");
   }
+  fclose(fp);
+  yap_message("\n");
+
+  if ( pmicount ) {
+    char *toppmifile;
+    char *pmifile;
+    double *tp;
+    tp = dvec(ddN.T);
+    pmifile=yap_makename(stem,".pmi");
+    toppmifile=yap_makename(topfile,"pmi");
+    get_probs(tp);
+    report_pmi(topfile, pmifile, toppmifile, ddN.T, ddN.W, 1, 
+               pmicount, tp, tpmi);
+    free(toppmifile);
+    free(pmifile);
+    free(tp);
+  }
+  /*
+   *   two passes through, 
+   *           second to produce report
+   */
+  for (k=0; k<ddN.T; k++) {
+    yap_message("Topic %d stats:", k);
+    if ( ddP.phi==NULL ) 
+      yap_message((ddN.T>200)?" p=%.3lf%%,":" p=%.2lf%%,", 
+		  100*((double)ddS.NWt[k])/(double)Nk_tot);   
+    if ( nophi ) 
+      yap_message(" ws=%.1lf%%,", 100*(1-spw[k]));
+    else
+      yap_message(" #=%.0lf,", effcnt[k]); 
+    yap_message(" ds=%.1lf%%", 100*(1-spd[k]) );
+    if ( pmicount ) 
+      yap_message(" pmi=%.3f,", tpmi[k]);
+    yap_message("\n");
+  }
+  yap_message("\n");
+	     
   if ( nophi )
-    yap_message("Average topicXword sparsity = %.2lf%%, ",
-		100*(1-sparsityword/ddN.T) );
-  yap_message("Average docXtopic sparsity = %.2lf%%, "
-	      "underused topics = %.1lf%%\n",
+    yap_message("Average topicXword sparsity = %.2lf%%\n",
+                100*(1-sparsityword/ddN.T) );
+  yap_message("Average docXtopic sparsity = %.2lf%%\n"
+	      "Underused topics = %.1lf%%\n",
 	      100*(1-sparsitydoc/ddN.T), 
 	      100.0*underused/(double)ddN.T);
+  if ( pmicount ) 
+    yap_message("Average PMI = %.3f\n", tpmi[ddN.T]);
+
+  /*
+   *  print burstiness report
+   */
   if ( ddP.bdk!=NULL) {
     int tottbl = 0;
     int totmlttbl = 0;
@@ -313,9 +378,15 @@ void hca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 		100.0*((double)tottbl)/ddN.NT,
 		100.0*((double)totmlttbl)/totmlt);
   }
-  fclose(fp);
-  free(fname);
+
+  free(topfile);
   free(indk);
+  free(spd);
+  free(spw);
+  if ( !nophi )
+    free(effcnt);
+  if ( pmicount )
+    free(tpmi);
   if ( scoretype != ST_count ) {
     free(NwK);
     NwK = NULL;

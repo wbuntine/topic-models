@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sat Jun 28 22:54:39 EST 2014
+.\" Manual page created with latex2man on Sun Jun 29 19:12:26 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -568,17 +568,41 @@ option.
 .PP
 .RE
 .TP
-\fB\-o\fP\fIscore\fP
- Scoring rule to pick top words for printing. 
+{\-o}{score[,count 
+}] Scoring rule to pick top words for printing. 
 Methods are `count\&', `idf\&', `cost\&' and `phi\&'\&. Default is `idf\&'\&. 
+Ranking done for top count
+words, default is 20. 
+Methods are 
+.RS
+.TP
+count: 
+rank by count in topic. 
+.TP
+idf: 
+rank by fraction of the total occurrences of 
+this word that are in this topic. 
+.TP
+cost: 
+rank by proportion of this word in topic 
+minus estimated proportion assuming topic and word independent. 
+.TP
+phi: 
+rank by computed phi value (if loaded). 
+.RE
+.RS
+.PP
+.RE
 .TP
 \fB\-O\fP
  Report log likelihood, not log perplexity. Both 
 are done in base 2. 
 .TP
 \fB\-p\fP
- Report topic coherency in the log file, and 
-save results in the parameter file. This requires 
+ Report topic coherency in the log file, 
+and save the detail (per topic) in the RepStem.toppmi
+file. 
+This requires 
 a DataStem.pmi
 or DataStem.pmi.gz
 file exist 
@@ -594,6 +618,10 @@ of the form ``N M PMI\&'' for word indices
 the file DataStem.pmi
 needs to be specifically built for 
 the dataset as the word indices must align. 
+By default, PMI computed for top 10 words. 
+Give option twice, and PMI will be done for all top words 
+ranked (as per the \fB\-o\fP
+option). 
 .TP
 \fB\-P\fP\fIsecs\fP
  Calculate test perplexity (using document completion) 
@@ -752,6 +780,10 @@ for each topic. If a hierarchical model in use, then the
 ``\-1\&'' topic is for the base distribution of words. 
 Word indices are offset from 0. 
 .TP
+RepStem.toppmi
+ A simple text report giving the top word indices 
+and the associated mean PMI for the word. 
+.TP
 RepStem.theta
  Estimated topic probabilities 
 for each training document 
@@ -869,7 +901,7 @@ sending logging to stderr\&.
 .Vb
    hca \-v \-e \-K20 \-B0.001 \-C100 data/ch c1
 .Ve
-The command line means: 
+The command lines mean: 
 .TP
 ``\-v\&'': 
 use level one verbosity; 

@@ -28,17 +28,7 @@
 #include "stats.h"
 #include "pctl.h"
 #include "atomic.h"
-
-/*
- *  print out the topic topk=10 words. report the PMI score. 
- */
-double report_pmi(char *topfile,   /* name of topics file */
-		  char *pmifile,  /* name of PMI file */
-		  int T,          /* total topics */
-		  int W,          /* total words */
-		  int E,
-		  int topk,
-		  double *tp);
+#include "pmi.h"
 
 /*
  *    computes various quality measures,
@@ -72,7 +62,7 @@ void tca_report(char *resstem, char *stem, int ITER, int procs,
       topfile=yap_makename(resstem,".top");
       pmifile=yap_makename(stem,".pmi");
       get_probs(tp);
-      coh = report_pmi(topfile, pmifile, ddN.T, ddN.W, ddN.E, 10, tp);
+      coh = report_pmi(topfile, pmifile, NULL, ddN.T, ddN.W, ddN.E, 10, tp, NULL);
       free(topfile);
       free(pmifile);
       if ( fp )

@@ -13,8 +13,10 @@ HFILES = data.h hca.h probs.h sample.h stats.h pctl.h diag.h check.h \
 
 all:    hca
 
-hca:	hca.o $(subst .c,.o,$(CFILES) ) 
+hca:	hca.o $(subst .c,.o,$(CFILES) ) ../util/libhca.a
 	cc  $(CPPFLAGS) $(CFLAGS)  -o hca hca.o $(subst .c,.o,$(CFILES)) $(LDFLAGS)
+
+../util/libhca.a:
 
 clean: 
 	rm -f *.o *.d hca gmon.out 

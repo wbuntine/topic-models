@@ -2,9 +2,9 @@
 #   CFLAGS and LDFLAGS should be in environment vars
 
 SRC = beta.c coher.c csparse.c myarms.c tokens.c util.c yap.c pmi.c dread.c misi.c 
-HFILES = myarms.h util.h yap.h dread.h misi.h
+HFILES = myarms.h util.h yap.h dread.h misi.h pmi.h
 OBJ = $(SRC:.c=.o)
-LIBRARY = libddca.a
+LIBRARY = libhca.a
 
 library:  $(OBJ)
 	ar rcs $(LIBRARY) $(OBJ)

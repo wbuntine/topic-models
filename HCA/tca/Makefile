@@ -10,10 +10,10 @@ HFILES = data.h tca.h probs.h sample.h stats.h pctl.h change.h
 
 all:    tca
 
-tca:	tca.o $(subst .c,.o,$(CFILES) ) ../util/libutil.a
+tca:	tca.o $(subst .c,.o,$(CFILES) ) ../util/libhca.a
 	cc  $(CPPFLAGS) $(CFLAGS)  -o tca tca.o $(subst .c,.o,$(CFILES)) $(LDFLAGS)
 
-../util/libutil.a:
+../util/libhca.a:
 
 clean: 
 	rm -f *.o *.d tca gmon.out 
