@@ -206,8 +206,6 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     }
   }
 
-  assert(ddN.tokens);
-
   for (k=0; k<ddN.T; k++) {
     Nk_tot += ddS.NWt[k];
   }
@@ -272,18 +270,21 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     if ( !nophi )
       effcnt[k] = exp(phi_entropy(k));
     fprintf(fp,"%d: ", k);
-    yap_message("Topic %d words=", k);
+    if ( verbose>1 ) yap_message("Topic %d words=", k);
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
-      if ( w>0 ) yap_message(",");
-      if ( verbose>2 ) {
-	double score = tscore(indk[w]);
-	yap_message("%s(%6lf)", ddN.tokens[indk[w]], score);
-      } else
-	yap_message("%s", ddN.tokens[indk[w]]);
+      if ( verbose>1 ) {
+	if ( w>0 ) yap_message(",");
+	if ( ddN.tokens ) 
+	  yap_message("%s", ddN.tokens[indk[w]]);
+	else
+	  yap_message("%d", indk[w]);
+	if ( verbose>2 )
+	  yap_message("(%6lf)", tscore(indk[w]));
+      }
     }
     fprintf(fp, "\n");
-    yap_message("\n");
+    if ( verbose>1 ) yap_message("\n");
   }
   if ( ddP.PYbeta && nophi ) {
     int cnt;
@@ -296,21 +297,25 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
     }
     topk(topword, cnt, indk, countscore);
-    yap_message("Topic root words =");
+    if ( verbose>1 ) yap_message("Topic root words =");
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
-      if ( verbose>2 ) {
-	double score = tscore(indk[w]);
-	yap_message(",%s(%6lf)", ddN.tokens[indk[w]], score);
-      } else
-	yap_message(",%s", ddN.tokens[indk[w]]);
+      if ( verbose>1 ) {
+	if ( w>0 ) yap_message(",");
+	if ( ddN.tokens )
+	  yap_message("%s", ddN.tokens[indk[w]]);
+	else
+	  yap_message("%d", indk[w]);
+	if ( verbose>2 )
+	  yap_message("(%6lf)", tscore(indk[w]));
+      }
     }
-    yap_message("\n");
+    if ( verbose>1 ) yap_message("\n");
     fprintf(fp, "\n");
   }
   fclose(fp);
-  yap_message("\n");
+  if ( verbose>1 ) yap_message("\n");
 
   if ( pmicount ) {
     char *toppmifile;
@@ -373,7 +378,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       if ( M_multi(i) )
 	totmlt++;
     }
-    yap_message("doc PYP report:   multis=%.2lf%%,  tables=%.2lf%%, tbls-in-multis=%.2lf%%\n",
+    yap_message("Burst report: multis=%.2lf%%, tables=%.2lf%%, tbls-in-multis=%.2lf%%\n",
 		100.0*((double)ddM.dim_multiind)/ddN.N,
 		100.0*((double)tottbl)/ddN.NT,
 		100.0*((double)totmlttbl)/totmlt);

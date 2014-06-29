@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sun Jun 29 21:49:27 EST 2014
+.\" Manual page created with latex2man on Sun Jun 29 22:42:42 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -1292,13 +1292,18 @@ data/ch.pmi.gz
 created explicitly for this test set. 
 For other datasets, you will need to download prepared 
 PMI matrices from the project homepage. 
-The PMI output in the log file is: 
+The PMI output in the log file 
+adds a PMI figure at the end of the second set of 
+diagnostics: 
 .Vb
-PMI ::  0:2.051 1:3.172 2:5.170 3:0.353 ...
-PMI = 1.257
+Topic 0 stats: p=3.16%, ws=86.3%, ds=71.4%, pmi=2.565,
+Topic 1 stats: p=6.73%, ws=81.7%, ds=76.2%, pmi=0.825,
+Topic 2 stats: p=3.59%, ws=85.2%, ds=72.9%, pmi=1.392,
 .Ve
-The first line gives the PMI per topic. 
-The second line gives the mean PMI. 
+Moreover, the general diagnistics get an extra line: 
+.Vb
+Average PMI = 0.602
+.Ve
 .PP
 .SS BURSTINESS
 .PP
@@ -1336,7 +1341,7 @@ sampling of hyperparameters.
 .PP
 Diagnostics reported for burstiness, printed at the end, are as follows: 
 .Vb
-multis=55.45%,  tables=79.57%, tbls\-in\-multis=63.15%
+Burst report:  multis=55.45%, tables=79.57%, tbls\-in\-multis=63.15%
 .Ve
 These are: 
 .TP

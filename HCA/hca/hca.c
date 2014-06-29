@@ -1253,9 +1253,7 @@ int main(int argc, char* argv[])
       pctl_update(iter);
       if ( iter>0 && verbose>1 ) {
 	if ( ddS.Ndt ) yap_probs();
-	if ( ddN.tokens ) {
-          hca_displaytopics(stem, resstem, displaycount, score, 0);
-	}
+	hca_displaytopics(stem, resstem, displaycount, score, 0);
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5,procs);
       }
@@ -1274,8 +1272,7 @@ int main(int argc, char* argv[])
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");
-      if ( ddN.tokens ) 
-        hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
+      hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
       hca_report(resstem, stem, ITER, procs, fix_hold, showlike, nosave);
     }
     if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
@@ -1298,9 +1295,7 @@ int main(int argc, char* argv[])
 	     iter,  (tot_time-psample_time)/iter, psample_time/iter);
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
-    if ( ddN.tokens ) {
-      hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
-    }
+    hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5,procs);
   }
