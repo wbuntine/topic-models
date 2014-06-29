@@ -25,6 +25,9 @@
 #include "util.h"
 extern int verbose;
 
+/******************
+ *    dirt simple hashing routine
+ */
 #define HASHPRIME 7919U
 #define REHASHPRIME 7883U
 
@@ -57,6 +60,58 @@ static void addw(uint32_t w, uint32_t ind) {
   return;
 }
 
+/****************************************
+ *  reading of top topics file
+ */
+/*
+ *    get next (topic,epoch) pair
+ *    (T,E) are input maximum topics and epochs
+ *    return zero if none
+ */
+static int lineno;      /* no. lines read */
+static char *line;      /*  text of current line */
+static int n_line;      
+static char *buf;       /*  ptr to next spot in line */
+static char *ttop_file;
+static FILE *ttop_fp;
+
+void ttop_close() {
+  fclose(ttop_fp);
+  ttop_file = NULL;
+  ttop_fp = NULL;
+}  
+void ttop_open(char *topfile) {
+  ttop_file = topfile;
+  ttop_fp = fopen(topfile,"r");
+  if ( !ttop_fp ) 
+    yap_sysquit("Topic file '%s' not read\n", topfile);
+  lineno = 0;
+}
+int ttop_next(int T, int E, int *k, int *e) {
+  line = NULL;
+  n_line = 0;
+  while ( getline(&line, &n_line, ttop_fp)>0 ) {
+    int e = 0;
+    buf = line;
+    lineno ++;
+    /*  skip lines starting wth # */
+    if ( buf[0]=='#' ) 
+      continue;
+    buf += strspn(buf," \t\n");    //   skip space
+    if ( (E==1 && sscanf(buf, "%d: ", k)<1) || 
+	 (E>1 && sscanf(buf, "%d,%d: ", e, k)<2) ) 
+      yap_quit("Cannot read topic in topic line %d from file '%s'\n", 
+	       lineno, ttop_file);
+    /*  skip lines with topics/epochs outside bounds */
+    if ( *k<0 || *k>=T )
+      continue;
+    if ( *e<0 || *e>=E )
+      continue;
+    return 1;
+  } 
+  return 0;
+}
+
 /*
  *  print out the topic topk=10 words. report the PMI score. 
  */
@@ -68,7 +123,6 @@ double report_pmi(char *topfile,   /* name of topics file */
 		  int topk,
 		  double *tp)
 {
-  int lineno = 0;
   int i,k, thee;
   /*
    *   mapping from local index to actual word index
@@ -87,8 +141,6 @@ double report_pmi(char *topfile,   /* name of topics file */
   double **pmi;
   float ave = 0;
 
-  char *line;
-  size_t n_line;
   FILE *fr;
   if ( !wind || !wuse )
     yap_quit("Out of memory in report_pmi()\n");
@@ -96,27 +148,9 @@ double report_pmi(char *topfile,   /* name of topics file */
   /*
    *   read in file of top word indices in topic
    */
-  fr = fopen(topfile,"r");
-  if ( !fr ) 
-    yap_sysquit("Topic file '%s' not read\n", topfile);
+  ttop_open(topfile);
   
-  line = NULL;
-  n_line = 0;
-  lineno = 0;
-  while ( getline(&line, &n_line, fr)>0 ) {
-    char *buf = line;
-    unsigned j;
-    int e = 0;
-    lineno ++;
-    buf += strspn(buf," \t\n");    //   skip space
-    if ( (E==1 && sscanf(buf, "%d: ", &k)<1) || 
-	 (E>1 && sscanf(buf, "%d,%d: ", &e, &k)<2) ) 
-      yap_quit("Cannot read topic in topic line %d from file '%s'\n", 
-	       lineno, topfile);
-    if ( k<0 || k>=T )
-      continue;
-    if ( e<0 || e>=E )
-      continue;
+  while ( ttop_line(T, E, &k, &e) ) {
     for (i = 0; i<topk && *buf; i++) {
       buf = strpbrk(buf," \t\n");    //   skip to next space
       if ( sscanf(buf, " %u", &j) <1 ) {
@@ -153,7 +187,7 @@ double report_pmi(char *topfile,   /* name of topics file */
     line = NULL;
     n_line = 0;
   }
-  fclose(fr);
+  ttop_close();
 
   pmi = dmat(n_wind,n_wind);
   /*
