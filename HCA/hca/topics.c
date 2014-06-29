@@ -378,6 +378,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 		100.0*((double)tottbl)/ddN.NT,
 		100.0*((double)totmlttbl)/totmlt);
   }
+  yap_message("\n");
 
   free(topfile);
   free(indk);

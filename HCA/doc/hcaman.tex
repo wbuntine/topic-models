@@ -584,7 +584,8 @@ The command lines mean:
 \item[``-v'':] use level one verbosity;
 \item[``-e'':] send the log file to  \texttt{stderr},
 not to ``c1.log'';
-\item[``-K20'':] use 20 topics (the truncation level);
+\item[``-K20'':] use 20 topics 
+(the truncation level if using \OptArg{-A}{hpdd}));
 \item[``-Adir'':]  use a symmetric Dirichlet prior on topic probability
 vectors for documents with default value;
 \item[``-Bdir'':]  use a symmetric Dirichlet prior on word probability
@@ -592,9 +593,10 @@ vectors (i.e., topics) with default value;
 \item[``-B0.001'':]  use a symmetric Dirichlet prior on word probability
 vectors (i.e., topics) with this value;
 \item[``-C100'':] run for 100 cycles;
-\item[``data.ch'':] stem for data file;
+\item[``data/ch'':] stem for data file;
 \item[``c1'':] stem for results file.
 \end{description}
+Consider the HDP-LDA version.
 Before the runtime logging starts, initial details are printed:
 \begin{verbatim}
 Version 0.5, H.Pitman-Yor sampler for topics, Dirichlet sampler for words
@@ -623,7 +625,13 @@ Initialised with 20 classes
 Note the following:
 \begin{itemize}
 \item
-the hyperparameters being sampled are 
+the \texttt{betatot} value is the total of the input
+\texttt{beta} (0.001) over the $W=4258$ words;
+internally the \texttt{betatot} is maintained and subsequently
+sampled;
+\item
+the ``Sampling pars:'' line indicates
+hyperparameters being sampled, which  are 
 \texttt{b}, \texttt{b0}, \texttt{betatot}, with
 \texttt{b} and \texttt{b0} being sampled every 3 major cycles and \texttt{betatot}
 every 4 major cycles;
@@ -661,17 +669,18 @@ Here cycles 81-85 are run.
 The two perplexities reported are normalised per token and then given in
 log to base 2.  The first is from the posterior probability with all
 real-valued probability vectors marginalised out using Pitman-Yor process
-theory but with the latent count variables 
+theory but with the latent counts
 (counts of tables, not full table configurations) included.
 The second is the running total of word probabilities encountered
 during sampling.  This does not include the probability cost of latent
 variables (for instance, the topics) so always less.
 After \texttt{Pars:} appears the list of hyperparameters being sampled and their
-current values.  Note the parameter \texttt{bdk}, the
-concentration for the bursiness per topic, is
-a vector over topics, so only the first entry is printed.
+current values.  
+% Note the parameter \texttt{bdk}, the
+% concentration for the bursiness per topic, is
+% a vector over topics, so only the first entry is printed.
 
-Adding an extra level of verbosity using an addition \Opt{-v}, one gets
+Adding an extra level of verbosity using an additional \Opt{-v}, one gets
 a brief one line report for every hyperparameter being sampled,
 such as
 \begin{verbatim}
@@ -680,7 +689,7 @@ such as
 This means the adaptive rejection sampler took 37 calls
 to sample \texttt{b}.  The initial value was 3.432078
 and the final value was 3.272891.
-This line will be printed every time a sampling step is done, sometimes multiple
+This line will be printed every time a sampling is done, sometimes multiple
 ones per major Gibbs cycle.
 Moreover, topic probabilities are printed.
 These are estimated (with standard smoothing) from
@@ -696,10 +705,30 @@ If some topics have no data in them, \texttt{empty} will tell how much.
 The effective number of topics is 19.049888,
 which is the exponential of the entropy of the probability vector
 (ignoring empty topics).
+It should always be less than the truncation level.
 
-At the end, the top 20 words will be printed and the
-final training perplexity printed.  This is based on
-the posterior probability as previous.
+At the end, a final report is printed.  
+\begin{verbatim}
+[29/05/2014:21:07:27] Finished after 100 cycles on average of 0.193804+0.013074(s) per cycle
+probs =  0.037662 0.031478 0.034289 0.020517 0.043002 0.097527 0.022766 0.068859 0.114952 ...
+conc. = 1.784346, empty = 0, exp.ent = 15.296125
+log_2(train perp) = 11.456566
+\end{verbatim}
+The figures give 0.19380 seconds per cycle for the Gibbs sampler
+and 0.01307 seconds per cycle for the adative rejection sampling
+of hyperparameters.  Note these figures are not collected
+correctly for the multi-core version.
+The \texttt{log\_2(train perp)} figure is equivalent
+to the \texttt{log\_2(perp)} figure 
+above because there is no test data.
+At this point, a number of data files will have been
+written, the same as done with any checkpoint.
+The main one is the parameter file
+\File{c1.par} which gives all the dimensions as well
+as the final values of the hyper-parameters.
+Note the \texttt{probs} are also included, but these
+are for information only.
+The others can be used to restart the run.
 
 If you have the multicore version compiled, 
 and you have an 8-core CPU, then run with 8 threads:
@@ -727,15 +756,38 @@ The command line means:
 Note must have at least level two verbosity;
 \item[``-C0'':] do not run any cycles, just do reporting.
 \end{description}
-This will have lines like:
+After printing initial details, this will print three
+sets of details.
+The first is a list of top topic words. 
+Such as:
 \begin{verbatim}
-Topic 15 (p=5.88%,ws=71.8%,ds=69.4%) words =,museum,salonika,byzantine
+Topic 0 words=gandhi,auction,phillips,sotheby,sale,1945,becket,martin,onassis,papers,...
+Topic 1 words=pope,pontiff,appendix,crucitti,tumour,gemelli,parkinson,krakow,trembling,...
+Topic 2 words=versace,cunanan,beach,wallace,mastroianni,miami,designer,philippines,...
 \end{verbatim}
-which means the topic is observed in 5.88\% of word occurrences,
-word sparsity for the topic is 71.8\%
-(71.8\% of the words have zero data for this topic),
-and document sparsity for the topic is 69.4\%
-(69.4\% of the documents have zero data for this topic).
+The second set is diagnostics about the topics:
+\begin{verbatim}
+Topic 0 stats: p=3.16%, ws=86.3%, ds=71.4%
+Topic 1 stats: p=6.73%, ws=81.7%, ds=76.2%
+Topic 2 stats: p=3.59%, ws=85.2%, ds=72.9%
+\end{verbatim}
+This means the topic 0 is observed in 3.16\% of word occurrences,
+word sparsity for the topic is 86.3\%
+(86.3\% of the words have zero entries for this topic),
+and document sparsity for the topic is 71.4\%
+(71.4\% of the documents have zero entries for this topic).
+The final set is general diagostics:
+\begin{verbatim}
+Average topicXword sparsity = 83.37%
+Average docXtopic sparsity = 67.09%
+Underused topics = 0.0%
+\end{verbatim}
+The first line gives is the mean of the word sparsities
+(\texttt{ws}), the second 
+gives the mean of the document sparsities (\texttt{ds}),
+and the number of underused topics is the
+percentage of topics whose observed proportion
+is less than 1/T/100.
 
 \subsection{Produce sparsity mappings and document topic probabilities}
 Restart again and build a topic probability vector for each document,
