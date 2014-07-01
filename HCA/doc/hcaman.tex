@@ -756,27 +756,30 @@ The command line means:
 Note must have at least level two verbosity;
 \item[``-C0'':] do not run any cycles, just do reporting.
 \end{description}
-After printing initial details, this will print three
+After printing initial details, this will print two
 sets of details.
-The first is a list of top topic words. 
+The first is a list of top topic words (if verbosity is greater than 1)
+and topic diagnostics. 
+Topics are printed in decreasing order of occurrence.
 Such as:
 \begin{verbatim}
-Topic 0 words=gandhi,auction,phillips,sotheby,sale,1945,becket,martin,onassis,papers,...
-Topic 1 words=pope,pontiff,appendix,crucitti,tumour,gemelli,parkinson,krakow,trembling,...
-Topic 2 words=versace,cunanan,beach,wallace,mastroianni,miami,designer,philippines,...
+Topic 19/0 p=23.20%, ws=66.6%, ds=6.3% words=think,own,old,never,place,earlier,...
+Topic 14/1 p=6.62%, ws=80.9%, ds=77.5% words=appendix,crucitti,tumour,parkinson,...
+Topic 16/2 p=6.32%, ws=80.5%, ds=75.4% words=prince,diana,parker,bowles,camilla,...
+Topic 5/3 p=5.56%, ws=83.4%, ds=79.7% words=teresa,missionaries,calcutta,nirmala,...
 \end{verbatim}
-The second set is diagnostics about the topics:
-\begin{verbatim}
-Topic 0 stats: p=3.16%, ws=86.3%, ds=71.4%
-Topic 1 stats: p=6.73%, ws=81.7%, ds=76.2%
-Topic 2 stats: p=3.59%, ws=85.2%, ds=72.9%
-\end{verbatim}
-This means the topic 0 is observed in 3.16\% of word occurrences,
-word sparsity for the topic is 86.3\%
-(86.3\% of the words have zero entries for this topic),
-and document sparsity for the topic is 71.4\%
-(71.4\% of the documents have zero entries for this topic).
-The final set is general diagostics:
+This means the topic 19 is observed in 23.20\% of word occurrences,
+word sparsity for the topic is 66.6\%
+(66.6\% of the words have zero entries for this topic),
+and document sparsity for the topic is 6.3\%
+(6.3\% of the documents have zero entries for this topic).
+The words are ranked according to the order given with the \Opt{-o} argument,
+and the number of top-ranked words can be changed with the 
+second optional part.
+Note the first most frequent topic is a general clean-up topic that
+has low comprehensibility, and the remaining are more topic specific.
+
+The final report gives general diagostics:
 \begin{verbatim}
 Average topicXword sparsity = 83.37%
 Average docXtopic sparsity = 67.09%
@@ -787,7 +790,7 @@ The first line gives is the mean of the word sparsities
 gives the mean of the document sparsities (\texttt{ds}),
 and the number of underused topics is the
 percentage of topics whose observed proportion
-is less than 1/T/100.
+is less than 1/T/100 or with less than 5 occurrences.
 
 \subsection{Produce sparsity mappings and document topic probabilities}
 Restart again and build a topic probability vector for each document,

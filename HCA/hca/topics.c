@@ -31,7 +31,25 @@
 #include "probs.h" 
 #include "pmi.h" 
 
-/*
+/*************************************************
+ *  return sort order for topics by size
+ */
+static int pcompar(const void *a, const void *b) {
+  uint32_t na = ddS.NWt[*(uint32_t*)a];
+  uint32_t nb = ddS.NWt[*(uint32_t*)b];
+  if ( na<nb ) return 1;
+  if ( na>nb ) return -1;
+  return 0;
+}
+static uint32_t *sorttops(int K) {
+  uint32_t *psort = u32vec(K);
+  int k;
+  for (k=0; k<K; k++) psort[k] = k;
+  qsort(psort, K, sizeof(*psort), pcompar);
+  return psort;
+}
+
+/*************************************************
  *  find top-K by bubble sort
  */
 static void topk(int K, int N, int *ind, double (*foo)(int)) {
@@ -50,12 +68,19 @@ static void topk(int K, int N, int *ind, double (*foo)(int)) {
 }
 
 
+/***************************************************
+ *
+ *   scoring utilities
+ */
 /*
  *  for IDF score
  */
 static uint32_t NWK = 0;
 static uint32_t *NwK = NULL;
 
+/*
+ *  all the scoring functions below require this static set to work
+ */
 static int tscorek;
 
 static unsigned getn(int w) {
@@ -96,6 +121,40 @@ static double costscore(int w) {
 
 static double countscore(int w) {
   return getn(w);
+}
+
+/********************************************************
+ *  build non-zero indices for topic
+ */
+static int buildindk(int k, int *indk) {
+  int w;
+  int cnt=0;
+  if ( k<0 ) {
+    /*
+     *  for root topic
+     */
+    if ( ddP.phi!=NULL ) 
+      return 0;
+    for (w=0; w<ddN.W; w++) {
+      if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
+    }
+    return cnt;
+  }
+  if ( ddP.phi==NULL ) {
+    for (w=0; w<ddN.W; w++) {
+      if ( ddS.Nwt[w][k]>0 ) indk[cnt++] = w;
+    }
+  } else {
+    float **phi;
+    if ( ddP.phi )
+      phi = ddP.phi;
+    else
+      phi = ddS.phi;
+    for (w=0; w<ddN.W; w++) {
+      if ( phi[k][w]>0.5/ddN.W ) indk[cnt++] = w;
+    }
+  }
+  return cnt;
 }
 
 uint32_t **classbytopic(char *resstem) {
@@ -164,6 +223,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   FILE *fp;
   float *tpmi;
   char *topfile;
+  uint32_t *psort;
 
   /*
    *  topic stats
@@ -210,6 +270,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     Nk_tot += ddS.NWt[k];
   }
 
+  psort = sorttops(ddN.T);
+
   if ( pmicount ) {
     tpmi = malloc(sizeof(*tpmi)*(ddN.T+1));
     if ( !tpmi )
@@ -230,7 +292,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 
   /*
    *   two passes through, 
-   *           first to build the top words and write to file
+   *           first to build the top words and dump to file
    */
   topfile = yap_makename(resstem,".top");
   fp = fopen(topfile,"w");
@@ -241,77 +303,46 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     int cnt;
     tscorek = k;
     /*
-     *    print top words
+     *    build sorted word list
      */
-    cnt=0;
-    if ( ddP.phi==NULL ) {
-      for (w=0; w<ddN.W; w++) {
-	if ( ddS.Nwt[w][k]>0 ) indk[cnt++] = w;
-      }
-    } else {
-      float **phi;
-      if ( ddP.phi )
-	phi = ddP.phi;
-      else
-	phi = ddS.phi;
-      for (w=0; w<ddN.W; w++) {
-	if ( phi[k][w]>0.5/ddN.W ) indk[cnt++] = w;
-      }
-    }
+    cnt = buildindk(k, indk);
     topk(topword, cnt, indk, tscore);
+    /*
+     *   compute diagnostics
+     */
     spd[k] = ((double)nonzero_Ndt(k))/((double)ddN.DT);
     sparsitydoc += spd[k];
     if ( nophi ) {
       spw[k] = ((double)nonzero_Nwt(k))/((double)ddN.W);
       sparsityword += spw[k];
     }
-    if ( ddS.NWt[k]*ddN.T*100<Nk_tot ) 
+    if ( ddS.NWt[k]*ddN.T*100<Nk_tot || ddS.NWt[k]<5 ) 
       underused++;
     if ( !nophi )
       effcnt[k] = exp(phi_entropy(k));
+    if ( cnt==0 )
+      continue;
+    /*
+     *   dump words to file
+     */
     fprintf(fp,"%d: ", k);
-    if ( verbose>1 ) yap_message("Topic %d words=", k);
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
-      if ( verbose>1 ) {
-	if ( w>0 ) yap_message(",");
-	if ( ddN.tokens ) 
-	  yap_message("%s", ddN.tokens[indk[w]]);
-	else
-	  yap_message("%d", indk[w]);
-	if ( verbose>2 )
-	  yap_message("(%6lf)", tscore(indk[w]));
-      }
     }
     fprintf(fp, "\n");
-    if ( verbose>1 ) yap_message("\n");
   }
   if ( ddP.PYbeta && nophi ) {
     int cnt;
      /*
-     *    print root words
+     *    dump root words
      */
     tscorek = -1;
-    cnt=0;
-    for (w=0; w<ddN.W; w++) {
-      if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
-    }
+    cnt = buildindk(-1, indk);
     topk(topword, cnt, indk, countscore);
-    if ( verbose>1 ) yap_message("Topic root words =");
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
-      if ( verbose>1 ) {
-	if ( w>0 ) yap_message(",");
-	if ( ddN.tokens )
-	  yap_message("%s", ddN.tokens[indk[w]]);
-	else
-	  yap_message("%d", indk[w]);
-	if ( verbose>2 )
-	  yap_message("(%6lf)", tscore(indk[w]));
-      }
     }
-    if ( verbose>1 ) yap_message("\n");
     fprintf(fp, "\n");
   }
   fclose(fp);
@@ -332,21 +363,69 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     free(tp);
   }
   /*
-   *   two passes through, 
-   *           second to produce report
+   *   now report words and diagnostics
    */
+  ttop_open(topfile);
   for (k=0; k<ddN.T; k++) {
-    yap_message("Topic %d stats:", k);
+    int cnt;
+    int kk = psort[k];
+    if ( ddS.NWt[kk]==0 )
+      continue;
+    /*
+     *  rebuild word list
+     */
+    tscorek = kk;
+    cnt = buildindk(kk, indk);
+    topk(topword, cnt, indk, tscore);
+    /*
+     *  print stats
+     */
+    yap_message("Topic %d/%d", kk, k);
     if ( ddP.phi==NULL ) 
       yap_message((ddN.T>200)?" p=%.3lf%%,":" p=%.2lf%%,", 
-		  100*((double)ddS.NWt[k])/(double)Nk_tot);   
+		  100*((double)ddS.NWt[kk])/(double)Nk_tot);   
     if ( nophi ) 
-      yap_message(" ws=%.1lf%%,", 100*(1-spw[k]));
+      yap_message(" ws=%.1lf%%,", 100*(1-spw[kk]));
     else
-      yap_message(" #=%.0lf,", effcnt[k]); 
-    yap_message(" ds=%.1lf%%", 100*(1-spd[k]) );
+      yap_message(" #=%.0lf,", effcnt[kk]); 
+    yap_message(" ds=%.1lf%%", 100*(1-spd[kk]) );
     if ( pmicount ) 
-      yap_message(" pmi=%.3f,", tpmi[k]);
+      yap_message(" pmi=%.3f,", tpmi[kk]);
+    if ( verbose>1 ) {
+      /*
+       *   print top words
+       */
+      yap_message(" words=");
+      for (w=0; w<topword && w<cnt; w++) {
+	if ( w>0 ) yap_message(",");
+	if ( ddN.tokens ) 
+	  yap_message("%s", ddN.tokens[indk[w]]);
+	else
+	  yap_message("%d", indk[w]);
+	if ( verbose>2 )
+	  yap_message("(%6lf)", tscore(indk[w]));
+      }
+    }
+    yap_message("\n");
+  }
+  if ( verbose>1 && ddP.PYbeta && nophi ) {
+    int cnt;
+     /*
+     *    print root words
+     */
+    tscorek = -1;
+    cnt = buildindk(-1,indk);
+    topk(topword, cnt, indk, countscore);
+    yap_message("Topic root words =");
+    for (w=0; w<topword && w<cnt; w++) {
+      if ( w>0 ) yap_message(",");
+      if ( ddN.tokens )
+	yap_message("%s", ddN.tokens[indk[w]]);
+      else
+	yap_message("%d", indk[w]);
+      if ( verbose>2 )
+	yap_message("(%6lf)", countscore(indk[w]));
+    }
     yap_message("\n");
   }
   yap_message("\n");
@@ -389,6 +468,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   free(indk);
   free(spd);
   free(spw);
+  free(psort);
   if ( !nophi )
     free(effcnt);
   if ( pmicount )

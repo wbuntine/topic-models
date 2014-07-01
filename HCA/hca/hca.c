@@ -324,7 +324,7 @@ int main(int argc, char* argv[])
   int qparts=0, this_qpart=0;
 #endif
   char *resstem;
-  int displaycount = 20;
+  int displaycount = 10;
   int pmicount = 10;
   char *betafile = NULL;
   char *alphafile = NULL;
