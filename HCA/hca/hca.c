@@ -473,6 +473,13 @@ int main(int argc, char* argv[])
 	nosample = 1;
       } else if ( strcmp(optarg,"phi")==0 ) {
 	loadphi++;
+	/*
+	 *  special case since we call these betatot and alphatot
+	 */
+      } else if ( strcmp(optarg,"beta")==0 ) {
+	ddT[ParBeta].fix = 1;
+      } else if ( strcmp(optarg,"alpha")==0 ) {
+	ddT[ParAlpha].fix = 1;
       } else {
 	par = findpar(optarg);
 	if ( par==ParNone ) {

@@ -824,8 +824,10 @@ Read lines in the sparsity report, \File{c1.smap}, as follows:
 Token with index 12 occurs in topics 5, 14 and 19.
 It has 2.6 counts (its a sample average so counts can be a fraction)
 in topic 5 and 219.0 in topic 19.
-The log-2 entropy of the topic distribution based on these
-counts is 1.149816.
+The effective number of topics using this token is 1.149816.
+This is measured as the exponential of the entropy of the topic distribution 
+(i.e., probability of topic given the single word and assuming topics
+are equally likely).
 
 Read lines in the topic probabilities report, \File{c1.theta}, as follows:
 \begin{verbatim}
