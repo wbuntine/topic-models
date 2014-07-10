@@ -78,7 +78,7 @@ double lp_test_LRS();
 double lp_test_ML(int procs, enum GibbsType fix);
 
 void query_read(char *fname);
-void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts);
+void gibbs_query(char *stem, int K, char *qname, int dots, int this_qpart, int qparts);
 
 void print_maxz(char *fname);
 

@@ -23,42 +23,9 @@
 
 #include "yap.h"
 #include "util.h"
+#include "ehash.h"
 extern int verbose;
 
-/******************
- *    dirt simple hashing routine
- */
-#define HASHPRIME 7919U
-#define REHASHPRIME 7883U
-
-/*
- *   stored as +1 to make 0 be "empty"
- */
-static uint32_t *hashtab = NULL;
-static uint32_t hashsize = 0;
-/*
- *    w = word to find
- *    wind[] = index of words
- */
-static int32_t findw(uint32_t w, uint32_t *wind) {
-  uint32_t key = ( w*HASHPRIME ) % hashsize;
-  if ( hashtab[key]==0 ) 
-    return UINT32_MAX;
-  while ( wind[hashtab[key]-1] != w ) {
-    key = (key+REHASHPRIME) % hashsize;
-    if ( hashtab[key]==0 ) 
-      return UINT32_MAX;
-  }
-  return hashtab[key]-1;
-}
-static void addw(uint32_t w, uint32_t ind) {
-  uint32_t key = ( w*HASHPRIME ) % hashsize;
-  while ( hashtab[key] != 0 ) {
-    key = (key+REHASHPRIME) % hashsize;
-  }
-  hashtab[key] = ind+1;
-  return;
-}
 
 /****************************************
  *  reading of top topics file
@@ -182,6 +149,7 @@ double report_pmi(char *topfile,  /* name of topics file to read */
   double **pmi;
   float ave = 0;
   FILE *tpfp = NULL;
+  ehash_t hp;
 
   if ( !wind || !wuse )
     yap_quit("Out of memory in report_pmi()\n");
@@ -219,17 +187,15 @@ double report_pmi(char *topfile,  /* name of topics file to read */
   ttop_close();
 
   pmi = dmat(n_wind,n_wind);
+  if ( !pmi )
+    yap_quit("Out of memory in report_pmi()\n");
   /*
    *  build hash table now since we know size
    */
-  hashsize = n_wind*2;
-  hashtab = malloc(sizeof(*hashtab)*hashsize);
-  if ( !pmi || !hashtab )
+  if ( ehash_init(&hp, n_wind*2) )
     yap_quit("Out of memory in report_pmi()\n");
-  for (k=0; k<hashsize; k++)
-    hashtab[k] = 0;
   for (k=0; k<n_wind; k++)
-    addw(wind[k],k);
+    ehash_addw(&hp,wind[k],k);
 
   /*
    *   load up PMI file, only keeping words mentioned in hash table
@@ -265,8 +231,8 @@ double report_pmi(char *topfile,  /* name of topics file to read */
       if ( t1!= t2 && ( wuse[t1/32U] & (1U<<(t1%32U)) ) 
 	   && ( wuse[t2/32U] & (1U<<(t2%32U))) ) {
 	int i1, i2;
-	i1 = findw(t1,wind);
-	i2 = findw(t2,wind);
+	i1 = ehash_findw(&hp, t1, wind);
+	i2 = ehash_findw(&hp, t2, wind);
 	if ( i1==UINT32_MAX || i2==UINT32_MAX )
 	  yap_quit("Could not locate word index in report_pmi()\n");
 	pmi[i1][i2]=value;
@@ -307,7 +273,7 @@ double report_pmi(char *topfile,  /* name of topics file to read */
         yap_message("\nPMI %d:: ", e);
     }
     for (i = 0; i<topk && ttop_word(W, i, &j); i++) {
-      topic[i] = findw(j,wind);
+      topic[i] = ehash_findw(&hp, j,wind);
     }
     ttop_eol();
     if ( i<topk )
@@ -370,8 +336,6 @@ double report_pmi(char *topfile,  /* name of topics file to read */
   free(wuse);
   free(topic);
   free(pmi[0]); free(pmi);
-  free(hashtab);
-  hashtab = NULL;
-  hashsize = 0;
+  ehash_free(&hp);
   return ave;
 }

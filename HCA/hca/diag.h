@@ -61,7 +61,6 @@ void phi_update();
 void phi_save();
 void phi_free();
 void phi_load(char *resstem);
-double phi_entropy(int k);
 
 /*
  *  optionally save/update \alpha matrix at end of cycles
@@ -70,7 +69,6 @@ void alpha_init(char *resstem);
 void alpha_update();
 void alpha_save();
 void alpha_free();
-double alpha_entropy();
 
 /*
  *    during Gibbs estimate proportion

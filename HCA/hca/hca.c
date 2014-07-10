@@ -44,7 +44,8 @@
 #endif
 #include "atomic.h"
 
-void hca_displaytopics(char *stem, char *resstem, int topword, enum ScoreType score, int pmicount);
+void hca_displaytopics(char *stem, char *resstem, int topword, 
+		       enum ScoreType score, int pmicount, int fullreport);
 void hca_displayclass(char *resstem);
 
 //==================================================
@@ -723,7 +724,7 @@ int main(int argc, char* argv[])
       verbose++;
       break;
     case 'V':
-      load_vocab = 1;
+      load_vocab++;
       break;
 #ifdef EXPERIMENTAL
     case 'w':
@@ -757,8 +758,8 @@ int main(int argc, char* argv[])
   stem = strdup(argv[optind++]);
   resstem = strdup(argv[optind++]);
 
-  if ( dopmi )
-    load_vocab = 1;
+  if ( dopmi && load_vocab==0 )
+    load_vocab++;
   if ( dopmi>1 )
     pmicount = displaycount;
 
@@ -982,9 +983,8 @@ int main(int argc, char* argv[])
      dmi_init(&ddM, ddS.z, ddD.w, ddD.NdTcum,
               ddN.T, ddN.N, ddN.W, ddN.D, ddN.DT,
               (fix_hold==GibbsHold)?pctl_hold:NULL);
-   if ( load_vocab ) {
+   if ( load_vocab )
      data_vocab(stem);
-   }
    
    if ( probepsilon<=0 )
      probepsilon = 0.001/ddN.T;
@@ -1041,7 +1041,7 @@ int main(int argc, char* argv[])
   if ( queryfile ) {
     char *qname = yap_makename(queryfile,".out");
     data_df(stem);
-    gibbs_query(querycnt,qname,dots,this_qpart,qparts);
+    gibbs_query(stem, querycnt,qname,dots,this_qpart,qparts);
     free(qname);
     restart_offset = ddN.DT;
     cal_perp = 0;
@@ -1260,7 +1260,8 @@ int main(int argc, char* argv[])
       pctl_update(iter);
       if ( iter>0 && verbose>1 ) {
 	if ( ddS.Ndt ) yap_probs();
-	hca_displaytopics(stem, resstem, displaycount, score, 0);
+	hca_displaytopics(stem, resstem, displaycount, score, 0,
+			  (load_vocab>1)?1:0);
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5,procs);
       }
@@ -1279,7 +1280,8 @@ int main(int argc, char* argv[])
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");
-      hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
+      hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0,
+			(load_vocab>1)?1:0);
       hca_report(resstem, stem, ITER, procs, fix_hold, showlike, nosave);
     }
     if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
@@ -1302,7 +1304,8 @@ int main(int argc, char* argv[])
 	     iter,  (tot_time-psample_time)/iter, psample_time/iter);
   
   if ( ( verbose==1 || ((iter+1)%5!=0 && verbose>1) ) ) {
-    hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0);
+    hca_displaytopics(stem, resstem, displaycount, score, dopmi?pmicount:0,
+		      (load_vocab>1)?1:0);
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5,procs);
   }

@@ -485,12 +485,14 @@ The report is instigated by the
 \OptArg{-l}{sp} option.
 \item[\File{RepStem.tbyc}]  Optional confusion matrix printed when
 the \Opt{-X} option is used.
-\item[\File{RepStem.top}] A simple text report giving the top word indices
+\item[\File{RepStem.toplst}] A simple text report giving the top word indices
   for each topic.  If a hierarchical model in use, then the
 ``-1'' topic is for the base distribution of words.
 Word indices are offset from 0.
 \item[\File{RepStem.toppmi}] A simple text report giving the top word indices
 and the associated mean PMI for the word.
+\item[\File{RepStem.topset}] Full diagnostic output for topics and their words
+instigated with a command sequence like ``-V -V -oidf,100''.
 \item[\File{RepStem.theta}] Estimated topic probabilities 
 for each training document
 written in a simple sparse form.  The class index
@@ -710,6 +712,16 @@ It should always be less than the truncation level.
 At the end, a final report is printed.  
 \begin{verbatim}
 [29/05/2014:21:07:27] Finished after 100 cycles on average of 0.193804+0.013074(s) per cycle
+
+Topic 6/0 p=12.54% ws=76.1% ds=14.2% ew=584 ud=0.9344 pd=0.6448 co=-1.4%
+Topic 3/1 p=6.82% ws=76.8% ds=39.0% ew=790 ud=0.8126 pd=0.7304 co=-0.8%
+Topic 14/2 p=5.73% ws=83.2% ds=82.0% ew=442 ud=0.9223 pd=0.7350 co=-0.3%
+...
+
+Average topicXword sparsity = 82.93%
+Average docXtopic sparsity = 66.14%
+Underused topics = 0.0%
+
 probs =  0.037662 0.031478 0.034289 0.020517 0.043002 0.097527 0.022766 0.068859 0.114952 ...
 conc. = 1.784346, empty = 0, exp.ent = 15.296125
 log_2(train perp) = 11.456566
@@ -718,6 +730,30 @@ The figures give 0.19380 seconds per cycle for the Gibbs sampler
 and 0.01307 seconds per cycle for the adative rejection sampling
 of hyperparameters.  Note these figures are not collected
 correctly for the multi-core version.
+Some basic details for the topics are given too.
+These are listed in terms of decreasing proportion.
+Details are as follows:
+\begin{description}
+\item[p:] proportion of tokens tagged with this topic;
+\item[ws:] word sparsity, proportion of words occurring zero times with this topic;
+\item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
+\item[ew:] effective number of words, expenential of the entropy of the word distribution;
+\item[ud:] Hellinger distance to the uniform distribution.
+\item[pd:] Hellinger distance to the (training) population word distribution;
+\item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.
+\end{description}
+So the first topic has 6/0 given.  This means it was index 6 in the
+run but is rank 0 in terms of proportion.  In the saved data file
+it will be topic 6.  With more verbosity, top topic words will be given
+as well ranked according to the \Arg{-o} option.
+Totals for some of the topics are also given:
+``Average topicXword sparsity'' is the mean of the word sparsities
+(\texttt{ws}),  ``Average docXtopic sparsity''
+gives the mean of the document sparsities (\texttt{ds}),
+and the number of underused topics is the
+percentage of topics whose observed proportion
+is less than 1/T/100 or with less than 5 occurrences.
+
 The \texttt{log\_2(train perp)} figure is equivalent
 to the \texttt{log\_2(perp)} figure 
 above because there is no test data.
@@ -761,36 +797,22 @@ sets of details.
 The first is a list of top topic words (if verbosity is greater than 1)
 and topic diagnostics. 
 Topics are printed in decreasing order of occurrence.
-Such as:
-\begin{verbatim}
-Topic 19/0 p=23.20%, ws=66.6%, ds=6.3% words=think,own,old,never,place,earlier,...
-Topic 14/1 p=6.62%, ws=80.9%, ds=77.5% words=appendix,crucitti,tumour,parkinson,...
-Topic 16/2 p=6.32%, ws=80.5%, ds=75.4% words=prince,diana,parker,bowles,camilla,...
-Topic 5/3 p=5.56%, ws=83.4%, ds=79.7% words=teresa,missionaries,calcutta,nirmala,...
-\end{verbatim}
-This means the topic 19 is observed in 23.20\% of word occurrences,
-word sparsity for the topic is 66.6\%
-(66.6\% of the words have zero entries for this topic),
-and document sparsity for the topic is 6.3\%
-(6.3\% of the documents have zero entries for this topic).
-The words are ranked according to the order given with the \Opt{-o} argument,
-and the number of top-ranked words can be changed with the 
-second optional part.
-Note the first most frequent topic is a general clean-up topic that
-has low comprehensibility, and the remaining are more topic specific.
+The extra verbosity level and the \Opt{-V}
+means that topic words will be printed out too.
 
-The final report gives general diagostics:
+For more detail to the \File{RepStem.topset} file, use:
 \begin{verbatim}
-Average topicXword sparsity = 83.37%
-Average docXtopic sparsity = 67.09%
-Underused topics = 0.0%
+   hca -v -v -r0 -e -V -V -oidf,100 -C0 data/ch c1
 \end{verbatim}
-The first line gives is the mean of the word sparsities
-(\texttt{ws}), the second 
-gives the mean of the document sparsities (\texttt{ds}),
-and the number of underused topics is the
-percentage of topics whose observed proportion
-is less than 1/T/100 or with less than 5 occurrences.
+The command line means:
+\begin{description}
+\item[``-V -V'':] extra \Opt{-V} means create the 
+\File{RepStem.topset} file of details.
+\item[``-oidf,100'':] means report on up to 100 words for each topic,
+and words ranked by the \texttt{idf} score.
+\end{description}
+The first two lines give brief column heads for the topic and word lines.
+The scores match those printed with diagnostics.
 
 \subsection{Produce sparsity mappings and document topic probabilities}
 Restart again and build a topic probability vector for each document,

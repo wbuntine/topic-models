@@ -30,6 +30,7 @@
 #include "pctl.h"
 #include "probs.h"
 #include "pmi.h"
+#include "ehash.h"
 
 /*
  *    computes various quality measures,
@@ -153,6 +154,66 @@ void hca_free() {
   }  
   sparsemap_free();
   tprob_free();
+}
+
+/*
+ *   Build a matrix doc-frequency for words.
+ *   If topic<0, do for all training words,
+ *   otherwise only for words of topic
+ */
+uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
+  uint32_t **mtx = u32mat(n_words,n_words);
+  int i, l;
+  char *win = calloc(n_words, 1);  /* boolean, stores if word in doc */
+  uint32_t *docwords = u32vec(n_words);   /* stores index of word in doc */
+  ehash_t hp;
+
+  /*
+   *  make hash table
+   */
+  if ( !win || !docwords || !mtx || ehash_init(&hp, n_words*2) )
+    yap_quit("Cannot allocate table in hca_dfmtx()\n");
+  for (i=0; i<n_words; i++) 
+    ehash_addw(&hp, words[i], i);
+  /*
+   *  run through docs 
+   */
+  for (i=0; i<ddN.DT; i++) {
+    memset(win,0,n_words);
+    int n_dw = 0;
+    /*
+     *    record which are in
+     */
+    for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) {
+      if ( topic<0 || Z_t(ddS.z[l])==topic ) {
+	int i1 = ehash_findw(&hp, ddD.w[l], words);
+	if ( i1!=UINT32_MAX ) {
+	  if ( !win[i1] ) {
+	    win[i1] = 1;
+	    docwords[n_dw++] = i1;
+	  }
+	}
+      }
+    }
+    /*
+     *  now update stats
+     */
+    for (l=0; l<n_dw; l++) {
+      int l2;
+      int t1 = docwords[l];
+      mtx[t1][t1]++;
+      for (l2=0; l2<l; l2++) {
+	if ( t1<docwords[l2] )
+	  mtx[docwords[l2]][t1]++;
+	else
+	  mtx[t1][docwords[l2]]++;
+      }
+    }
+  }
+  free(docwords);
+  free(win);
+  ehash_free(&hp);
+  return mtx;
 }
 
 /*

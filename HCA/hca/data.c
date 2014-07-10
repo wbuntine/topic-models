@@ -38,7 +38,6 @@ void free_vocab(char **ctmp);
  */
 void data_alloc() {
   int i;
-  ddD.df = NULL;
   ddD.c = NULL;
   if ( ddP.phi==NULL && ddN.DT<5 )
     yap_quit("Only %d training examples\n", ddN.DT);
@@ -67,12 +66,12 @@ void data_vocab(char *stem) {
     free(wname);
 }
 
-void data_df(char *stem) {
+int data_df(char *stem, uint32_t *dfvec) {
   char buf[1000];
   char *wname = yap_makename(stem, ".srcpar");
   FILE *fp;
+  int n_df;
   int i;
-  ddD.df = u32vec(ddN.W);
   /*
    *  check .srcpar file exists
    */
@@ -85,9 +84,9 @@ void data_df(char *stem) {
   {
     char *p = readsrcpar(stem,"dfdocs",buf,50);
     if ( p )
-      ddD.n_df = atoi(p);
+      n_df = atoi(p);
     else
-      ddD.n_df = ddN.D;
+      n_df = ddN.D;
   }
   /*  read dfs */
   wname = yap_makename(stem, ".words");
@@ -105,10 +104,11 @@ void data_df(char *stem) {
       yap_quit("Cannot parse line %d from '%s', too long\n", i, wname);
     if ( sscanf(&buf[0],"%*u %*s %*x %*u %u ", &df) != 1 )
       yap_quit("Cannot parse line %d from '%s', no df\n", i, wname);
-    ddD.df[i] = df;
+    dfvec[i] = df;
   }
   fclose(fp);
   free(wname);
+  return n_df;
 }
 
 /*
@@ -149,8 +149,6 @@ void data_free() {
 	free_vocab(ddN.tokens);
   if ( ddD.c )
     free(ddD.c);
-  if ( ddD.df )
-    free(ddD.df);
 }
 
 int data_docsize() {

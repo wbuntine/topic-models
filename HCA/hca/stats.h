@@ -86,6 +86,8 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
 		enum GibbsType fix, int showlike, int nopar);
 void hca_correct_twt();
 
+uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic);
+
 /*
  *     loads data from Chang and Blei's C++ HDP code
  */

@@ -174,6 +174,9 @@ static int bubble(int K, int *topind, float *score, float newscore) {
   return newind;
 }
 
+static int n_df;
+static uint32_t *df = NULL;
+
 /*
  *  copied from Wikipedia page Okapi_BM25
  */
@@ -186,7 +189,7 @@ static double bm25(int d, int *found, uint32_t *wi, int nw,  float *ws) {
   assert(nw>0);
   assert(d>=0 && d<ddN.DT);
   for (j=0; j<nw; j++) {
-    double score = log ((ddD.n_df - ddD.df[wi[j]] + 0.5)/(ddD.df[wi[j]] + 0.5));
+    double score = log ((n_df - df[wi[j]] + 0.5)/(df[wi[j]] + 0.5));
     score *= found[j] * (k1+1);
     score /= (found[j]  + k1*(1 - b + b*ddD.NdT[d]/avgdl));
     ws[j] = score;
@@ -317,7 +320,7 @@ static void map_query(int d, int *map, int *found) {
  *
  *    K = number of top results to retain
  */
-void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts) {
+void gibbs_query(char *stem, int K, char *qname, int dots, int this_qpart, int qparts) {
   /*
    *    mapping from query word posn. to its mi in current doc
    *       >ddN.N  = not in current doc
@@ -499,6 +502,14 @@ void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts) {
   if ( dots>0 ) yap_message("\n");
   
   /*
+   *  load df
+   */
+  df = calloc(ddN.W,sizeof(df[0]));
+  if ( !df ) 
+    yap_quit("Cannot allocate memory in gibbs_query()\n");
+  n_df = data_df(stem,df);
+  
+  /*
    *  write result
    */
   {
@@ -537,6 +548,7 @@ void gibbs_query(int K, char *qname, int dots, int this_qpart, int qparts) {
   /*
    *  clean up
    */
+  free(df);
   free(fact);
   if ( ddP.bdk!=NULL ) misi_free(&dD);
   if ( mimap ) free(mimap);

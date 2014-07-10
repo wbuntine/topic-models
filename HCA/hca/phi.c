@@ -10,7 +10,8 @@
  *
  * Author: Wray Buntine (wray.buntine@nicta.com.au)
  *
- *
+ *  If ddP.memory is set, then statistics kept
+ *  in file in binary format.
  */
 
 #include <stdio.h>
@@ -28,7 +29,6 @@
 #include "diag.h"
 #include "check.h"
 
-
 static char *phi_file = NULL;
 static char *alpha_file = NULL;
 
@@ -42,9 +42,7 @@ void phi_init(char *resstem) {
 void alpha_init(char *resstem) {
   alpha_file = yap_makename(resstem,".alpha");
   ddG.alpha_cnt = 0;
-  if ( ! ddP.memory ) {
-    ddS.alpha = fvec(ddN.T);
-  }
+  ddS.alpha = fvec(ddN.T);
 }
 
 void phi_free() {
@@ -64,10 +62,8 @@ void alpha_free() {
     free(alpha_file);
     alpha_file = NULL;
   }
-  if ( ddS.alpha ) {
-    free(ddS.alpha);
-    ddS.alpha = NULL;
-  }
+  free(ddS.alpha);
+  ddS.alpha = NULL;
 }
 
 /*
@@ -115,45 +111,6 @@ void alpha_save() {
 	yap_message(" %f", ddS.alpha[t]);
     yap_message("\n");
   }
-}
-
-double phi_entropy(int k) {
-  double ent = 0;
-  int i;
-  assert(ddP.phi || ddS.phi);
-  if ( ddP.phi ) {
-    for (i=0; i<ddN.W; i++ ) {
-      double p = ddP.phi[k][i];
-      if ( p>0.00001 ) 
-	ent -= p * log(p);
-    }
-  } else {
-   for (i=0; i<ddN.W; i++ ) {
-      double p = ddS.phi[k][i];
-      if ( p>0.00001 ) 
-	ent -= p * log(p);
-   }
-  }
-  return ent;
-}
-double alpha_entropy() {
-  double ent = 0;
-  int k;
-  assert(ddP.alphapr || ddS.alpha);
-  if ( ddP.alphapr ) {
-    for (k=0; k<ddN.T; k++) {
-      double p = ddP.alphapr[k];
-      if ( p>0.00001 ) 
-	ent -= p * log(p);
-    }
-  } else {
-    for (k=0; k<ddN.T; k++) {
-      double p = ddS.alpha[k];
-      if ( p>0.00001 ) 
-	ent -= p * log(p);
-    }
-  }
-  return ent;
 }
  
 void phi_load(char *resstem) {
