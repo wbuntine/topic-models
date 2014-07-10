@@ -61,6 +61,7 @@ double likemerge_PYalpha(k1,k2) {
   double likelihood = 0;
   double la = 0;
   double lb = log(ddP.bpar);
+  yap_quit("NI\n");
   if ( ddP.apar>0 ) la = log(ddP.apar);
   for (i=0; i<ddN.DT; i++) {
     uint16_t Td_ = 0;
@@ -90,6 +91,7 @@ double likemerge_PYalpha_HDP(k1,k2) {
    */
   int t;
   double likelihood = 0;
+  yap_quit("NI\n");
   assert(ddP.a0==0);
   for (t=0; t<ddN.T; t++) {
     if ( ddS.TDt[t]>0 ) {
@@ -107,6 +109,7 @@ double likemerge_PYalpha_PDP(k1,k2) {
    */
   int t;
   double likelihood = 0;
+  yap_quit("NI\n");
   for (t=0; t<ddN.T; t++) {
     if ( ddS.TDt[t]>0 ) {
       assert(ddP.alphapr[t]>0);
@@ -129,6 +132,7 @@ double likemerge_PYalpha_HPDD(k1,k2) {
   /*
    *    the PDD prior
    */
+  yap_quit("NI\n");
   if ( ddP.a0==0 )
     likelihood += ddS.TDTnz*log(ddP.b0);
   else
@@ -176,6 +180,7 @@ double likemerge_PYbeta(k1,k2) {
   double likelihood = 0;
   double lbw = log(ddP.bwpar);
   double law = log(ddP.awpar);
+  yap_quit("NI\n");
   likelihood += pctl_gammaprior(ddP.bwpar);
   /*
    *    term for k-th node
@@ -220,6 +225,7 @@ double likemerge_PYbeta_PDP(k1,k2) {
    */
   int j;
   double likelihood = 0;
+  yap_quit("NI\n");
   for (j=0; j<ddN.W; j++) {
     if ( ddS.TwT[j]>0 ) {
       likelihood += ddS.TwT[j]*log(ddP.betapr[j]);
