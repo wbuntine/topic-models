@@ -156,6 +156,7 @@ void hca_free() {
   tprob_free();
 }
 
+
 /*
  *   Build a matrix doc-frequency for words.
  *   If topic<0, do for all training words,

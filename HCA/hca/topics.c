@@ -51,7 +51,58 @@ static uint32_t *sorttops(int K) {
 }
 
 /*************************************************
- *   build document proportions vec
+ *   build topic proportions vec for doc d
+ */
+static float *topprop(int d) {
+  float *vec = fvec(ddN.T);
+  double tot = 0;
+  int k;
+  if ( !vec) return NULL;
+  if ( ddP.theta ) {
+    for (k=0; k<ddN.T; k++)
+      tot += vec[k] = ddP.theta[d][k];
+  } else { 
+    for (k=0; k<ddN.T; k++)
+      tot += vec[k] = ddS.Ndt[d][k];
+  }
+  for (k=0; k<ddN.T; k++)
+    vec[k] /= tot;
+  return vec;
+}
+
+/*
+ *   Build a matrix doc-frequency for words.
+ *   If topic<0, do for all training words,
+ *   otherwise only for words of topic
+ *   This is O(D*T*T) so very slow.
+ */
+float **hca_topmtx() {
+  float **mtx = fmat(ddN.T, ddN.T);
+  float *vec = fvec(ddN.T);
+  int i, t1, t2;
+  for (i=0; i<ddN.DT; i++) {
+    float *tvec = topprop(i);
+    for (t1=0; t1<ddN.T; t1++) 
+      vec[t1] += tvec[t1];
+    for (t1=0; t1<ddN.T; t1++) 
+      for (t2=0; t2<t1; t2++) 
+	mtx[t1][t2] += tvec[t1] * tvec[t2];
+    free(tvec);
+  }     
+  for (t1=0; t1<ddN.T; t1++) 
+    vec[t1] /= ddN.T;
+  for (t1=0; t1<ddN.T; t1++) 
+    for (t2=0; t2<t1; t2++) {
+      mtx[t1][t2] = mtx[t1][t2]/ddN.T - vec[t1] * vec[t2];
+      mtx[t1][t2] = 1.0 + mtx[t1][t2]/(vec[t1] * vec[t2]);
+      
+    }
+  free(vec);
+  return mtx;
+}
+
+/*************************************************
+ *   build document proportions vec for topic k
  */
 static float *docprop(int k) {
   float *vec = fvec(ddN.DT);
@@ -510,6 +561,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  fprintf(rp," %.4f", tpmi[kk]);
 	fprintf(rp,"\n");
       }
+      if ( dprop) free(dprop);
     }
     if ( verbose>1 ) {
       double pcumm = 0;
@@ -601,6 +653,46 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	      100.0*underused/(double)ddN.T);
   if ( pmicount ) 
     yap_message("Average PMI = %.3f\n", tpmi[ddN.T]);
+
+  /*
+   *   print 
+   */
+  if ( 1 ) {
+    float **cmtx = hca_topmtx();
+    int t1, t2;
+    int m1, m2;
+    float mval;
+    char *corfile = yap_makename(resstem,".topcor");
+    fp = fopen(corfile,"w");
+    if ( !fp ) 
+      yap_sysquit("Cannot open file '%s' for write\n", corfile);
+   /*
+    *   print file
+     */
+    for (t1=0; t1<ddN.T; t1++) {
+      for (t2=0; t2<t1; t2++) 
+	if ( cmtx[t1][t2]>1.0e-3 )
+	  fprintf(fp, "%d %d %0.6f\n", t1, t2, cmtx[t1][t2]);
+    }
+    fclose(fp);
+    free(corfile);
+    /*
+     *   display maximum
+     */
+    m1 = 1; m2 = 0;
+    mval = cmtx[1][0];
+    for (t1=0; t1<ddN.T; t1++) {
+      for (t2=0; t2<t1; t2++) {
+	if ( mval<cmtx[t1][t2] ) {
+	  mval = cmtx[t1][t2];
+	  m1 = t1;
+	  m2 = t2;
+	}
+      }
+    }
+    yap_message("Maximum correlated topics (%d,%d) = %f\n", m1, m2, mval);
+    free(cmtx[0]); free(cmtx);
+  }
 
   /*
    *  print burstiness report
