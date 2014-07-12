@@ -160,10 +160,12 @@ static void usage() {
 #endif
 	  "   -r offset      #  restart using data from offset on (usually 0)\n"
           "                  #  load training statistics previously saved\n"
-	  "   -r phi         #  keyword 'phi' means load '.phi' file\n"
-	  "   -r tprob       #  keyword 'tprob' means load '.tprob' file\n"
-	  "   -r hdp         #  keyword 'hdp' means load saved data from HDP,\n"
+	  "   -r phi         #  means load '.phi' file\n"
+	  "   -r theta       #  means load '.theta' file\n"
+#ifdef EXPERIMENTAL
+	  "   -r hdp         #  means load saved data from HDP,\n"
           "                  #    from 'mode-word-assignments.dat' file\n"
+#endif
           "   -s seed        #  random number seed, default is a time value\n"
 	  "   -v             #  up the verbosity by one\n"
 #ifdef EXPERIMENTAL
@@ -356,7 +358,9 @@ int main(int argc, char* argv[])
   int showlike = 0;
   int nosave = 0;
   int doclass = 0;
+#ifdef EXPERIMENTAL
   int loadhdp = 0;
+#endif
   int loadtheta = 0;
   int loadphi = 0;
   int nosample = 0;
@@ -662,11 +666,13 @@ int main(int argc, char* argv[])
 	loadtheta++;
       } else if ( strcmp(optarg,"phi")==0 ) {
 	loadphi++;
+#ifdef EXPERIMENTAL
       } else if ( strcmp(optarg,"hdp")==0 ) {
 	loadhdp++;
 	if ( ddP.PYbeta != H_None ) {
 	  ddP.PYbeta = H_None;
 	}
+#endif
       } else if ( sscanf(optarg,"%d",&restart_offset)!=1 )
 	yap_quit("Need a valid 'r' argument\n");
       break;
@@ -880,10 +886,11 @@ int main(int argc, char* argv[])
        ddN.NT = i;
      }
    }
-   
+
+#ifdef EXPERIMENTAL
    if ( ddP.window && loadhdp )
      yap_quit("Option '-w' must not be used with loadhdp\n");
-   
+#endif
    if ( ddP.tprobiter>0 && ddN.TEST==0 )
      yap_quit("Option '-ltestprob,...' must have test data\n");
    
@@ -1022,10 +1029,13 @@ int main(int argc, char* argv[])
   /*
    *  load/init topic assignments and prepare statistics
    */
+#ifdef EXPERIMENTAL
   if ( loadhdp ) {
     hca_reset_stats(resstem, 0, 1, 0, ddN.DT);
     hca_load_hdp(resstem);
-  } else {
+  } else 
+#endif
+  {
     if ( restart ) {
       hca_read_z(resstem, 0, ddN.DT);
       hca_rand_z(ddP.Tinit, ddN.DT, ddN.D);

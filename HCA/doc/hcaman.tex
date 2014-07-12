@@ -278,17 +278,23 @@ Default is 10000,1000.
 On collections with more than 20k documents, can require more.
 \item[\OptArg{-q}{threads}] If compiled with threading, enables
 this many threads.  Default is 1.
-\item[\OptArg{-r}{offset}]
-Restart.  Currently must use \texttt{offset} equal to ``0''
+\item[\OptArg{-r}{0}]
+Restart with all data.  Currently must use the \texttt{offset} equal to ``0''
 for a normal restart.
 \item[\OptArg{-r}{phi}]
 Second version of the \Opt{-r} option
 using the string ``phi'' as the argument.
 Restart but now fix the word by topic matrix
-to the previous value saved at 
+to the previously estimated values saved at 
 \File{RepStem.phi},
 and the beta side is held constant and not sampled.
 Can significantly speed up testing or querying sometimes.
+\item[\OptArg{-r}{theta}]
+Second version of the \Opt{-r} option
+using the string ``phi'' as the argument.
+Restart but now fix the document by topic matrix
+to the previously estimated values saved at 
+\File{RepStem.theta} and \File{RepStem.testprob}.
 \item[\OptArg{-s}{seed}]
 Initialise the random number seed.
 \item[\Opt{-v}] Up verbosity by one increment.
@@ -713,9 +719,9 @@ At the end, a final report is printed.
 \begin{verbatim}
 [29/05/2014:21:07:27] Finished after 100 cycles on average of 0.193804+0.013074(s) per cycle
 
-Topic 6/0 p=12.54% ws=76.1% ds=14.2% ew=584 ud=0.9344 pd=0.6448 co=-1.4%
-Topic 3/1 p=6.82% ws=76.8% ds=39.0% ew=790 ud=0.8126 pd=0.7304 co=-0.8%
-Topic 14/2 p=5.73% ws=83.2% ds=82.0% ew=442 ud=0.9223 pd=0.7350 co=-0.3%
+Topic 6/0 p=12.54% ws=76.1% ds=14.2% ew=584 ed=24 da=0 ud=0.9344 pd=0.6448 co=-1.4%
+Topic 3/1 p=6.82% ws=76.8% ds=39.0% ew=790 ed=56 da=0 ud=0.8126 pd=0.7304 co=-0.8%
+Topic 14/2 p=5.73% ws=83.2% ds=82.0% ew=442 ed=93 da=0 ud=0.9223 pd=0.7350 co=-0.3%
 ...
 
 Average topicXword sparsity = 82.93%
@@ -738,6 +744,8 @@ Details are as follows:
 \item[ws:] word sparsity, proportion of words occurring zero times with this topic;
 \item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
 \item[ew:] effective number of words, expenential of the entropy of the word distribution;
+\item[ew:] effective number of documents, expenential of the entropy of the document distribution (given topic);
+\item[da:] documents with proportion greater than $1/\mbox{sqrt}(T)$.
 \item[ud:] Hellinger distance to the uniform distribution.
 \item[pd:] Hellinger distance to the (training) population word distribution;
 \item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.

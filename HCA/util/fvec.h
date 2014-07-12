@@ -21,3 +21,4 @@ double fv_helldistunif(float *vp, int N) ;
 double fv_helldist(float *vp, float *vp2, int N) ;
 double fv_entropy(float *vp, int N) ;
 double fv_avestrlen(float *vp, char **str, int N) ;
+double fv_bound(float *vp, int N, float alpha);

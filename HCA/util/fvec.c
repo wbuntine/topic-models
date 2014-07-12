@@ -47,6 +47,8 @@ double fv_helldist(float *vp, float *vp2, int N) {
 double fv_entropy(float *vp, int N) {
   double ent = 0;
   int i;
+  if ( !vp ) 
+    return INFINITY;
   for (i=0; i<N; i++ ) {
     double p = vp[i];
     if ( N*p>0.00001 ) 
@@ -54,10 +56,21 @@ double fv_entropy(float *vp, int N) {
   }
   return ent;
 }
+double fv_bound(float *vp, int N, float alpha) {
+  int i;
+  double count = 0;
+  if ( !vp ) 
+    return 0;
+  for (i=0; i<N; i++ ) {
+    if ( vp[i]>alpha )
+      count ++;
+  }
+  return count;
+}
 double fv_avestrlen(float *vp, char **str, int N) {
   double asl = 0;
   int i;
-  if ( !str )
+  if ( !str || !vp )
     return 0.0;
   for (i=0; i<N; i++ ) {
     if ( str[i] )

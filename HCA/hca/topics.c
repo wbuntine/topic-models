@@ -51,6 +51,25 @@ static uint32_t *sorttops(int K) {
 }
 
 /*************************************************
+ *   build document proportions vec
+ */
+static float *docprop(int k) {
+  float *vec = fvec(ddN.DT);
+  double tot = 0;
+  int i;
+  if ( !vec) return NULL;
+  if ( ddP.theta ) {
+    for (i=0; i<ddN.DT; i++)
+      tot += vec[i] = ddP.theta[i][k];
+  } else { 
+    for (i=0; i<ddN.DT; i++)
+      tot += vec[i] = ddS.Ndt[i][k];
+  }
+  for (i=0; i<ddN.DT; i++)
+    vec[i] /= tot;
+  return vec;
+}
+/*************************************************
  *  find top-K by bubble sort
  */
 static void topk(int K, int N, uint32_t *ind, double (*foo)(int)) {
@@ -388,9 +407,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     rp = fopen(repfile,"a");
     if ( !rp ) 
       yap_sysquit("Cannot open file '%s' for append\n", repfile);
-    fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words dist-unif "
-	    "dist-unigrm ave-length coher pmi\n");
-    fprintf(rp, "#word topic index rank count prop cumm df coher\n");
+    fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound dist-unif "
+	    "dist-unigrm ave-length coher");
+    if ( pmicount ) 
+      fprintf(rp, " pmi");
+    fprintf(rp, "\n#word topic index rank count prop cumm df coher\n");
   }
   for (k=0; k<ddN.T; k++) {
     int cnt;
@@ -438,6 +459,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
        *   compute diagnostics
        */
       double prop;
+      float *dprop = docprop(kk);
       double spw;
       double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT); 
       double ew = exp(fv_entropy(pvec,ddN.W));
@@ -445,6 +467,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double pd = fv_helldist(pvec,gpvec,ddN.W);
       double sl = fv_avestrlen(pvec,ddN.tokens,ddN.W);
       double co = coherence(dfmtx, cnt);
+      double ed = dprop?exp(fv_entropy(dprop,ddN.DT)):ddN.DT;
+      double da = fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T));
       sparsitydoc += spd;
       if ( ddP.phi==NULL ) {
 	prop = ((double)ddS.NWt[kk])/(double)Nk_tot;
@@ -457,6 +481,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       } 
       yap_message(" ds=%.1lf%%", 100*(1-spd) );
       yap_message(" ew=%.0lf", ew); 
+      yap_message(" ed=%.0lf", ed); 
+      yap_message(" da=%.0lf", da+0.1); 
       yap_message(" ud=%.4lf", ud); 
       yap_message(" pd=%.4lf", pd); 
       if ( ddN.tokens )  
@@ -473,7 +499,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  fprintf(rp," 0 0");
 	}
 	fprintf(rp," %.6lf", (1-spd) );
-	fprintf(rp," %.4lf", ew); 
+	fprintf(rp," %.2lf", ew); 
+	fprintf(rp," %.2lf", ed); 
+	fprintf(rp," %.0lf", da+0.1); 
 	fprintf(rp," %.6lf", ud); 
 	fprintf(rp," %.6lf", pd); 
 	fprintf(rp," %.4lf", (ddN.tokens)?sl:0); 
