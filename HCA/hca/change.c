@@ -74,7 +74,14 @@ void fix_tableidtopic(int d, int t) {
 void unfix_tableidword(int w, int t) {
   int val;
   assert(ddS.Twt[w][t]);
-  atomic_decr(ddS.Twt[w][t]);
+  val = atomic_decr(ddS.Twt[w][t]);
+  if ( val>UINT16_MAX-5 ) {
+    /*
+     *  whoops
+     */
+    atomic_incr(ddS.Twt[w][t]);
+    return;
+  }
   val = atomic_decr(ddS.TwT[w]);
   atomic_decr(ddS.TWt[t]);
   atomic_decr(ddS.TWT);
@@ -85,7 +92,7 @@ void unfix_tableidword(int w, int t) {
 
 void fix_tableidword(int w, int t) {
   int val;
-  atomic_incr(ddS.Twt[w][t]);
+  val = atomic_incr(ddS.Twt[w][t]);
   atomic_incr(ddS.TWt[t]);
   val = atomic_incr(ddS.TwT[w]);
   if ( val==1 ) {
