@@ -538,7 +538,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" pd=%.4lf", pd); 
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
-      yap_message(" co=%.1lf%%", co);
+      yap_message(" co=%.4lf%%", co);
       if ( pmicount ) 
 	yap_message(" pmi=%.3f", tpmi[kk]);
       if ( fullreport ) {
@@ -671,7 +671,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     for (t1=0; t1<ddN.T; t1++) {
       for (t2=0; t2<t1; t2++) 
-	if ( cmtx[t1][t2]>1.0e-3 )
+	if ( cmtx[t1][t2]>1.0e-3 ) 
 	  fprintf(fp, "%d %d %0.6f\n", t1, t2, cmtx[t1][t2]);
     }
     fclose(fp);
