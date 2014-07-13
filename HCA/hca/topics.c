@@ -59,12 +59,18 @@ static float *topprop(int d) {
   int k;
   if ( !vec) return NULL;
   if ( ddP.theta ) {
-    for (k=0; k<ddN.T; k++)
+    for (k=0; k<ddN.T; k++) {
+      assert( ddP.theta[d][k]>=0 );
       tot += vec[k] = ddP.theta[d][k];
+    }
   } else { 
-    for (k=0; k<ddN.T; k++)
+    for (k=0; k<ddN.T; k++) {
+      assert(ddS.Ndt[d][k]>=0);
       tot += vec[k] = ddS.Ndt[d][k];
+    }
   }
+  if ( tot <=0 )
+    return vec;
   for (k=0; k<ddN.T; k++)
     vec[k] /= tot;
   return vec;
@@ -84,9 +90,12 @@ float **hca_topmtx() {
     float *tvec = topprop(i);
     for (t1=0; t1<ddN.T; t1++) 
       vec[t1] += tvec[t1];
-    for (t1=0; t1<ddN.T; t1++) 
+    for (t1=0; t1<ddN.T; t1++) {
+      if ( tvec[t1]<=0 )
+        continue;
       for (t2=0; t2<t1; t2++) 
 	mtx[t1][t2] += tvec[t1] * tvec[t2];
+    }
     free(tvec);
   }     
   for (t1=0; t1<ddN.T; t1++) 
@@ -95,7 +104,6 @@ float **hca_topmtx() {
     for (t2=0; t2<t1; t2++) {
       mtx[t1][t2] = mtx[t1][t2]/ddN.T - vec[t1] * vec[t2];
       mtx[t1][t2] = 1.0 + mtx[t1][t2]/(vec[t1] * vec[t2]);
-      
     }
   free(vec);
   return mtx;
@@ -671,7 +679,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     for (t1=0; t1<ddN.T; t1++) {
       for (t2=0; t2<t1; t2++) 
-	if ( cmtx[t1][t2]>1.0e-3 ) 
+	 if ( cmtx[t1][t2]>1.0e-3 ) 
 	  fprintf(fp, "%d %d %0.6f\n", t1, t2, cmtx[t1][t2]);
     }
     fclose(fp);
