@@ -84,23 +84,39 @@ double alphabasechange(int t) {
  */
 double likemerge(int k1, int k2) {
   int t, d, k;
+  /*
+   *   storing/saving
+   */
+  uint32_t TDt;
   uint16_t *Tdt;
+  /*
+   *  cache
+   */
   uint16_t *TdT;
+  uint16_t *Ndt;
+  /*
+   *    sorting on moves
+   */
   uint16_t *Tdt_up;
   uint16_t *Tdt_down;
-  uint32_t TDt;
   float *score_up;
   float *score_down;
   float base_up;
   float base_down;
+
   double likelihood = 0;
 
   if ( k1<=0 || k2<=0 ) 
     return 0.0;
  
+  /*
+   *    we save all the old values relevant to topic k1,
+   *    and overwrite temporarily so we can use standard
+   *    routines/scoring functions
+   */
+  Tdt = u16vec(ddN.DT); 
   TdT = u16vec(ddN.DT);
   Ndt = u16vec(ddN.DT);
-  Tdt = u16vec(ddN.DT);
   Tdt_up = u16vec(ddN.DT);
   Tdt_down = u16vec(ddN.DT);
   score_up = u16vec(ddN.DT);
@@ -109,16 +125,20 @@ double likemerge(int k1, int k2) {
        !Tdt || !Tdt_up || !Tdt_down )
     yap_quit("Out of memory in likemerge()\n");
 
-  TDt = 0;
+  /*
+   *  initialise
+   */
+  TDt = 0; ???????????????
   for (d=0; d<ddN.DT; d++) {
-    Ndt[d] = ddS.Ndt[d][k1] + ddS.Ndt[d][k1];
+    Tdt[d] = ddS.Tdt[d][k1];
+    Ndt[d] = ddS.Ndt[d][k1] + ddS.Ndt[d][k2];
     TdT[d] = 0;  
     for (k=0; k<ddN.T; k++)
       TdT[d] += ddS.Tdt[d][k];
-    Tdt[d] = ddS.Tdt[d][k1] + ddS.Tdt[d][k1];
-    if ( Tdt[d]>2 )
-      Tdt[d]--;
-    TDt += Tdt[d];
+    ddS.Tdt[d][k1] += ddS.Tdt[d][k2];
+    if ( ddS.Tdt[d][k1]>2 )
+      ddS.Tdt[d][k1]--;
+    TDt += ddS.Tdt[d][k1];
   }
   for (d=0; d<ddN.DT; d++) {
     Tdt_up[d] = d;
@@ -127,7 +147,6 @@ double likemerge(int k1, int k2) {
       * S_V(ddP.SX,Ndt[d],Tdt[d]+1) * alphabasetopicprob*(t);
     score_down[d] = 1.0/(ddP.bpar + ddP.apar*(TdT[d]-1))
       / S_V(ddP.SX,Ndt[d],Tdt[d]) / alphabasetopicprob*(t-1);
-    ????;
   }
 
   free(score_up);
