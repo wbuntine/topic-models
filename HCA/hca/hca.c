@@ -19,6 +19,8 @@
 #include <math.h>
 #include <assert.h>
 #include <time.h>
+#include <sys/time.h>
+#include <limits.h>
 
 #include "yap.h"
 #include "util.h"
@@ -154,7 +156,7 @@ static void usage() {
           "   -I init,cycle,inc,free  #  controls constrains on topic changes\n"
           "   -K topics      #  maximum number of topics\n"
 	  "   -m             #  up the memory conservation by one\n"
-	  "   -M maxtime     #  maximum training time, quit early if reached\n"
+	  "   -M maxtime     #  maximum training seconds (wall time), quit early if reached\n"
 	  "   -N maxNwt,maxT #  maximum counts for Stirling number tables\n"
 #ifdef H_THREADS
 	  "   -q threads     #  set number of threads, default 1\n"
@@ -209,6 +211,13 @@ static void usage() {
           "   -V             #  load vocab file to allow printing terms\n"
 	  "   -X             #  do classifier results using data in STEM.class\n"
  	  );
+}
+
+static time_t wall_secs() {
+  struct timeval tp;
+  struct timezone tz;
+  gettimeofday(&tp, &tz);
+  return tp.tv_sec;
 }
 
 void *sampling_p(void *pargs)
@@ -348,10 +357,11 @@ int main(int argc, char* argv[])
   int doexclude = 0;
   int cal_perp = 0;
   clock_t t1=0, t2=0, t3=0;
+  time_t wall_start = 0;
   double tot_time = 0;
   double psample_time = 0;
   double t_interval = 0;
-  double max_time = INFINITY;
+  long max_time = LONG_MAX;
   int num_perp = 1;
   enum ParType par;
   int procs = 1;          /*  number of threads */
@@ -604,8 +614,8 @@ int main(int argc, char* argv[])
       ddP.memory++;
       break;
     case 'M':
-      if(!optarg || sscanf(optarg, "%lf", &max_time) != 1)
-	yap_quit("Need a valid 's' argument\n");
+      if(!optarg || sscanf(optarg, "%ld", &max_time) != 1)
+	yap_quit("Need a valid 'N' argument\n");
       break;
     case 'N':
       if ( !optarg || sscanf(optarg,"%d,%d", &maxNwt, &maxT)<1 )
@@ -1068,6 +1078,8 @@ int main(int argc, char* argv[])
 
   if ( ITER )
       yap_report("cycles: ");
+
+  wall_start = wall_secs();
   
   for (iter=0; iter<ITER; iter++) {
     int pro;
@@ -1300,8 +1312,8 @@ int main(int argc, char* argv[])
     if ( ddP.alphaiter>0 && iter>ddP.alphaburn && (iter%ddP.alphaiter)==0 )
       alpha_update();
 
-    if (tot_time > max_time){ //72000 20hs, 86400 24 hs
-      yap_message("\ntotal training time exceeds maximal training time  %lf s, quitting...\n", max_time);
+    if ( wall_secs()-wall_start > max_time){ //72000 20hs, 86400 24 hs
+      yap_message("\ntotal training time exceeds maximal training time  %ld s, quitting...\n", max_time);
       break;
     }
 
