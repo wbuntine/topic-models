@@ -1,0 +1,11 @@
+->0.6
+
+Changed internal handling of alpha and beta parameters (alphatot and betatot) and -A/B interface.
+Fixed bug with multicore when huge number of topics causing underflow of Twt (tables for
+topic-word matrix).
+Made -M operate off wall-time.
+Added ability to have a constant alpha vector (not just symmetric) -- intended for use
+on restart after akpha vector is estimated.
+Extend diagostic reporting on topics.
+Sorted topics on output so now most frequent first.
+
