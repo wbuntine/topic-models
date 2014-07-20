@@ -26,6 +26,8 @@
 #include "ehash.h"
 extern int verbose;
 
+ssize_t xgetline(char **buf, size_t *n, FILE *stream) ;
+
 
 /****************************************
  *  reading of top topics file
@@ -64,7 +66,7 @@ void ttop_open(char *topfile) {
 int ttop_next(int T, int E, int *k, int *e) {
   size_t n_line = 0;
   line = NULL;
-  while ( getline(&line, &n_line, ttop_fp)>0 ) {
+  while ( xgetline(&line, &n_line, ttop_fp)>0 ) {
     buf = line;
     *e = 0;
     *k = 0;

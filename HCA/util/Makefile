@@ -2,7 +2,7 @@
 #   CFLAGS and LDFLAGS should be in environment vars
 
 SRC = beta.c coher.c csparse.c myarms.c tokens.c util.c yap.c pmi.c \
-	dread.c misi.c  ehash.c fvec.c
+	dread.c misi.c  ehash.c fvec.c getline.c
 HFILES = myarms.h util.h yap.h dread.h misi.h pmi.h ehash.h fvec.h
 OBJ = $(SRC:.c=.o)
 LIBRARY = libhca.a
