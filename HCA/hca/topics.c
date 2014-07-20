@@ -342,7 +342,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   double sparsitydoc = 0;
   double underused = 0;
   FILE *fp;
-  float *tpmi;
+  float *tpmi = NULL;
   char *topfile;
   char *repfile;
   uint32_t *psort;
@@ -519,7 +519,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
        */
       double prop;
       float *dprop = docprop(kk);
-      double spw;
+      double spw = 0;
       double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT); 
       double ew = exp(fv_entropy(pvec,ddN.W));
       double ud = fv_helldistunif(pvec,ddN.W);
@@ -542,11 +542,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" ew=%.0lf", ew); 
       yap_message(" ed=%.0lf", ed); 
       yap_message(" da=%.0lf", da+0.1); 
-      yap_message(" ud=%.4lf", ud); 
-      yap_message(" pd=%.4lf", pd); 
+      yap_message(" ud=%.3lf", ud); 
+      yap_message(" pd=%.3lf", pd); 
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
-      yap_message(" co=%.4lf%%", co);
+      yap_message(" co=%.3lf%%", co);
       if ( pmicount ) 
 	yap_message(" pmi=%.3f", tpmi[kk]);
       if ( fullreport ) {
