@@ -9,6 +9,12 @@
 #include "arms.h"
 #include "yap.h"
 
+#ifdef isfinite
+#define ISFINITE(x) isfinite(x)
+#else
+#define ISFINITE(x) finite(x)
+#endif
+
 int myarms_evals;
 double myarms_last;
 extern int verbose;
@@ -80,7 +86,7 @@ int myarmsMH(double xl, double xr,
   if ( errcode && (errcode!=2000 || startval!=result  ) ) {
     yap_quit("   myarmsMH(%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n", 
 	     label, errcode,
-	     myarms_last, result, (!isfinite(result))?"(inf)":"",
+	     myarms_last, result, (!ISFINITE(result))?"(inf)":"",
 	     *xval, myarms_evals);
   }
   /*
@@ -88,15 +94,15 @@ int myarmsMH(double xl, double xr,
    *    unchanged .... seems to be when the 
    *    posterior is really focussed
    */
-  if ( verbose>1 || !isfinite(result) || startval==result )
+  if ( verbose>1 || !ISFINITE(result) || startval==result )
     yap_message("   myarmsMH(%s) = %lf%s<-%lf, w %d calls %s\n", 
 		label,
-		result, (!isfinite(result))?"(inf)":"",
+		result, (!ISFINITE(result))?"(inf)":"",
 		*xval, myarms_evals,
 		(startval==result)?"UNCHANGED":"");
-  if ( isfinite(result) )  
+  if ( ISFINITE(result) )  
     *xval = result;
-  if ( !isfinite(result) ) {
+  if ( !ISFINITE(result) ) {
     return 1;
   }
   return 0;
