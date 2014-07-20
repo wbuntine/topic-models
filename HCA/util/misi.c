@@ -424,7 +424,7 @@ void dmi_free(D_DMi_t *ptr) {
 double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
                       double a_burst, double *b_burst, stable_t *SD) {
   D_MiSi_t dD;   
-  double la;
+  double la = 0;
   double lgbd[ptr->T];
   double lgabd[ptr->T];
   double lb[ptr->T];

@@ -81,13 +81,6 @@ extern void yap_setstamp(char *(*yap_stamp_in)(void));
  *  the default for the above
  */
 extern char *yap_stamp(void);
-/*
- *  assumes error has been redirected somehow;
- *  writes out the PID and goes in background
- *  though doesn't change directory;
- *  set watchdog to put a watchdog restarter in place
- */
-void yap_daemon(char *pidfilename, int watchdog);
 
 /* Nonfatal error related to a system call. */
 extern void yap_sysreport(const char *fmt, ...);

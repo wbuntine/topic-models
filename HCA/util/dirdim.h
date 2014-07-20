@@ -13,7 +13,7 @@
  */
 
 #ifndef __DIRDM_H
-#define __IRDMD_H
+#define __DIRDM_H
 
 /*
  *    bounds for the parameters to various distributions

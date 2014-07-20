@@ -100,59 +100,6 @@ void yap_file(char *name)
 static pid_t yapchildpid = -1;
 static char *yappiffile = NULL;
 
-static void doonexit(int sig) {
-  if ( yapchildpid>1 ) {
-    if ( kill(yapchildpid,SIGTERM)<0 )
-      yap_sysreport("Cannot kill child %d\n", yapchildpid);
-    else
-      yap_report("Killed child %d\n", yapchildpid);
-  } 
-  if ( yappiffile ) {
-    unlink(yappiffile);
-  }
-  exit(0);
-}
-
-void yap_daemon(char *pidfilename, int watchdog) {
-  FILE *dp;
-  if ( yap_fd == STDERR_FILENO && !use_syslog )
-    yap_message("No error logging set up\n");
-  errno = 0;
-  if ( !daemon(1,0) && errno )
-    yap_sysquit("Cannot go in background as daemon\n");
-  yappiffile = strdup(pidfilename);
-  dp = fopen(pidfilename,"w");
-  if ( !dp )
-    yap_sysquit("Cannot write to '%s'\n",pidfilename);
-  fprintf(dp, "%d\n", getpid());
-  fclose(dp);
-  if ( watchdog ) {
-    int stat_loc;
-    while ( (yapchildpid = fork()) ) {
-      if ( signal(SIGHUP,doonexit)==SIG_ERR )
-	yap_sysquit("Cannot set signal\n");
-      if ( signal(SIGTERM,doonexit)==SIG_ERR )
-	yap_sysquit("Cannot set signal\n");
-      /*
-       *  parent waits around to restart when needed
-       *  NB.  child seems to inherit sig actions too ??
-       */
-      if ( !waitpid(yapchildpid,&stat_loc,0) )
-	yap_sysquit("yap_daemon failed waitpid\n");
-      yapchildpid = -1;
-      /*
-       *   if an OK termination, then quit
-       */
-      if ( !stat_loc ) {
-	exit(0);
-      }
-      yap_report("Watchdog restarting\n");
-      signal(SIGHUP,SIG_DFL);
-      signal(SIGTERM,SIG_DFL);  
-    }
-  }
-}
-
 void yap_setstamp(char *(*yap_stamp_in)(void))
 {
   if ( yap_stamp_in )
