@@ -97,9 +97,6 @@ void yap_file(char *name)
   use_syslog = 0;
 }
 
-static pid_t yapchildpid = -1;
-static char *yappiffile = NULL;
-
 void yap_setstamp(char *(*yap_stamp_in)(void))
 {
   if ( yap_stamp_in )
