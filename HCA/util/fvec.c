@@ -44,17 +44,25 @@ double fv_helldist(float *vp, float *vp2, int N) {
     dist += sqrt(vp[i]*vp2[i]);
   return 2.0 * (1-dist);
 }
+/*
+ *   noramlise too, just in case
+ */
 double fv_entropy(float *vp, int N) {
   double ent = 0;
+  double tot = 0;
   int i;
   if ( !vp ) 
     return INFINITY;
   for (i=0; i<N; i++ ) {
     double p = vp[i];
-    if ( N*p>0.00001 ) 
+    if ( N*p>0.00001 ) {
+      tot += p;
       ent -= p * log(p);
+    }
   }
-  return ent;
+  if ( tot<=0 )
+    return INFINITY;
+  return (ent+log(tot))/tot;
 }
 double fv_bound(float *vp, int N, float alpha) {
   int i;

@@ -719,9 +719,9 @@ At the end, a final report is printed.
 \begin{verbatim}
 [29/05/2014:21:07:27] Finished after 100 cycles on average of 0.193804+0.013074(s) per cycle
 
-Topic 6/0 p=12.54% ws=76.1% ds=14.2% ew=584 ed=24 da=0 ud=0.9344 pd=0.6448 co=-1.4%
-Topic 3/1 p=6.82% ws=76.8% ds=39.0% ew=790 ed=56 da=0 ud=0.8126 pd=0.7304 co=-0.8%
-Topic 14/2 p=5.73% ws=83.2% ds=82.0% ew=442 ed=93 da=0 ud=0.9223 pd=0.7350 co=-0.3%
+Topic 6/0 p=12.54% ws=76.1% ds=14.2% ew=584 ed=24 da=10 t1=4 ud=0.9344 pd=0.6448 co=-1.4%
+Topic 3/1 p=6.82% ws=76.8% ds=39.0% ew=790 ed=56 da=6 t1=3 ud=0.8126 pd=0.7304 co=-0.8%
+Topic 14/2 p=5.73% ws=83.2% ds=82.0% ew=442 ed=93 da=12 t1=5 ud=0.9223 pd=0.7350 co=-0.3%
 ...
 
 Average topicXword sparsity = 82.93%
@@ -745,7 +745,8 @@ Details are as follows:
 \item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
 \item[ew:] effective number of words, expenential of the entropy of the word distribution;
 \item[ew:] effective number of documents, expenential of the entropy of the document distribution (given topic);
-\item[da:] documents with proportion greater than $1/\mbox{sqrt}(T)$.
+\item[da:] documents with proportion for topic greater than $1/\mbox{sqrt}(T)$.
+\item[t1:] documents with this topic as most common.
 \item[ud:] Hellinger distance to the uniform distribution.
 \item[pd:] Hellinger distance to the (training) population word distribution;
 \item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.

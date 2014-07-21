@@ -77,12 +77,10 @@ static float *topprop(int d) {
 }
 
 /*
- *   Build a matrix doc-frequency for words.
- *   If topic<0, do for all training words,
- *   otherwise only for words of topic
+ *   Build a matrix giving correlation of topic proportions for docs
  *   This is O(D*T*T) so very slow.
  */
-float **hca_topmtx() {
+static float **hca_topmtx() {
   float **mtx = fmat(ddN.T, ddN.T);
   float *vec = fvec(ddN.T);
   int i, t1, t2;
@@ -97,10 +95,10 @@ float **hca_topmtx() {
 	mtx[t1][t2] += tvec[t1] * tvec[t2];
     }
     free(tvec);
-  }     
-  for (t1=0; t1<ddN.T; t1++) 
+  }
+  for (t1=0; t1<ddN.T; t1++)
     vec[t1] /= ddN.T;
-  for (t1=0; t1<ddN.T; t1++) 
+  for (t1=0; t1<ddN.T; t1++)
     for (t2=0; t2<t1; t2++) {
       mtx[t1][t2] = mtx[t1][t2]/ddN.T - vec[t1] * vec[t2];
       mtx[t1][t2] = 1.0 + mtx[t1][t2]/(vec[t1] * vec[t2]);
@@ -109,23 +107,39 @@ float **hca_topmtx() {
   return mtx;
 }
 
+/*
+ *   Build a vector giving number of times each topic is the
+ *   most common in a doc.
+ */
+static uint32_t *hca_top1cnt() {
+  uint32_t *cnt = u32vec(ddN.T);
+  int i, t;
+  for (i=0; i<ddN.DT; i++) {
+    float *tvec = topprop(i);
+    int maxt = 0;
+    for (t=0; t<ddN.T; t++) 
+      if ( tvec[t]>tvec[maxt] )
+	maxt = t;
+    cnt[maxt]++;
+    free(tvec);
+  }     
+  return cnt;
+}
+
 /*************************************************
  *   build document proportions vec for topic k
  */
 static float *docprop(int k) {
   float *vec = fvec(ddN.DT);
-  double tot = 0;
   int i;
   if ( !vec) return NULL;
   if ( ddP.theta ) {
     for (i=0; i<ddN.DT; i++)
-      tot += vec[i] = ddP.theta[i][k];
+      vec[i] = ddP.theta[i][k];
   } else { 
     for (i=0; i<ddN.DT; i++)
-      tot += vec[i] = ddS.Ndt[i][k];
+      vec[i] = ddS.Ndt[i][k]/(float)ddS.NdT[i];
   }
-  for (i=0; i<ddN.DT; i++)
-    vec[i] /= tot;
   return vec;
 }
 /*************************************************
@@ -234,6 +248,7 @@ double coherence(uint32_t **mtx, int N) {
   co /= N*(N-1)/2;
   return co;
 }
+
 double coherence_word(uint32_t **mtx, int N, int i1) {
   int i2; 
   double co = 0;
@@ -341,6 +356,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   double sparsityword = 0;
   double sparsitydoc = 0;
   double underused = 0;
+  uint32_t *top1cnt = NULL;
   FILE *fp;
   float *tpmi = NULL;
   char *topfile;
@@ -384,6 +400,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   }
 
   psort = sorttops(ddN.T);
+  
+  top1cnt = hca_top1cnt();
+  if ( !top1cnt )
+    yap_quit("Cannot allocate top1cnt in hca_displaytopics()\n");
+
 
   if ( pmicount ) {
     tpmi = malloc(sizeof(*tpmi)*(ddN.T+1));
@@ -466,8 +487,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     rp = fopen(repfile,"a");
     if ( !rp ) 
       yap_sysquit("Cannot open file '%s' for append\n", repfile);
-    fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound dist-unif "
-	    "dist-unigrm ave-length coher");
+    fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound top-one "
+	    "dist-unif dist-unigrm ave-length coher");
     if ( pmicount ) 
       fprintf(rp, " pmi");
     fprintf(rp, "\n#word topic index rank count prop cumm df coher\n");
@@ -527,7 +548,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double sl = fv_avestrlen(pvec,ddN.tokens,ddN.W);
       double co = coherence(dfmtx, cnt);
       double ed = dprop?exp(fv_entropy(dprop,ddN.DT)):ddN.DT;
-      double da = fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T));
+      double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
       if ( ddP.phi==NULL ) {
 	prop = ((double)ddS.NWt[kk])/(double)Nk_tot;
@@ -542,6 +563,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" ew=%.0lf", ew); 
       yap_message(" ed=%.0lf", ed); 
       yap_message(" da=%.0lf", da+0.1); 
+      yap_message(" t1=%u", top1cnt[kk]); 
       yap_message(" ud=%.3lf", ud); 
       yap_message(" pd=%.3lf", pd); 
       if ( ddN.tokens )  
@@ -561,6 +583,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	fprintf(rp," %.2lf", ew); 
 	fprintf(rp," %.2lf", ed); 
 	fprintf(rp," %.0lf", da+0.1); 
+	fprintf(rp," %u", top1cnt[kk]); 
 	fprintf(rp," %.6lf", ud); 
 	fprintf(rp," %.6lf", pd); 
 	fprintf(rp," %.4lf", (ddN.tokens)?sl:0); 
