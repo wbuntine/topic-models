@@ -1,26 +1,32 @@
+#
+#  to get multi-threaded version working, add -DH_THREADS
+#  to CPPFLAGS to Linux/Mac-OSX versions below
+#
+
+###########################################
 #     installed location of where to find libstb
 #       i.e.,   libstb.a is in $(STB)/lib/
 STB_HOME := /home/wbuntine/
+export STB_HOME
 
+#######################################
 ##  Linux versions
-#         add "-g" or "-O5 -DNDEBUG" or ....
-#  Add "-DH_THREADS" to get multi-core version
+#
+#  add "-g" or "-O5 -DNDEBUG" or ....
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
-#MYDEBUG=-g 
-#  add "-g" for debugging libraries
-MYLIB=
+# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE 
+MYDEBUG=-g
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)
 CFLAGS = -Wall 
 LDFLAGS = -L../util -L$(STB_HOME)/lib -lhca -lstb$(MYLIB)  -lm -pthread
 
+####################################################
 ##  Mac OSX versions
-#CFLAGS = -D__WORDSIZE=64 -I/opt/local/include -Wall -g 
-#LDFLAGS = -L/opt/local/lib -lstb -lm
-#CPPFLAGS=-I/opt/local/include 
+#CFLAGS = -D__WORDSIZE=64 -I/opt/local/include -Wall
+#LDFLAGS = -L/opt/local/lib -L../util -L../lib -lhca -lstb -lm -pthread
+#CPPFLAGS=-I/opt/local/include -I../util/ -I../lib/ 
 
-export STB_HOME
 export CFLAGS
 export LDFLAGS
 export CPPFLAGS
