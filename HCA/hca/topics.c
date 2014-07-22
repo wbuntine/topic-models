@@ -278,15 +278,11 @@ static int buildindk(int k, uint32_t *indk) {
     }
     return cnt;
   }
-  if ( ddP.phi || ddS.phi ) {
-    float **phi;
-    if ( ddP.phi )
-      phi = ddP.phi;
-    else
-      phi = ddS.phi;   
+  if ( ddP.phi ) {
     for (w=0; w<ddN.W; w++) 
-      if ( phi[k][w]>0.5/ddN.W ) indk[cnt++] = w;
+      if ( ddP.phi[k][w]>0.1/ddN.W ) indk[cnt++] = w;
   } else {
+    assert(ddS.Nwt);
     for (w=0; w<ddN.W; w++) {
       if ( ddS.Nwt[w][k]>0 ) indk[cnt++] = w;
     }

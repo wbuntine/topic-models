@@ -45,14 +45,14 @@ double fv_helldist(float *vp, float *vp2, int N) {
   return 2.0 * (1-dist);
 }
 /*
- *   noramlise too, just in case
+ *   normalise too, just in case
  */
 double fv_entropy(float *vp, int N) {
   double ent = 0;
   double tot = 0;
   int i;
   if ( !vp ) 
-    return INFINITY;
+    return HUGE_VAL;
   for (i=0; i<N; i++ ) {
     double p = vp[i];
     if ( N*p>0.00001 ) {
