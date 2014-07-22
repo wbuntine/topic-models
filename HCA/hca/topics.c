@@ -762,6 +762,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 
   free(topfile);
   if ( repfile ) free(repfile);
+  if ( top1cnt ) free(top1cnt);
   free(indk);
   free(psort);
   if ( pmicount )

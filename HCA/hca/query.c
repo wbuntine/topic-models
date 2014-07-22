@@ -399,7 +399,7 @@ void gibbs_query(char *stem, int K, char *qname, int dots, int this_qpart, int q
   for (i=0; i<K*ddP.n_query; i++) {
     topind[i] = i%K;
     topk[i] = -1;
-    topscore[i] = INFINITY;
+    topscore[i] = HUGE_VAL;
   }
   
   /*

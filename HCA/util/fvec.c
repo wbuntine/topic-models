@@ -61,7 +61,7 @@ double fv_entropy(float *vp, int N) {
     }
   }
   if ( tot<=0 )
-    return INFINITY;
+    return HUGE_VAL;
   return (ent+log(tot))/tot;
 }
 double fv_bound(float *vp, int N, float alpha) {
