@@ -381,13 +381,28 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
    *  first collect counts of each word/term,
    *  and build gpvec (mean word probs)
    */
-  build_NwK();
-  {
+  if ( ddS.Nwt ) {
+    /*
+     *  get from topic stats
+     */
     double tot = 0;
+    build_NwK();
     for (w=0; w<ddN.W; w++)
-      tot += gpvec[w] = NwK[w]+0.1;
+      tot += gpvec[w] = NwK[w]+0.1; 
     for (w=0; w<ddN.W; w++)
       gpvec[w] /= tot;
+  } else {
+    /*
+     *  recompute from scratch
+     */
+    double tot = 0;
+    int i;
+    for (i=0; i<ddN.NT; i++) 
+      gpvec[ddD.w[i]]++;
+    for (w=0; w<ddN.W; w++)
+      tot += (gpvec[w] += 0.1);
+    for (w=0; w<ddN.W; w++)
+      gpvec[w] /= tot; 
   }
   
 

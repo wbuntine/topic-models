@@ -1061,7 +1061,6 @@ int main(int argc, char* argv[])
 #ifdef QUERY
   if ( queryfile ) {
     char *qname = yap_makename(queryfile,".out");
-    data_df(stem);
     gibbs_query(stem, querycnt,qname,dots,this_qpart,qparts);
     free(qname);
     restart_offset = ddN.DT;
