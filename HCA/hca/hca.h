@@ -23,7 +23,7 @@
 #include "stats.h"
 #include "srng.h"
 
-#define HCA_VERSION "0.5"
+#define HCA_VERSION "0.6"
 
 #define MAXM 1000
 /* 

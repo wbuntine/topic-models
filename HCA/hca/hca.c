@@ -115,7 +115,7 @@ static const char *stype() {
 	"\n";
     else
       return 
-	"irichlet sampler for topics"
+	"Dirichlet sampler for topics"
 	", Dirichlet sampler for words"
 	"\n";
   }

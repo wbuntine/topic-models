@@ -147,32 +147,32 @@ static double adkterms(double mya, void *mydata) {
 }
 
 #define CONJPRIOR
-static double alphaterms(double alpha, void *mydata) {
+static double alphaterms(double alphatot, void *mydata) {
   int t,s;
   double val = 0;
   double tot;
-  double lga = lgamma(alpha);
-  double lgat = lgamma(ddN.T*alpha); 
+  double lga = lgamma(alphatot/ddN.T);
+  double lgat = lgamma(alphatot); 
 #ifdef A_DEBUG
   double like;
 #endif
 #ifdef CONJPRIOR
-  val += ddN.T*(lgamma(alpha+1.0/ddN.T) - lga);
-  val -= lgamma(ddN.T*alpha+1) - lgamma(ddN.T*alpha);
+  val += ddN.T*(lgamma((alphatot+1.0)/ddN.T) - lga);
+  val -= lgamma(alphatot+1.0) - lgamma(alphatot);
 #endif
   for (s=0; s<ddN.DT; s++) {
     tot = 0;
     for (t=0; t<ddN.T; t++) {
-      tot += alpha+ddS.Ndt[s][t];
-      val += gammadiff(ddS.Ndt[s][t],alpha,lga);
+      tot += alphatot/ddN.T+ddS.Ndt[s][t];
+      val += gammadiff(ddS.Ndt[s][t],alphatot/ddN.T,lga);
     }
     val -= lgamma(tot) - lgat;
   }
   myarms_evals++;
-  myarms_last = alpha;
+  myarms_last = alphatot;
 #ifdef A_DEBUG
-  yap_message("Eval alphaterms(%lf) = %lf\n", alpha, val);
-  ddP.alpha = alpha;
+  yap_message("Eval alphaterms(%lf) = %lf\n", alphatot, val);
+  ddP.alphatot = alphatot;
   cache_update("alpha");
   like = likelihood();
   if ( last_val != 0 ) {
@@ -269,13 +269,16 @@ void sample_adk(double *mya) {
 /*
  *  assumes uniform prior Dirichlet
  */
-void sample_alpha(double *alpha) {
+void sample_alpha(double *alphatot) {
+  double dirmax = DIR_TOTAL_MAX;
+  if ( dirmax>ddN.T * DIR_MAX )
+    dirmax = ddN.T * DIR_MAX;
 #ifdef A_DEBUG
   last_val = 0;
   last_like = 0;
 #endif
-  if ( myarmsMH(DIR_MIN, DIR_MAX,
-                &alphaterms, NULL, alpha, "alpha",1) ) {
+  if ( myarmsMH(DIR_MIN*ddN.T, dirmax,
+                &alphaterms, NULL, alphatot, "alphatot",1) ) {
     yap_message("sample_alpha: error in result\n");
   }
   cache_update("alpha");
