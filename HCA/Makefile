@@ -15,8 +15,8 @@ export STB_HOME
 #  add "-g" or "-O5 -DNDEBUG" or ....
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
-#MYDEBUG=-g
+# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
+MYDEBUG=-g
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)
 CFLAGS = -Wall 
 LDFLAGS = -L../util -L$(STB_HOME)/lib -lhca -lstb$(MYLIB)  -lm -pthread
@@ -40,6 +40,11 @@ util:    yes
 
 terms:    yes
 	cd util; make terms
+
+heap:    yes
+	cd util; make heap
+
+hca:    yes
 
 hca:    yes
 	cd hca; make 
