@@ -6,7 +6,7 @@
 
 \usepackage[fancyhdr]{latex2man}
 
-\setDate{2014/06/28}
+\setDate{2014/08/04}
 \setVersion{0.6}
 
 \begin{document}
@@ -328,9 +328,12 @@ starting after the \texttt{start} cycle and then taking the
 estimate every \texttt{cycles} cycle.
 Diagnostics are:
 \begin{Description}[testprob]\setlength{\itemsep}{0cm}
-\item[sp] 
+\item[sparse] 
 Estimate topic sparsity in the theta matrix for the
 words given in \File{DataStem.smap}.
+If \File{DataStem.smap} is not there then this defaults to all words.
+Note, the default can be quite wasteful for multicore, is it duplicates the theta matrix
+for each thread, so only do for small data sets.
 Results placed in \File{RepStem.smap}.
 The report gives ``topic/weight'' for topics including the word.
 \item[prog] 
@@ -745,7 +748,7 @@ Details are as follows:
 \item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
 \item[ew:] effective number of words, expenential of the entropy of the word distribution;
 \item[ew:] effective number of documents, expenential of the entropy of the document distribution (given topic);
-\item[da:] documents with proportion for topic greater than $1/\mbox{sqrt}(T)$.
+\item[da:] documents with proportion for topic greater than 1/sqrt($T$).
 \item[t1:] documents with this topic as most common.
 \item[ud:] Hellinger distance to the uniform distribution.
 \item[pd:] Hellinger distance to the (training) population word distribution;
@@ -831,10 +834,10 @@ This you need to create/edit ahead of time.
 This must run a number of cycles because the estimates are done 
 during the Gibbs sampling.
 \begin{verbatim}
-hca -v -r0 -e -lsp,2,1 -ltheta,2,1,0.001 -C20 data/ch c1
+hca -v -r0 -e -lsparse,2,1 -ltheta,2,1,0.001 -C20 data/ch c1
 \end{verbatim} 
 \begin{description}
-\item[``-lsp2,1'':] sample for sparsity every 2nd cycle
+\item[``-lsparse,2,1'':] sample for sparsity every 2nd cycle
 starting at the 1st.
 \item[``-ltheta,2,1,0.001'':] sample probabilities per document
 (theta) every 2nd cycle

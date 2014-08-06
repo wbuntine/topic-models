@@ -184,7 +184,7 @@ static void usage() {
           "                  #  HOLD=fract, hold out last fract words in doc\n"
 	  "   -h all         #  no test set, done on training set\n"
           "   -l DIAG,cycles,start #  cycles for runtime calculations\n"
-	  "                  #  DIAG is one of 'sp','theta','testprob','prog',\n"
+	  "                  #  DIAG is one of 'sparse','theta','testprob','prog',\n"
 	  "                  #  'phi', 'alpha'\n"
           "   -L DIAG,cycles,start #  cycles for diagnostic calculations\n"
 #ifdef EXPERIMENTAL
@@ -567,9 +567,9 @@ int main(int argc, char* argv[])
     case 'l':
       if ( !optarg )
 	yap_quit("Need a valid 'l ' argument\n");
-      if ( strncmp(optarg,"sp,",3)==0 ) {
-	if ( sscanf(&optarg[3],"%d,%d",&ddP.spiter, &ddP.spburn)<2 )
-	  yap_quit("Need a valid 'l sp,' argument\n");
+      if ( strncmp(optarg,"sparse,",7)==0 ) {
+	if ( sscanf(&optarg[7],"%d,%d",&ddP.spiter, &ddP.spburn)<2 )
+	  yap_quit("Need a valid 'l sparse,' argument\n");
       } else if ( strncmp(optarg,"testprob,",9)==0 ) {
 	if ( sscanf(&optarg[9],"%d,%d,%lf",
 		    &ddP.tprobiter, &ddP.tprobburn, &probepsilon)<2 )
@@ -1013,10 +1013,9 @@ int main(int argc, char* argv[])
    if ( ddP.spiter>0 ) {
      char *fname = yap_makename(stem,".smap");
      FILE *fp = fopen(fname,"r");
-     if ( fp ) {
-       sparsemap_init(fp, procs);
+     sparsemap_init(fp, procs);
+     if ( fp ) 
        fclose(fp);
-     } 
      free(fname);
    }
    if ( ddP.probiter>0 || ddP.tprobiter>0 ) {

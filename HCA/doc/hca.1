@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Tue Jul 15 17:13:55 EST 2014
+.\" Manual page created with latex2man on Wed Aug  6 18:06:12 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "HCA" "1" "2014/06/28" "Data Analysis Tools " "Data Analysis Tools "
+.TH "HCA" "1" "2014/08/04" "Data Analysis Tools " "Data Analysis Tools "
 .SH NAME
 
 .PP
@@ -509,9 +509,13 @@ cycle.
 Diagnostics are: 
 .RS
 .TP
-sp 
+sparse 
 Estimate topic sparsity in the theta matrix for the 
 words given in DataStem.smap\&.
+If DataStem.smap
+is not there then this defaults to all words. 
+Note, the default can be quite wasteful for multicore, is it duplicates the theta matrix 
+for each thread, so only do for small data sets. 
 Results placed in RepStem.smap\&.
 The report gives ``topic/weight\&'' for topics including the word. 
 .TP
@@ -1123,4 +1127,407 @@ ew:
 effective number of documents, expenential of the entropy of the document distribution (given topic); 
 .TP
 da: 
-documents with proportion for topic greater than 
+documents with proportion for topic greater than 1/sqrt(T). 
+.TP
+t1: 
+documents with this topic as most common. 
+.TP
+ud: 
+Hellinger distance to the uniform distribution. 
+.TP
+pd: 
+Hellinger distance to the (training) population word distribution; 
+.TP
+co: 
+coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011. 
+.PP
+So the first topic has 6/0 given. This means it was index 6 in the 
+run but is rank 0 in terms of proportion. In the saved data file 
+it will be topic 6. With more verbosity, top topic words will be given 
+as well ranked according to the \fI\-o\fP
+option. 
+Totals for some of the topics are also given: 
+``Average topicXword sparsity\&'' is the mean of the word sparsities 
+(ws),
+``Average docXtopic sparsity\&'' 
+gives the mean of the document sparsities (ds),
+and the number of underused topics is the 
+percentage of topics whose observed proportion 
+is less than 1/T/100 or with less than 5 occurrences. 
+.PP
+The log_2(train perp)
+figure is equivalent 
+to the log_2(perp)
+figure 
+above because there is no test data. 
+At this point, a number of data files will have been 
+written, the same as done with any checkpoint. 
+The main one is the parameter file 
+c1.par
+which gives all the dimensions as well 
+as the final values of the hyper\-parameters. 
+Note the probs
+are also included, but these 
+are for information only. 
+The others can be used to restart the run. 
+.PP
+If you have the multicore version compiled, 
+and you have an 8\-core CPU, then run with 8 threads: 
+.Vb
+   hca \-v \-e \-K20 \-B0.001 \-C100 \-q8 data/ch c1
+.Ve
+.TP
+``\-q8\&'': 
+use 8 threads for Gibbs sampling. 
+.PP
+This just repeats the above but should be faster! 
+.PP
+.SS RESTART AND PRINT WORDS FOR THE TOPICS
+Restart from checkpoint after the previous run but run no cycles. 
+Input the tokens from 
+data/ch.tokens,
+and print top 10 words for each topic. 
+.Vb
+   hca \-v \-v \-r0 \-e \-V \-C0 data/ch c1
+.Ve
+The command line means: 
+.TP
+``\-v \-v\&'': 
+use level two verbosity; 
+.TP
+``\-r0\&'': 
+restart from document 0, i.e., on all documents; 
+.TP
+``\-V\&'': 
+input the tokens from 
+``data/ch.tokens,\&'' and print top 10 words for each topic. 
+Note must have at least level two verbosity; 
+.TP
+``\-C0\&'': 
+do not run any cycles, just do reporting. 
+.PP
+After printing initial details, this will print two 
+sets of details. 
+The first is a list of top topic words (if verbosity is greater than 1) 
+and topic diagnostics. 
+Topics are printed in decreasing order of occurrence. 
+The extra verbosity level and the \fB\-V\fP
+means that topic words will be printed out too. 
+.PP
+For more detail to the RepStem.topset
+file, use: 
+.Vb
+   hca \-v \-v \-r0 \-e \-V \-V \-oidf,100 \-C0 data/ch c1
+.Ve
+The command line means: 
+.TP
+``\-V \-V\&'': 
+extra \fB\-V\fP
+means create the 
+RepStem.topset
+file of details. 
+.TP
+``\-oidf,100\&'': 
+means report on up to 100 words for each topic, 
+and words ranked by the idf
+score. 
+.PP
+The first two lines give brief column heads for the topic and word lines. 
+The scores match those printed with diagnostics. 
+.PP
+.SS PRODUCE SPARSITY MAPPINGS AND DOCUMENT TOPIC PROBABILITIES
+Restart again and build a topic probability vector for each document, 
+as well as sparsity mappings for the words in 
+data/ch.smap
+file. 
+This you need to create/edit ahead of time. 
+This must run a number of cycles because the estimates are done 
+during the Gibbs sampling. 
+.Vb
+hca \-v \-r0 \-e \-lsparse,2,1 \-ltheta,2,1,0.001 \-C20 data/ch c1
+.Ve
+.TP
+``\-lsparse,2,1\&'': 
+sample for sparsity every 2nd cycle 
+starting at the 1st. 
+.TP
+``\-ltheta,2,1,0.001\&'': 
+sample probabilities per document 
+(theta) every 2nd cycle 
+starting at the 1st. 
+Only report probabilities above 0.001. 
+.TP
+``\-C20\&'': 
+sampling done for 20 cycles. 
+.PP
+Now view the sparsity report at c1.smap
+and 
+the topic probabilities at c1.theta,
+and the values saved in the parameter file c1.par\&.
+Again, add the \fB\-q\fP\fI8\fP
+option to run this faster, 
+with 8 threads (if you have 8 cores). 
+.PP
+Read lines in the sparsity report, c1.smap,
+as follows: 
+.Vb
+\-\-(12): 5/2.6 14/1.3 19/219.0 perp=1.149816
+.Ve
+Token with index 12 occurs in topics 5, 14 and 19. 
+It has 2.6 counts (its a sample average so counts can be a fraction) 
+in topic 5 and 219.0 in topic 19. 
+The effective number of topics using this token is 1.149816. 
+This is measured as the exponential of the entropy of the topic distribution 
+(i.e., probability of topic given the single word and assuming topics 
+are equally likely). 
+.PP
+Read lines in the topic probabilities report, c1.theta,
+as follows: 
+.Vb
+15: 16:0.006699 17:0.088948 19:0.902410
+.Ve
+Document 15 has 0.006699 for topic 15 and 0.902410 for topic 17. 
+The three topics only add to 0.998057 because some 
+smaller topics must have been dropped. 
+.PP
+.SS RUN WITH TESTING
+.PP
+Run basic LDA with training and parameter fitting on a subset 
+and testing on the final 100 documents. 
+The training subset is the full dataset minus the test data. 
+Logging now to c1.log\&.
+Checkpoint every 20 cycles 
+(note, we usually only do this for cycles taking over 10 minutes each). 
+.Vb
+hca \-v \-K20 \-C100 \-c20 \-T100 data/ch c1
+.Ve
+Again run multi\-core with \fB\-q\fP\fI8\fP
+if needed. 
+.TP
+``\-c20\&'': 
+do a checkpoint with any reporting every 
+20 cycles. 
+.TP
+``\-T100\&'': 
+use the last 100 documents for testing, 
+so the first (datasetsize\-100) are used for training. 
+The documents must be ordered so the test data is at the end. 
+Alternatively, a file stem can be given if test data is in a 
+separate file, so loaded from there. 
+.PP
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpML)\&''\&. 
+.PP
+Now restart but use document completion (every 4th word) to 
+get perplexity, with no more Gibbs cycles. 
+Without \fB\-h\fP
+the default is to use 
+a standard likelihood calculation so will be biased. 
+.Vb
+hca \-v \-e \-r0 \-C0 \-hdoc,4 \-T100 data/ch c1
+.Ve
+.TP
+``\-hdoc,4\&'': 
+hold out every 4\-th word in 
+the document. 
+.TP
+``\-T100\&'': 
+the test set size must be repeated, since it is not 
+reloaded with the restart. 
+.PP
+View the end of the log file to get the test perplexity, 
+which is printed after ``log_2(test perpHold)\&''\&. 
+Note it is also recorded in the parameter file. 
+.PP
+Restart and record the 
+PMI and the classification details on test data. 
+.Vb
+hca \-v \-v \-V \-r0 \-C0 \-Llike,0,0 \-X \-p \-T100 data/ch c1
+.Ve
+.TP
+``\-Llike,0,0\&'': 
+prevent it 
+doing test likelihood calculations, which are potentially slow 
+on larger data sets. 
+.TP
+``\-X\&'': 
+load up class data from data/ch.clas
+file to 
+enable classification on test data. 
+.TP
+``\-p\&'': 
+initiate PMI calculation. 
+.PP
+The PMI data has a value printed for each topic as well as a 
+final average. It bases its calculations on the matrix 
+data/ch.pmi.gz
+created explicitly for this test set. 
+For other datasets, you will need to download prepared 
+PMI matrices from the project homepage. 
+The PMI output in the log file 
+adds a PMI figure at the end of the second set of 
+diagnostics: 
+.Vb
+Topic 0 stats: p=3.16%, ws=86.3%, ds=71.4%, pmi=2.565,
+Topic 1 stats: p=6.73%, ws=81.7%, ds=76.2%, pmi=0.825,
+Topic 2 stats: p=3.59%, ws=85.2%, ds=72.9%, pmi=1.392,
+.Ve
+Moreover, the general diagnistics get an extra line: 
+.Vb
+Average PMI = 0.602
+.Ve
+.PP
+.SS BURSTINESS
+.PP
+The burstiness version significantly improves everything. 
+Our best bet, currently, is to run 
+with optimisation of the hyperparameters: 
+.Vb
+hca \-v \-v \-e \-K20 \-C100 \-Sbdk=100 \-Sad=0.5 data/ch c1
+.Ve
+.TP
+``\-Sbdk=100\&'': 
+burstiness document concentration is different 
+for every topic. This initialises all of them to 100. 
+Default has no burstiness. 
+.TP
+``\-Sad=0.5\&'': 
+burstiness document discount set to 
+0.5, same for all topics. Default is zero. 
+.PP
+The initial discount for the bursty topics is 
+0.5. The concentration we set quite high initially, 
+and these will be sampled separately with 
+each topic in batches, so bdk
+is a vector in the 
+parameter file. 
+The hyperparameter sampling slows it down quite a bit but seems to 
+make a significant difference. Unused topics sometimes 
+get a very low concentration. 
+Alternatively, fix the burstiness discount with 
+\fB\-F\fP\fIad\fP
+and continue sampling burstiness concentration only, 
+which is quite a lot faster. 
+Note burstiness works well with multi\-core as does 
+sampling of hyperparameters. 
+.PP
+Diagnostics reported for burstiness, printed at the end, are as follows: 
+.Vb
+Burst report:  multis=55.45%, tables=79.57%, tbls\-in\-multis=63.15%
+.Ve
+These are: 
+.TP
+multis: 
+percentage of tokens in documents that occur more than 
+once. Only these are affected by burstiness processing. 
+So (100\-multis)
+is proportion of tokens unique in 
+their document. 
+.TP
+tables: 
+percentage of data being passed up by the burstiness 
+sub\-module to the topic model. 
+Note 100% of the (100\-multis)%
+unique tokens will 
+be passed up as unique tokens always go to the topic model. 
+Of the remaining multis%
+tokens, only 
+tbls\-in\-multis%
+get passed up. 
+.TP
+tbls\-in\-multis: 
+the percentage of 
+non\-unique words in documents that are passed up by the burstiness 
+sub\-module to the topic model. 
+.PP
+.SH ERRORS
+
+.PP
+There is some error reporting on failure. 
+.PP
+If the software quits during a run on larger data with an 
+error message like: 
+.Vb
+    S_V(N,M,A) tagged 'XXX' hit bounds (BN,BM)
+.Ve
+for integers N,M
+and label XXX
+then you 
+need to increase the bounds BN,BM\&.
+If only the BM
+bound is violated, 
+then set BN
+to its default (10000) and increase 
+BM
+to, say 5000 (your choice) with the 
+option \fB\-N\fP\fI10000,5000\fP\&.
+The BN
+bound should only be violated 
+when the Beta side table is affected, 
+in which case the label will be 
+XXX=\&''SB, topicXword PYP". 
+Now increase BN
+to, say 30000 (your choice) with the 
+option \fB\-N\fP\fI30000,1000\fP,
+leaving BM
+as it was. 
+.PP
+For other errors, please report to the maintainer. 
+Best bet is to recompile 
+with ``MYDEBUG=\-g\&'' set in the Makefile 
+and possibly run under a memory checker to get details of 
+the reason for the crash. 
+.PP
+.SH SEE ALSO
+
+.PP
+The command \fIlinkBags\fP(1)
+is available from text\-bags
+at 
+\fBhttps://github.com/wbuntine/text\-bags\fP
+and was previously released at \fBhttp://mloss.org\fP\&.
+The extended library libstb,
+parts of which are included, is available 
+individually from \fBhttp://mloss.org\fP
+also at 
+\fBhttps://github.com/wbuntine/libstb\fP
+\&. 
+.PP
+.SH VERSION
+
+.PP
+This programme is version 0.6 of 2014/08/04\&.
+This incorporates parts of the library libstb
+version 1.8 
+also of 2014/08/04\&.
+.PP
+.SH LICENSE AND COPYRIGHT
+
+.PP
+.TP
+Copyright 
+(C)2011\-2014, Prof. Wray Buntine, 
+NICTA, Canberra, Australia (to 2013), and Monash 
+University (from 2014), 
+\fBwray.buntine@monash.edu\fP\&.
+Some parts also by Dr.  Jinjing Li (2013) and 
+Mr.  Swapnil Mishra (2013\-2014). 
+.PP
+.TP
+License 
+This Source Code Form is subject to the terms of the Mozilla 
+Public License, v. 2.0. If a copy of the MPL was not 
+distributed with this file, You can obtain one at 
+\fBhttp://mozilla.org/MPL/2.0/\fP\&.
+.PP
+.SH AUTHOR
+
+.PP
+Prof. Wray Buntine 
+.br
+Email: \fBWray.Buntine@monash.edu\fP
+.PP
+Some parts also done by Dr.  Jinjing Li and 
+Mr.  Swapnil Mishra. 
+.PP
+.\" NOTE: This file is generated, DO NOT EDIT.

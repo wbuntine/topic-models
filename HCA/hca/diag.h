@@ -38,8 +38,8 @@ typedef struct D_diag_s {
   /*
    *   used to compute sparsity over time
    */
-  uint32_t *iscodeword;
-  uint32_t *words;
+  uint32_t *iscodeword;  /* NULL if all words recorded, else a bit map */
+  uint32_t *words;       /* NULL if all words recorded, else a list */
   int     n_words;
   uint16_t    docode;
   uint16_t    didcode;
@@ -47,7 +47,7 @@ typedef struct D_diag_s {
 } D_diag_t;
 
 
-#define G_isword(w) (ddG.iscodeword[(w)/32U] & (1U << (((unsigned)w)%32U)))
+#define G_isword(w) (!ddG.iscodeword || (ddG.iscodeword[(w)/32U] & (1U << (((unsigned)w)%32U))))
 
 extern D_diag_t ddG;
 

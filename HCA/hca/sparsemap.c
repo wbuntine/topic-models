@@ -10,6 +10,11 @@
  *
  * Author: Wray Buntine (wray.buntine@nicta.com.au)
  *
+ *     Two cases:
+ *           some words are recorded, so we have special bitmaps
+ *                to support checking
+ *           all words are being recorded, in which case we need a 
+ *               short-circuit of the above
  */
 
 #include <stdio.h>
@@ -26,27 +31,32 @@
 
 /*
  *    report sparsity for words in map
+ *    if fp is NULL do it for all words!
  */
 void sparsemap_init(FILE *fp, int procs) {
   int w, n=0;
-  int dim;
   /*
    *    set up words
    */
-  dim = 10;
-  ddG.words = malloc(sizeof(*ddG.words)*dim);
-  while ( fscanf(fp," %d", &w)==1 ) {
-    if ( n>=dim ) {
-      dim+=10;
-      ddG.words = realloc(ddG.words, dim*sizeof(*ddG.words));
+  if ( fp ) {
+    int dim = 10;
+    ddG.words = malloc(sizeof(*ddG.words)*dim);
+    while ( fscanf(fp," %d", &w)==1 ) {
+      if ( n>=dim ) {
+	dim+=10;
+	ddG.words = realloc(ddG.words, dim*sizeof(*ddG.words));
       if ( !ddG.words )
 	yap_quit("Out of memory in sparsemap_init()\n");
+      }
+      ddG.words[n++] = w;
     }
-    ddG.words[n++] = w;
+    //  ddG.words = realloc(ddG.words, n);
+    ddG.n_words = n;
+  } else {
+    ddG.words = NULL;
+    ddG.n_words = ddN.W;
   }
-  //  ddG.words = realloc(ddG.words, n);
-  ddG.n_words = n;
-  /*
+ /*
    *   set up data structures
    */
   ddG.code = malloc(sizeof(*ddG.code)*procs);
@@ -57,9 +67,13 @@ void sparsemap_init(FILE *fp, int procs) {
     for (p=0; p<procs; p++)
       ddG.code[p] = fmat(ddG.n_words,ddN.T);
   }
-  ddG.iscodeword = u32vec((ddN.W+31)/32);
-  for (n=0; n<ddG.n_words; n++) {
-    ddG.iscodeword[ddG.words[n]/32U] |= (1U << (ddG.words[n]%32U));
+  if ( fp ) {
+    ddG.iscodeword = u32vec((ddN.W+31)/32);
+    for (n=0; n<ddG.n_words; n++) {
+      ddG.iscodeword[ddG.words[n]/32U] |= (1U << (ddG.words[n]%32U));
+    }
+  } else {
+    ddG.iscodeword = NULL;
   }
   ddG.docode = 0;
   ddG.didcode = 0;
@@ -76,9 +90,11 @@ void sparsemap_null() {
 void sparsemap_free() {
   if ( ddG.n_words>0 ) {
     ddG.n_words = 0;
-    free(ddG.words);
+    if ( ddG.words )
+      free(ddG.words);
     free(ddG.code[0][0]);free(ddG.code[0]);free(ddG.code);
-    free(ddG.iscodeword);
+    if ( ddG.iscodeword )
+      free(ddG.iscodeword);
     sparsemap_null();
   }
 }
@@ -93,7 +109,9 @@ void sparsemap_report(char *resstem, double epsilon, int procs) {
   for (n=0; n<ddG.n_words; n++) {
     double ent = 0;
     double tot = 0;
-    uint32_t w = ddG.words[n];
+    uint32_t w = n;
+    if ( ddG.words ) 
+	w = ddG.words[n];
     fprintf(fp,"%s(%d):", ddN.tokens?ddN.tokens[w]:"--", w);
     if ( procs>1 ) {
       /*  accummulate into ddG.code[0]  */
@@ -121,6 +139,10 @@ void sparsemap_report(char *resstem, double epsilon, int procs) {
 
 int sparsemap_word(uint32_t w) {
   int n;
+  /*  short circuit if all words recorded */
+  if ( !ddG.iscodeword )
+    return w;
+  /*  otherwise, lookup */
   assert(G_isword(w));
   for (n=0; n<ddG.n_words; n++)
     if ( ddG.words[n]==w )

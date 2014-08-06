@@ -125,7 +125,6 @@ void heap_free(struct heap_s *h) {
 int heap_remove(struct heap_s *h, uint32_t value) 
 {
   uint32_t index, parent;
-  uint32_t temp;
   
   if ( h->lookup[value]>=h->size ) 
     return 1;
