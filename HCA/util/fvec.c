@@ -53,16 +53,17 @@ double fv_entropy(float *vp, int N) {
   int i;
   if ( !vp ) 
     return HUGE_VAL;
+  for (i=0; i<N; i++ ) 
+    tot += vp[i];
   for (i=0; i<N; i++ ) {
-    double p = vp[i];
-    if ( N*p>0.00001 ) {
-      tot += p;
+    double p = vp[i]/tot;
+    if ( N*p>1e-5 ) {
       ent -= p * log(p);
     }
   }
   if ( tot<=0 )
     return HUGE_VAL;
-  return (ent+log(tot))/tot;
+  return ent;
 }
 double fv_bound(float *vp, int N, float alpha) {
   int i;

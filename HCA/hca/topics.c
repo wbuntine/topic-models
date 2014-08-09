@@ -146,9 +146,9 @@ static float *docprop(int k) {
   if ( ddP.theta ) {
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddP.theta[i][k];
-  } else if ( ddP.phi ) { 
+  } else if ( ddP.phi==NULL ) { 
     for (i=0; i<ddN.DT; i++)
-      vec[i] = ddS.Ndt[i][k]/(float)ddS.NdT[i];
+      vec[i] = ddS.Ndt[i][k] / (float)ddS.NdT[i];
   } else {
     for (i=0; i<ddN.DT; i++)
       vec[i] = 0;
@@ -603,7 +603,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       } 
       yap_message(" ds=%.1lf%%", 100*(1-spd) );
       yap_message(" ew=%.0lf", ew); 
-      yap_message(" ed=%.0lf", ed); 
+      yap_message(" ed=%.1lf", ed); 
       yap_message(" da=%.0lf", da+0.1); 
       yap_message(" t1=%u", top1cnt[kk]); 
       yap_message(" ud=%.3lf", ud); 
