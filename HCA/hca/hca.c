@@ -184,11 +184,11 @@ static void usage() {
           "                  #  HOLD=fract, hold out last fract words in doc\n"
 	  "   -h all         #  no test set, done on training set\n"
           "   -l DIAG,cycles,start #  cycles for runtime calculations\n"
-	  "                  #  DIAG is one of 'sparse','theta','testprob','prog',\n"
-	  "                  #  'phi', 'alpha'\n"
+	  "                  #  DIAG is one of 'alpha','phi','prog','sparse',\n"
+	  "                  #     'theta' or 'testprob' \n"
           "   -L DIAG,cycles,start #  cycles for diagnostic calculations\n"
 #ifdef EXPERIMENTAL
-	  "                  #  DIAG is one of 'lrs','class','like','query'\n"
+	  "                  #  DIAG is one of 'class','like','lrs','query'\n"
 #else
 #ifdef QUERY
 	  "                  #  DIAG is one of 'class','like','query'\n"
@@ -196,7 +196,7 @@ static void usage() {
 	  "                  #  DIAG is one of 'class','like'\n"
 #endif
 #endif
-          "   -o SC[,count]  #  SC=score type, 'count', 'idf', 'cost', 'Q', 'phi'\n"
+          "   -o SC[,count]  #  SC=score type, 'cost', 'count', 'idf', 'Q', 'phi'\n"
           "                  #     optionally add number of words to print\n"
 	  "   -O             #  report likelihood, not scaled perplexity\n"
 	  "   -p             #  report coherency via PMI of topics\n"
@@ -962,13 +962,6 @@ int main(int argc, char* argv[])
    }
 
    if ( loadphi ) {
-     if ( score!=ST_phi ) {
-       /*
-        *  scoring gives errors otherwise since it uses data counts
-        */
-       yap_message("Setting scoring to be 'phi' due to '-r phi' option\n");
-       score = ST_phi;
-     }
      phi_load(resstem);
    } 
    if ( loadtheta ) {

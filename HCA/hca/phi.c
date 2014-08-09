@@ -31,13 +31,18 @@
 
 static char *phi_file = NULL;
 static char *alpha_file = NULL;
+static char *beta_file = NULL;
+
+#define ESTIMATE_BETA (ddP.PYbeta && ddP.PYbeta!=H_PDP)
 
 void phi_init(char *resstem) {
   phi_file = yap_makename(resstem,".phi");
   ddG.phi_cnt = 0;
   if ( ! ddP.memory ) {
-    ddS.phi = fmat(ddN.T,ddN.W);
+    ddS.phi = fmat(ddN.T + (ESTIMATE_BETA?1:0),ddN.W);
   }
+  if ( ESTIMATE_BETA ) 
+    beta_file = yap_makename(resstem,".beta");
 }
 void alpha_init(char *resstem) {
   alpha_file = yap_makename(resstem,".alpha");
@@ -50,6 +55,10 @@ void phi_free() {
   if ( phi_file ) {
     free(phi_file);
     phi_file = NULL;
+  }
+  if ( beta_file ) {
+    free(beta_file);
+    beta_file = NULL;
   }
   if ( ddS.phi ) {
     free(ddS.phi[0]); free(ddS.phi);
@@ -71,7 +80,7 @@ void alpha_free() {
  */
 void phi_save() {
   if ( !ddP.memory ) {
-    uint32_t cnt, dim;
+    uint32_t cnt, dim, size;
     FILE *fpout=NULL;
     fpout = fopen(phi_file,"wb");
     if ( !fpout ) 
@@ -86,10 +95,15 @@ void phi_save() {
     cnt = ddG.phi_cnt+1;
     if ( fwrite(&cnt, sizeof(cnt), 1, fpout) !=1 )
       yap_sysquit("Cannot write count to '%s' in phi_save()\n", phi_file);
-    if ( fwrite(ddS.phi[0], sizeof(ddS.phi[0][0]), ddN.W*ddN.T, fpout) 
-	 !=ddN.W*ddN.T )
+    size = ddN.W*(ddN.T+(ESTIMATE_BETA?1:0));
+    if ( fwrite(ddS.phi[0], sizeof(ddS.phi[0][0]), size, fpout) 
+	 !=size )
       yap_sysquit("Cannot write matrix to '%s' in phi_save()\n", phi_file);
     fclose(fpout);
+    if ( ESTIMATE_BETA ) {
+      assert(beta_file);
+      write_fvec(beta_file,ddN.W,ddS.phi[ddN.T]);
+    }
 #ifndef NDEBUG
     {
       int w,t;
@@ -99,6 +113,24 @@ void phi_save() {
 	    yap_message(" saving ddS.phi[%d][%d]<=0\n", t, w);
     } 
 #endif
+  } else if ( ESTIMATE_BETA ) {
+    /*
+     *  not in memory so have to read
+     */
+    float *vec;
+    FILE *fpin = fopen(phi_file,"rb");
+    if ( !fpin )
+      yap_sysquit("Cannot open '%s' for read in phi_save()\n",phi_file);
+    vec = fvec(ddN.W);
+    if ( fseek(fpin, ddN.W*ddN.T*sizeof(vec[0]), SEEK_SET) ) 
+      yap_sysquit("Cannot seek in '%s' in phi_save()\n", 
+		  phi_file);
+    if ( fread(vec, sizeof(vec[0]), ddN.W, fpin) !=ddN.W )
+      yap_sysquit("Cannot read vector from '%s' in phi_save()\n", 
+		  phi_file);
+    fclose(fpin);
+    write_fvec(beta_file,ddN.W,vec);
+    free(vec);
   }
 }
 
@@ -114,11 +146,11 @@ void alpha_save() {
 }
  
 void phi_load(char *resstem) {
-  uint32_t cnt, dim;
+  uint32_t cnt, dim, size;
   int totgot, got;
   FILE *fp=NULL;
   phi_file = yap_makename(resstem,".phi");
-  ddP.phi = fmat(ddN.T,ddN.W);
+  ddP.phi = fmat(ddN.T+(ESTIMATE_BETA?1:0),ddN.W);
   fp = fopen(phi_file,"rb");
   if ( !fp ) 
     yap_sysquit("Cannot open file '%s' for read in phi_load()\n", 
@@ -136,15 +168,16 @@ void phi_load(char *resstem) {
   ddG.phi_cnt = cnt;
   got = 0;
   totgot = 0;
-  while ( (got=(int)fread(&ddP.phi[0][got], sizeof(ddS.phi[0][0]), ddN.W*ddN.T-totgot, fp)) 
-       !=ddN.W*ddN.T-totgot ) {
+  size = ddN.W*(ddN.T+(ESTIMATE_BETA?1:0));
+  while ( (got=(int)fread(&ddP.phi[0][got], sizeof(ddS.phi[0][0]), size-totgot, fp)) 
+       !=size-totgot ) {
     yap_message("load_phi(%d,%d): got %d in %d\n", (int)ddN.W, (int)ddN.T, got, totgot);
     if ( got==0 || ferror(fp) || feof(fp) )
        yap_sysquit("Cannot read matrix from '%s' in phi_load()\n", phi_file);
     totgot += got;
   }
   totgot += got;
-  assert(totgot==ddN.W*ddN.T);
+  assert(totgot==size);
   fclose(fp);
   if ( verbose )
      yap_message("Read matrix from '%s' in phi_load()\n", phi_file);
@@ -224,8 +257,10 @@ void phi_update() {
   /*
    *    now compute
    */
-  for (t=0; t<ddN.T; t++) {
+  for (t=0; t<ddN.T+1; t++) {
     double totvec = 0;
+    if ( !ESTIMATE_BETA && t>=ddN.T ) 
+      break;
     if ( ddP.memory ) {
       if ( fpin ) {
 	if ( fread(vec, sizeof(vec[0]), ddN.W, fpin) !=ddN.W )
@@ -240,14 +275,14 @@ void phi_update() {
     }
     
     for (w=0; w<ddN.W; w++) {
-      double val = wordprob(w, t);
+      double val = (t>=ddN.T)? betabasewordprob(w) : wordprob(w, t);
       totvec += val;
       if ( val<=0 )
 	yap_message("phi_update for phi[%d][%d] zero\n",t,w);
       vec[w] = (ddG.phi_cnt*vec[w] + val) / (ddG.phi_cnt+1);
     }
 #ifndef NDEBUG
-    if ( fabs(totvec-1.0)>0.02 )  {
+    if ( t<ddN.T && abs(totvec-1.0)>0.02 )  {
       double bwptot = 0;
       assert(ddP.PYbeta==H_HPDD) ;
       yap_message("Word vector for topic %d doesn't normalise (%g)\n",

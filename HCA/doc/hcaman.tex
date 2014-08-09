@@ -309,15 +309,15 @@ Do document completion testing on the test set.
 There are three styles of document completion implemented
 given by the \texttt{Hold} parameter.
 \begin{description}
+\item[dict] every \texttt{arg}-th
+word in the dictionary is held out in estimating
+and used for testing.  So if a word has dictionary index 
+\texttt{arg-1}, \texttt{2*arg-1}, \emph{etc.}, it is held out.
 \item[doc] every \texttt{arg}-th
 word is held out in estimating the latent variables (like theta)
 for the document and used instead for testing of perplexity.
 That is, words at document positions \texttt{arg-1}, \texttt{2*arg-1}, 
 \emph{etc.}
-\item[dict] every \texttt{arg}-th
-word in the dictionary is held out in estimating
-and used for testing.  So if a word has dictionary index 
-\texttt{arg-1}, \texttt{2*arg-1}, \emph{etc.}, it is held out.
 \item[fract] then the \texttt{fract}
 proportion at the tail of the document is held out.  
 The initial proportion is used in estimating.
@@ -328,6 +328,20 @@ starting after the \texttt{start} cycle and then taking the
 estimate every \texttt{cycles} cycle.
 Diagnostics are:
 \begin{Description}[testprob]\setlength{\itemsep}{0cm}
+\item[alpha] 
+Estimate the prior topic probability vector.
+Stored in the \File{RepStem.alpha} file.
+Note useable with a symmetric Dirichlet model.
+\item[phi] 
+Estimate the word probability vector for each topic.
+Stored in the \File{RepStem.phi} file.
+If the model is not a symmetric Dirichlet model,
+then the word prior vector will be estimated and
+saved in the \File{RepStem.beta} file
+as well.
+\item[prog] 
+How often to do the standard diagnostic reports
+(default is every 5-th cycle).
 \item[sparse] 
 Estimate topic sparsity in the theta matrix for the
 words given in \File{DataStem.smap}.
@@ -336,12 +350,6 @@ Note, the default can be quite wasteful for multicore, is it duplicates the thet
 for each thread, so only do for small data sets.
 Results placed in \File{RepStem.smap}.
 The report gives ``topic/weight'' for topics including the word.
-\item[prog] 
-How often to do the standard diagnostic reports
-(default is every 5-th cycle).
-\item[phi] 
-Estimate the word probability vector for each topic.
-Stored in the \File{RepStem.phi} file.
 \item[testprob] 
 Estimate the topic probability vector for each test document.  
 Stored in the \File{RepStem.testprob} file.
@@ -379,11 +387,11 @@ Methods are `count', `idf', `cost' and `phi'.  Default is `idf'.
 Ranking done for top \texttt{count} words, default is 20.
 Methods are
 \begin{Description}
+\item[cost:] rank by proportion of this word in topic
+       minus estimated proportion assuming topic and word independent.
 \item[count:] rank by count in topic.
 \item[idf:] rank by fraction of the total occurrences of
        this word  that are in this topic.
-\item[cost:] rank by proportion of this word in topic
-       minus estimated proportion assuming topic and word independent.
 \item[phi:] rank by computed phi value (if loaded).
 \end{Description}
 \item[\Opt{-O}] Report log likelihood, not log perplexity.  Both
@@ -473,9 +481,17 @@ These are built by adding a suffix to the report stem,
 \File{RepStem}.
 The first set of files are:
 \begin{Description}\setlength{\itemsep}{0cm}
+\item[\File{RepStem.alpha}] 
+If the alpha vector is being estimated 
+with the \Opt{-lalpha} option, then this will contain
+the estimated value.
 \item[\File{RepStem.beta}]  If a constant beta vector is specified
 using the \Opt{-u} option, this saves
    the value, for possible use in a restart.
+Otherwise, if the phi matrix is being estimated 
+with the \Opt{-lphi} option
+and the beta vector is not fixed, then this will contain
+the estimated value.
 \item[\File{RepStem.cnfs}+\File{RepStem.pcnfs}]  
 Best prediction and probability vector confusion matrices
 built on the test data with the 

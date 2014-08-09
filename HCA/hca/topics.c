@@ -35,9 +35,16 @@
 /*************************************************
  *  return sort order for topics by size
  */
-static int pcompar(const void *a, const void *b) {
+static int pNcompar(const void *a, const void *b) {
   uint32_t na = ddS.NWt[*(uint32_t*)a];
   uint32_t nb = ddS.NWt[*(uint32_t*)b];
+  if ( na<nb ) return 1;
+  if ( na>nb ) return -1;
+  return 0;
+}
+static int pAcompar(const void *a, const void *b) {
+  float na = ddP.alphapr[*(uint32_t*)a];
+  float nb = ddP.alphapr[*(uint32_t*)b];
   if ( na<nb ) return 1;
   if ( na>nb ) return -1;
   return 0;
@@ -46,7 +53,10 @@ static uint32_t *sorttops(int K) {
   uint32_t *psort = u32vec(K);
   int k;
   for (k=0; k<K; k++) psort[k] = k;
-  qsort(psort, K, sizeof(*psort), pcompar);
+  if ( ddP.phi==NULL ) 
+    qsort(psort, K, sizeof(*psort), pNcompar);
+  else if ( ddP.PYalpha==H_PDP )
+    qsort(psort, K, sizeof(*psort), pAcompar);
   return psort;
 }
 
@@ -136,9 +146,12 @@ static float *docprop(int k) {
   if ( ddP.theta ) {
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddP.theta[i][k];
-  } else { 
+  } else if ( ddP.phi ) { 
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddS.Ndt[i][k]/(float)ddS.NdT[i];
+  } else {
+    for (i=0; i<ddN.DT; i++)
+      vec[i] = 0;
   }
   return vec;
 }
@@ -176,11 +189,22 @@ static void build_NwK() {
     NwK[w] = 0;
   }
   NWK = 0;
-  for (w=0; w<ddN.W; w++) {
-    for (k=0; k<ddN.T; k++) {
-      NwK[w] += ddS.Nwt[w][k];    //  should use CCT_ReadN()
+  if ( ddP.phi ) {
+    /*
+     *  recompute from scratch
+     */
+    int i;
+    for (i=0; i<ddN.NT; i++) 
+      NwK[ddD.w[i]]++;
+    for (w=0; w<ddN.W; w++) 
+      NWK += NwK[w];
+  } else {
+    for (w=0; w<ddN.W; w++) {
+      for (k=0; k<ddN.T; k++) {
+	NwK[w] += ddS.Nwt[w][k];    //  should use CCT_ReadN()
+      }
+      NWK += NwK[w];
     }
-    NWK += NwK[w];
   }
   if ( NWK==0 )
     yap_quit("empty NWK in build_NwK()\n");
@@ -204,13 +228,18 @@ static unsigned getn(int w) {
 }
 
 static double idfscore(int w) {
+  if ( tscorek>=0 && ddP.phi ) 
+    return ddP.phi[tscorek][w]/NwK[w];
   return (getn(w)+0.2)/(NwK[w]+0.2*ddN.T);
 }
 
 static double phiscore(int w) {
   assert(ddP.phi || ddS.phi);
-  if ( tscorek<0 ) 
+  if ( tscorek<0 ) {
+    if ( ddP.betapr ) 
+      return ddP.betapr[w];
     return ddS.TwT[w];
+  }
   if ( ddP.phi )
     return ddP.phi[tscorek][w];
   return ddS.phi[tscorek][w];
@@ -271,8 +300,14 @@ static int buildindk(int k, uint32_t *indk) {
     /*
      *  for root topic
      */
+    if ( ddP.betapr ) {
+      for (w=0; w<ddN.W; w++) 
+	if ( ddP.betapr[w]>0.05/ddN.W ) indk[cnt++] = w;
+      return cnt;
+    }
     if ( ddP.phi!=NULL ) 
       return 0;
+    assert(ddS.TwT);
     for (w=0; w<ddN.W; w++) {
       if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
     }
@@ -280,7 +315,7 @@ static int buildindk(int k, uint32_t *indk) {
   }
   if ( ddP.phi ) {
     for (w=0; w<ddN.W; w++) 
-      if ( ddP.phi[k][w]>0.1/ddN.W ) indk[cnt++] = w;
+      if ( ddP.phi[k][w]>0.05/ddN.W ) indk[cnt++] = w;
   } else {
     assert(ddS.Nwt);
     for (w=0; w<ddN.W; w++) {
@@ -381,35 +416,23 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
    *  first collect counts of each word/term,
    *  and build gpvec (mean word probs)
    */
-  if ( ddS.Nwt ) {
+  build_NwK();
+  {
     /*
      *  get from topic stats
      */
     double tot = 0;
-    build_NwK();
     for (w=0; w<ddN.W; w++)
       tot += gpvec[w] = NwK[w]+0.1; 
     for (w=0; w<ddN.W; w++)
       gpvec[w] /= tot;
-  } else {
-    /*
-     *  recompute from scratch
-     */
-    double tot = 0;
-    int i;
-    for (i=0; i<ddN.NT; i++) 
-      gpvec[ddD.w[i]]++;
-    for (w=0; w<ddN.W; w++)
-      tot += (gpvec[w] += 0.1);
-    for (w=0; w<ddN.W; w++)
-      gpvec[w] /= tot; 
   }
+  if ( ddS.Nwt ) {
+    for (k=0; k<ddN.T; k++) {
+      Nk_tot += ddS.NWt[k];
+    }
+  } 
   
-
-  for (k=0; k<ddN.T; k++) {
-    Nk_tot += ddS.NWt[k];
-  }
-
   psort = sorttops(ddN.T);
   
   top1cnt = hca_top1cnt();
@@ -455,14 +478,14 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     }
     fprintf(fp, "\n");
   }
-  if ( ddP.PYbeta && ddP.phi==NULL ) {
+  if ( ddP.PYbeta && (ddP.phi==NULL || ddP.betapr)  ) {
     int cnt;
      /*
      *    dump root words
      */
     tscorek = -1;
     cnt = buildindk(-1, indk);
-    topk(topword, cnt, indk, countscore);
+    topk(topword, cnt, indk, phiscore);
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
@@ -509,7 +532,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     int kk = psort[k];
     uint32_t **dfmtx;
 
-    if ( ddS.NWt[kk]==0 )
+    if ( ddS.NWt[kk]==0 && ddP.phi==NULL )
       continue;
     /*
      *   grab word prob vec for later use
@@ -537,7 +560,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     dfmtx = hca_dfmtx(indk, cnt, kk);
 
-    if ( ddS.NWt[kk]*ddN.T*100<Nk_tot || ddS.NWt[kk]<5 ) 
+    if ( ddP.phi==NULL && (ddS.NWt[kk]*ddN.T*100<Nk_tot || ddS.NWt[kk]<5 )) 
       underused++;
     /*
      *  print stats for topic
@@ -561,13 +584,16 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double ed = dprop?exp(fv_entropy(dprop,ddN.DT)):ddN.DT;
       double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
+      if ( ddP.phi==NULL || ddP.PYalpha==H_PDP ) {
+	if ( ddP.phi==NULL )
+	  prop = ((double)ddS.NWt[kk])/(double)Nk_tot;
+	else 
+	  prop = ddP.alphapr[kk];
+	yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
+      } 
       if ( ddP.phi==NULL ) {
-	prop = ((double)ddS.NWt[kk])/(double)Nk_tot;
 	spw = ((double)nonzero_Nwt(kk))/((double)ddN.W);
 	sparsityword += spw;
-      }
-      if ( ddP.phi==NULL ) {
-	yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
 	yap_message(" ws=%.1lf%%", 100*(1-spw));
       } 
       yap_message(" ds=%.1lf%%", 100*(1-spd) );
@@ -587,6 +613,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	if ( ddP.phi==NULL ) {
 	  fprintf(rp," %.6lf", prop);   
 	  fprintf(rp," %.6lf", (1-spw));
+	} else if ( ddP.alphapr ) {
+	  fprintf(rp," %.6lf", prop);   
+	  fprintf(rp," 0");
 	} else {
 	  fprintf(rp," 0 0");
 	}
@@ -635,7 +664,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     yap_message("\n");
     free(dfmtx[0]); free(dfmtx); 
   }
-  if ( verbose>1 && ddP.PYbeta && ddP.phi==NULL ) {
+  if ( verbose>1 && ddP.PYbeta && (ddP.phi==NULL || ddP.betapr) ) {
     int cnt;
     double pcumm = 0;
      /*
@@ -643,7 +672,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     tscorek = -1;
     cnt = buildindk(-1,indk);
-    topk(topword, cnt, indk, countscore);
+    topk(topword, cnt, indk, phiscore);
     /*
      *     cannot build df mtx for root because
      *     it is latent w.r.t. topics
