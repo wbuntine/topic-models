@@ -530,7 +530,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     fprintf(rp, " coher");
     if ( pmicount ) 
       fprintf(rp, " pmi");
-    fprintf(rp, "\n#word topic index rank count prop cumm df coher\n");
+    fprintf(rp, "\n#word topic index rank");
+    if ( ddS.Nwt )
+      fprintf(rp, " count");
+    fprintf(rp, " prop cumm df coher\n");
+    
   }
   for (k=0; k<ddN.T; k++) {
     int cnt;
@@ -659,7 +663,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	if ( verbose>2 )
 	  yap_message("(%6lf)", tscore(indk[w]));
 	if ( fullreport ) {
-	  fprintf(rp, "word %d %d %d %d", kk, indk[w], w, ddS.Nwt[w][kk]);
+	  fprintf(rp, "word %d %d %d", kk, indk[w], w);
+	  if ( ddS.Nwt )
+	    fprintf(rp, " %d", ddS.Nwt[w][kk]);
 	  pcumm += pvec[indk[w]];
 	  fprintf(rp, " %.6f %.6f", pvec[indk[w]], pcumm);
 	  fprintf(rp, " %d", dfmtx[w][w]); 
