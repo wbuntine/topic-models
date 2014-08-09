@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Wed Aug  6 18:06:12 EST 2014
+.\" Manual page created with latex2man on Sat Aug  9 19:54:27 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -474,14 +474,6 @@ given by the Hold
 parameter. 
 .RS
 .TP
-doc 
-every arg\-th
-word is held out in estimating the latent variables (like theta) 
-for the document and used instead for testing of perplexity. 
-That is, words at document positions arg\-1,
-2*arg\-1,
-\fIetc.\fP
-.TP
 dict 
 every arg\-th
 word in the dictionary is held out in estimating 
@@ -490,6 +482,14 @@ arg\-1,
 2*arg\-1,
 \fIetc.\fP,
 it is held out. 
+.TP
+doc 
+every arg\-th
+word is held out in estimating the latent variables (like theta) 
+for the document and used instead for testing of perplexity. 
+That is, words at document positions arg\-1,
+2*arg\-1,
+\fIetc.\fP
 .TP
 fract 
 then the fract
@@ -509,6 +509,26 @@ cycle.
 Diagnostics are: 
 .RS
 .TP
+alpha 
+Estimate the prior topic probability vector. 
+Stored in the RepStem.alpha
+file. 
+Note useable with a symmetric Dirichlet model. 
+.TP
+phi 
+Estimate the word probability vector for each topic. 
+Stored in the RepStem.phi
+file. 
+If the model is not a symmetric Dirichlet model, 
+then the word prior vector will be estimated and 
+saved in the RepStem.beta
+file 
+as well. 
+.TP
+prog 
+How often to do the standard diagnostic reports 
+(default is every 5\-th cycle). 
+.TP
 sparse 
 Estimate topic sparsity in the theta matrix for the 
 words given in DataStem.smap\&.
@@ -518,15 +538,6 @@ Note, the default can be quite wasteful for multicore, is it duplicates the thet
 for each thread, so only do for small data sets. 
 Results placed in RepStem.smap\&.
 The report gives ``topic/weight\&'' for topics including the word. 
-.TP
-prog 
-How often to do the standard diagnostic reports 
-(default is every 5\-th cycle). 
-.TP
-phi 
-Estimate the word probability vector for each topic. 
-Stored in the RepStem.phi
-file. 
 .TP
 testprob 
 Estimate the topic probability vector for each test document. 
@@ -589,16 +600,16 @@ words, default is 20.
 Methods are 
 .RS
 .TP
+cost: 
+rank by proportion of this word in topic 
+minus estimated proportion assuming topic and word independent. 
+.TP
 count: 
 rank by count in topic. 
 .TP
 idf: 
 rank by fraction of the total occurrences of 
 this word that are in this topic. 
-.TP
-cost: 
-rank by proportion of this word in topic 
-minus estimated proportion assuming topic and word independent. 
 .TP
 phi: 
 rank by computed phi value (if loaded). 
@@ -747,11 +758,22 @@ These are built by adding a suffix to the report stem,
 RepStem\&.
 The first set of files are: 
 .TP
+RepStem.alpha
+ If the alpha vector is being estimated 
+with the \fB\-lalpha\fP
+option, then this will contain 
+the estimated value. 
+.TP
 RepStem.beta
  If a constant beta vector is specified 
 using the \fB\-u\fP
 option, this saves 
 the value, for possible use in a restart. 
+Otherwise, if the phi matrix is being estimated 
+with the \fB\-lphi\fP
+option 
+and the beta vector is not fixed, then this will contain 
+the estimated value. 
 .TP
 RepStem.cnfs+RepStem.pcnfs
  Best prediction and probability vector confusion matrices 

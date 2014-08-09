@@ -485,7 +485,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     tscorek = -1;
     cnt = buildindk(-1, indk);
-    topk(topword, cnt, indk, phiscore);
+    topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
     fprintf(fp,"-1:");
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
@@ -522,7 +522,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     if ( !rp ) 
       yap_sysquit("Cannot open file '%s' for append\n", repfile);
     fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound top-one "
-	    "dist-unif dist-unigrm ave-length coher");
+	    "dist-unif dist-unigrm");
+    if ( ddP.bdk!=NULL ) 
+      fprintf(rp, " burst-concent");
+    if ( ddN.tokens )  
+      fprintf(rp, " ave-length");
+    fprintf(rp, " coher");
     if ( pmicount ) 
       fprintf(rp, " pmi");
     fprintf(rp, "\n#word topic index rank count prop cumm df coher\n");
@@ -603,6 +608,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" t1=%u", top1cnt[kk]); 
       yap_message(" ud=%.3lf", ud); 
       yap_message(" pd=%.3lf", pd); 
+      if ( ddP.bdk!=NULL ) 
+	yap_message(" bd=%.3lf", ddP.bdk[kk]); 
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
       yap_message(" co=%.3lf%%", co);
@@ -626,6 +633,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	fprintf(rp," %u", top1cnt[kk]); 
 	fprintf(rp," %.6lf", ud); 
 	fprintf(rp," %.6lf", pd); 
+	if ( ddP.bdk!=NULL ) 
+	  fprintf(rp," %.3lf", ddP.bdk[kk]); 
 	fprintf(rp," %.4lf", (ddN.tokens)?sl:0); 
 	fprintf(rp," %.6lf", co);
 	if ( pmicount ) 
@@ -672,7 +681,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     tscorek = -1;
     cnt = buildindk(-1,indk);
-    topk(topword, cnt, indk, phiscore);
+    topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
     /*
      *     cannot build df mtx for root because
      *     it is latent w.r.t. topics
