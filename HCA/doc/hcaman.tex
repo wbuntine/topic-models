@@ -331,7 +331,11 @@ Diagnostics are:
 \item[alpha] 
 Estimate the prior topic probability vector.
 Stored in the \File{RepStem.alpha} file.
-Note useable with a symmetric Dirichlet model.
+Note useable with the 
+\OptArg{-A}{pdp} option on restart
+as the \File{RepStem.alpha} will be read,
+though  \texttt{a} and \texttt{b}
+will need to be set.
 \item[phi] 
 Estimate the word probability vector for each topic.
 Stored in the \File{RepStem.phi} file.
@@ -339,6 +343,10 @@ If the model is not a symmetric Dirichlet model,
 then the word prior vector will be estimated and
 saved in the \File{RepStem.beta} file
 as well.
+Note useable with the 
+\OptArg{-B}{pdp} option on restart
+as the \File{RepStem.beta} will be read,
+though \texttt{aw} and \texttt{bw} will need to be set.
 \item[prog] 
 How often to do the standard diagnostic reports
 (default is every 5-th cycle).

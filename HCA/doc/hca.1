@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sat Aug  9 19:54:27 EST 2014
+.\" Manual page created with latex2man on Sat Aug  9 21:00:24 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -437,7 +437,7 @@ equal to ``0\&''
 for a normal restart. 
 .TP
 \fB\-r\fP\fIphi\fP
- Second version of the \fB\-r\fP
+ Another version of the \fB\-r\fP
 option 
 using the string ``phi\&'' as the argument. 
 Restart but now fix the word by topic matrix 
@@ -513,7 +513,14 @@ alpha
 Estimate the prior topic probability vector. 
 Stored in the RepStem.alpha
 file. 
-Note useable with a symmetric Dirichlet model. 
+Note useable with the 
+\fB\-A\fP\fIpdp\fP
+option on restart 
+as the RepStem.alpha
+will be read, 
+though a
+and b
+will need to be set. 
 .TP
 phi 
 Estimate the word probability vector for each topic. 
@@ -524,6 +531,14 @@ then the word prior vector will be estimated and
 saved in the RepStem.beta
 file 
 as well. 
+Note useable with the 
+\fB\-B\fP\fIpdp\fP
+option on restart 
+as the RepStem.beta
+will be read, 
+though aw
+and bw
+will need to be set. 
 .TP
 prog 
 How often to do the standard diagnostic reports 
