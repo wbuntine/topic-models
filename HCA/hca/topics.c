@@ -715,7 +715,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       if ( verbose>2 )
 	yap_message("(%6lf)", countscore(indk[w]));
       if ( fullreport ) {
-	fprintf(rp, "word %d %d %d %d", -1, indk[w], w, ddS.TwT[w]);
+	fprintf(rp, "word %d %d %d", -1, indk[w], w);
+	if ( ddS.TwT )
+	  fprintf(rp, " %d", ddS.TwT[w]);
 	pcumm += pvec[indk[w]];
 	fprintf(rp, " %.6f %.6f", pvec[indk[w]], pcumm);
 	fprintf(rp, " 0 0"); 
