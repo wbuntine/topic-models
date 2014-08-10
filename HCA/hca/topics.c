@@ -35,28 +35,20 @@
 /*************************************************
  *  return sort order for topics by size
  */
-static int pNcompar(const void *a, const void *b) {
-  uint32_t na = ddS.NWt[*(uint32_t*)a];
-  uint32_t nb = ddS.NWt[*(uint32_t*)b];
+static float *stvec;
+static int pcompar(const void *a, const void *b) {
+  float na = stvec[*(uint32_t*)a];
+  float nb = stvec[*(uint32_t*)b];
   if ( na<nb ) return 1;
   if ( na>nb ) return -1;
   return 0;
 }
-static int pAcompar(const void *a, const void *b) {
-  float na = ddP.alphapr[*(uint32_t*)a];
-  float nb = ddP.alphapr[*(uint32_t*)b];
-  if ( na<nb ) return 1;
-  if ( na>nb ) return -1;
-  return 0;
-}
-static uint32_t *sorttops(int K) {
+static uint32_t *sorttops(float *vec, int K) {
   uint32_t *psort = u32vec(K);
   int k;
   for (k=0; k<K; k++) psort[k] = k;
-  if ( ddP.phi==NULL ) 
-    qsort(psort, K, sizeof(*psort), pNcompar);
-  else if ( ddP.PYalpha==H_PDP )
-    qsort(psort, K, sizeof(*psort), pAcompar);
+  stvec = vec;
+  qsort(psort, K, sizeof(*psort), pcompar);
   return psort;
 }
 
@@ -82,6 +74,43 @@ static float *topprop(int d) {
   if ( tot <=0 )
     return vec;
   for (k=0; k<ddN.T; k++)
+    vec[k] /= tot;
+  return vec;
+}
+
+/*
+ *   global probability for topic:
+ *   taken from data if exists;
+ *   else from ddP.alphapr
+ *   else is 0
+ */
+static float *globalprop() {
+  float *vec = fvec(ddN.T);
+  double tot = 0;
+  int k;
+  if ( !vec) return NULL;
+  if ( ddP.phi==NULL ) {
+    for (k=0; k<ddN.T; k++) {
+      tot += vec[k] = ddS.NWt[k];
+    }
+  } else if ( ddS.Ndt ) {
+    /*  have to total from Ndt */
+    int d;
+    uint32_t *uvec = u32vec(ddN.T);
+    for (d=0; d<ddN.DT; d++) {
+      for (k=0; k<ddN.T; k++) 
+	uvec[k] += ddS.Ndt[d][k];
+    }
+    for (k=0; k<ddN.T; k++) 
+      tot += vec[k] = uvec[k];
+    free(uvec);
+  } else if ( ddP.alphapr ) {
+    for (k=0; k<ddN.T; k++) 
+      tot += vec[k] = ddP.alphapr[k];
+  }
+  if ( tot <=0 )
+    return vec;
+  for (k=0; k<ddN.T; k++) 
     vec[k] /= tot;
   return vec;
 }
@@ -146,13 +175,10 @@ static float *docprop(int k) {
   if ( ddP.theta ) {
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddP.theta[i][k];
-  } else if ( ddP.phi==NULL ) { 
+  } else { 
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddS.Ndt[i][k] / (float)ddS.NdT[i];
-  } else {
-    for (i=0; i<ddN.DT; i++)
-      vec[i] = 0;
-  }
+   }
   return vec;
 }
 /*************************************************
@@ -394,6 +420,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   char *repfile;
   uint32_t *psort;
   FILE *rp = NULL;
+  float *gtvec = globalprop();
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
   
@@ -419,7 +446,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   build_NwK();
   {
     /*
-     *  get from topic stats
+     *  gpvec[] is normalised NwK[]
      */
     double tot = 0;
     for (w=0; w<ddN.W; w++)
@@ -433,7 +460,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     }
   } 
   
-  psort = sorttops(ddN.T);
+  psort = sorttops(gtvec, ddN.T);
   
   top1cnt = hca_top1cnt();
   if ( !top1cnt )
@@ -523,7 +550,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_sysquit("Cannot open file '%s' for append\n", repfile);
     fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound top-one "
 	    "dist-unif dist-unigrm");
-    if ( ddP.bdk!=NULL ) 
+    if ( PCTL_BURSTY() ) 
       fprintf(rp, " burst-concent");
     if ( ddN.tokens )  
       fprintf(rp, " ave-length");
@@ -581,7 +608,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       /*
        *   compute diagnostics
        */
-      double prop;
+      double prop = gtvec[kk];
       float *dprop = docprop(kk);
       double spw = 0;
       double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT); 
@@ -593,13 +620,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double ed = dprop?exp(fv_entropy(dprop,ddN.DT)):ddN.DT;
       double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
-      if ( ddP.phi==NULL || ddP.PYalpha==H_PDP ) {
-	if ( ddP.phi==NULL )
-	  prop = ((double)ddS.NWt[kk])/(double)Nk_tot;
-	else 
-	  prop = ddP.alphapr[kk];
-	yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
-      } 
+      yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
       if ( ddP.phi==NULL ) {
 	spw = ((double)nonzero_Nwt(kk))/((double)ddN.W);
 	sparsityword += spw;
@@ -612,7 +633,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" t1=%u", top1cnt[kk]); 
       yap_message(" ud=%.3lf", ud); 
       yap_message(" pd=%.3lf", pd); 
-      if ( ddP.bdk!=NULL ) 
+      if ( PCTL_BURSTY() ) 
 	yap_message(" bd=%.3lf", ddP.bdk[kk]); 
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
@@ -621,14 +642,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	yap_message(" pmi=%.3f", tpmi[kk]);
       if ( fullreport ) {
 	fprintf(rp,"topic %d %d", kk, k);
+	fprintf(rp," %.6lf", prop);   
 	if ( ddP.phi==NULL ) {
-	  fprintf(rp," %.6lf", prop);   
 	  fprintf(rp," %.6lf", (1-spw));
-	} else if ( ddP.alphapr ) {
-	  fprintf(rp," %.6lf", prop);   
-	  fprintf(rp," 0");
 	} else {
-	  fprintf(rp," 0 0");
+	  fprintf(rp," 0");
 	}
 	fprintf(rp," %.6lf", (1-spd) );
 	fprintf(rp," %.2lf", ew); 
@@ -637,7 +655,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	fprintf(rp," %u", top1cnt[kk]); 
 	fprintf(rp," %.6lf", ud); 
 	fprintf(rp," %.6lf", pd); 
-	if ( ddP.bdk!=NULL ) 
+	if ( PCTL_BURSTY() ) 
 	  fprintf(rp," %.3lf", ddP.bdk[kk]); 
 	fprintf(rp," %.4lf", (ddN.tokens)?sl:0); 
 	fprintf(rp," %.6lf", co);
@@ -785,7 +803,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   /*
    *  print burstiness report
    */
-  if ( ddP.bdk!=NULL) {
+  if ( PCTL_BURSTY() ) {
     int tottbl = 0;
     int totmlttbl = 0;
     int totmlt = 0;
@@ -818,5 +836,6 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     NwK = NULL;
   }
   free(pvec); 
+  free(gtvec);
   free(gpvec);
 }
