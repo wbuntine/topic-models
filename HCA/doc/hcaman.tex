@@ -899,7 +899,13 @@ smaller topics must have been dropped.
 
 \subsection{Run with testing}
 
-Run basic LDA with training and parameter fitting on a subset
+Testing discussed here only tests on the latest sample done with
+Gibbs.  More sophisticated testing, described later
+first estimates the model parameters over a number of Gibbs
+iterations, and then perform testing using the estimates.
+This is described in later subsections.
+
+First run basic LDA with training and parameter fitting on a subset
 and testing on the final 100 documents.  
 The training subset is the full dataset minus the test data.
 Logging now to \File{c1.log}.
@@ -968,6 +974,33 @@ Moreover, the general diagnistics get an extra line:
 \begin{verbatim}
 Average PMI = 0.602
 \end{verbatim}
+
+\subsection{Estimating model parameters}
+
+The assumes a run has already been done.
+Now we restart and initiate estimation.
+\begin{verbatim}
+hca -v -e -r0 -C100 -lphi,3,1 -ltheta,3,1 -lalpha,3,1 data/ch c1
+\end{verbatim}
+\begin{description}
+\item[``-lalpha,3,1'':] estimate the \texttt{alpha} vector if
+the Alpha side is non-parametric, and save
+in the \File{c1.alpha} file.
+Estimation starts after the 1st cycle and a sample is added to the
+average every 3 cycles,
+that is, 1,4,7,...,94,97.
+\item[``-lphi,3,1'':] estimate the \texttt{phi} matrix, and if
+the Beta side is non-parametric, then also estimate the
+\texttt{beta} vector.
+Saved as the \File{c1.phi} and \File{c1.beta} files respectively.
+Estimation as before.
+\item[``-ltheta,3,1'':] estimate the \texttt{theta} matrix
+and save as the \File{c1.theta} file.
+Estimation as before.
+\end{description}
+The files \File{c1.alpha} and \File{c1.beta} are text but
+the file \File{c1.phi} is binary.
+The file \File{c1.theta} is written in a readable sparse form.
 
 \subsection{Burstiness}
 

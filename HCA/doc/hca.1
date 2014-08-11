@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sat Aug  9 21:00:24 EST 2014
+.\" Manual page created with latex2man on Mon Aug 11 18:39:49 EST 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -388,6 +388,9 @@ option.
 \fB\-C\fP\fIcycles\fP
  Stop after this many cycles\&.
 Default is 100. 
+Note \fB\-C\fP\fI0\fP
+should be used when one just wants reports, 
+as the various output files (other than reports) will be left unaltered. 
 .TP
 \fB\-d\fP\fIdots\fP
  For really big batches of data, print a 
@@ -1329,7 +1332,13 @@ smaller topics must have been dropped.
 .PP
 .SS RUN WITH TESTING
 .PP
-Run basic LDA with training and parameter fitting on a subset 
+Testing discussed here only tests on the latest sample done with 
+Gibbs. More sophisticated testing, described later 
+first estimates the model parameters over a number of Gibbs 
+iterations, and then perform testing using the estimates. 
+This is described in later subsections. 
+.PP
+First run basic LDA with training and parameter fitting on a subset 
 and testing on the final 100 documents. 
 The training subset is the full dataset minus the test data. 
 Logging now to c1.log\&.
@@ -1413,6 +1422,50 @@ Moreover, the general diagnistics get an extra line:
 .Vb
 Average PMI = 0.602
 .Ve
+.PP
+.SS ESTIMATING MODEL PARAMETERS
+.PP
+The assumes a run has already been done. 
+Now we restart and initiate estimation. 
+.Vb
+hca \-v \-e \-r0 \-C100 \-lphi,3,1 \-ltheta,3,1 \-lalpha,3,1 data/ch c1
+.Ve
+.TP
+``\-lalpha,3,1\&'': 
+estimate the alpha
+vector if 
+the Alpha side is non\-parametric, and save 
+in the c1.alpha
+file. 
+Estimation starts after the 1st cycle and a sample is added to the 
+average every 3 cycles, 
+that is, 1,4,7,...,94,97. 
+.TP
+``\-lphi,3,1\&'': 
+estimate the phi
+matrix, and if 
+the Beta side is non\-parametric, then also estimate the 
+beta
+vector. 
+Saved as the c1.phi
+and c1.beta
+files respectively. 
+Estimation as before. 
+.TP
+``\-ltheta,3,1\&'': 
+estimate the theta
+matrix 
+and save as the c1.theta
+file. 
+Estimation as before. 
+.PP
+The files c1.alpha
+and c1.beta
+are text but 
+the file c1.phi
+is binary. 
+The file c1.theta
+is written in a readable sparse form. 
 .PP
 .SS BURSTINESS
 .PP
