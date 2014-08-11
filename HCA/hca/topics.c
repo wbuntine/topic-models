@@ -89,7 +89,7 @@ static float *globalprop() {
   double tot = 0;
   int k;
   if ( !vec) return NULL;
-  if ( ddP.phi==NULL ) {
+  if ( ddS.Nwt  ) {
     for (k=0; k<ddN.T; k++) {
       tot += vec[k] = ddS.NWt[k];
     }
@@ -215,7 +215,7 @@ static void build_NwK() {
     NwK[w] = 0;
   }
   NWK = 0;
-  if ( ddP.phi ) {
+  if ( !ddS.Nwt ) {
     /*
      *  recompute from scratch
      */
@@ -260,12 +260,12 @@ static double idfscore(int w) {
 }
 
 static double phiscore(int w) {
-  assert(ddP.phi || ddS.phi);
   if ( tscorek<0 ) {
     if ( ddP.betapr ) 
       return ddP.betapr[w];
     return ddS.TwT[w];
   }
+  assert(ddP.phi || ddS.phi);
   if ( ddP.phi )
     return ddP.phi[tscorek][w];
   return ddS.phi[tscorek][w];
@@ -568,7 +568,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     int kk = psort[k];
     uint32_t **dfmtx;
 
-    if ( ddS.NWt[kk]==0 && ddP.phi==NULL )
+    if ( ddP.phi==NULL && ddS.NWt[kk]==0 )
       continue;
     /*
      *   grab word prob vec for later use
@@ -596,7 +596,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     dfmtx = hca_dfmtx(indk, cnt, kk);
 
-    if ( ddP.phi==NULL && (ddS.NWt[kk]*ddN.T*100<Nk_tot || ddS.NWt[kk]<5 )) 
+    if ( ddS.Nwt && (ddS.NWt[kk]*ddN.T*100<Nk_tot || ddS.NWt[kk]<5 )) 
       underused++;
     /*
      *  print stats for topic
@@ -621,7 +621,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
       yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
-      if ( ddP.phi==NULL ) {
+      if ( ddS.Nwt ) {
 	spw = ((double)nonzero_Nwt(kk))/((double)ddN.W);
 	sparsityword += spw;
 	yap_message(" ws=%.1lf%%", 100*(1-spw));
@@ -643,7 +643,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       if ( fullreport ) {
 	fprintf(rp,"topic %d %d", kk, k);
 	fprintf(rp," %.6lf", prop);   
-	if ( ddP.phi==NULL ) {
+	if ( ddS.Nwt ) {
 	  fprintf(rp," %.6lf", (1-spw));
 	} else {
 	  fprintf(rp," 0");
@@ -750,7 +750,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   if ( rp )
     fclose(rp);
 	     
-  if ( ddP.phi==NULL )
+  if ( ddS.Nwt )
     yap_message("Average topicXword sparsity = %.2lf%%\n",
                 100*(1-sparsityword/ddN.T) );
   yap_message("Average docXtopic sparsity = %.2lf%%\n"

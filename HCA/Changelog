@@ -9,3 +9,8 @@ on restart after akpha vector is estimated.
 Extend diagostic reporting on topics.
 Sorted topics on output so now most frequent first.
 
+->0.61
+
+Made reports address -rphi restart.
+Setup -Apdp and -Bpdp so they could be used with restart and .alpha/.beta files
+
