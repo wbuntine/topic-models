@@ -119,7 +119,7 @@ static float *globalprop() {
  *   Build a matrix giving correlation of topic proportions for docs
  *   This is O(D*T*T) so very slow.
  */
-static float **hca_topmtx() {
+float **hca_topmtx() {
   float **mtx = fmat(ddN.T, ddN.T);
   float *vec = fvec(ddN.T);
   int i, t1, t2;

@@ -1288,6 +1288,7 @@ int main(int argc, char* argv[])
 			  (load_vocab>1)?1:0);
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5,procs);
+	like_merge();
       }
       if ( ddP.window ) 
 	hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
@@ -1332,6 +1333,7 @@ int main(int argc, char* argv[])
 		      (load_vocab>1)?1:0);
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5,procs);
+    like_merge();
   }
   
   if ( ddG.didtprob )

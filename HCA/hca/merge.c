@@ -87,7 +87,7 @@ static double merge_alphabasetopicprob(uint32_t TDT, uint32_t TDt, int t) {
   return  ((double)TDt-ddP.a0)/((double)TDT+ddP.b0);	 
 }
 
-int fveccmp(uint32_t k1, uint32_t k2, void *par) {
+static int fveccmp(uint32_t k1, uint32_t k2, void *par) {
   float *fvec = (float *)par;
   if ( fvec[k1]>=fvec[k2] ) 
     return 1;
@@ -101,7 +101,7 @@ int fveccmp(uint32_t k1, uint32_t k2, void *par) {
  *  Tdt[] must be assigned on input
  *        Tdt = u16vec(ddN.DT); 
  */
-double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
+static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
   int d, k;
 
   /*
@@ -298,4 +298,32 @@ double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
   return likelihood;
 }
 
+void like_merge() {
+  int k1, k2;
+  uint16_t *Tdt
+  double likelihood;
+  float **cmtx
 
+  return;
+
+  Tdt = u16vec(ddN.DT); 
+  cmtx = hca_topmtx();
+ 
+  yap_message("Merge report:\n");
+  if ( ddP.PYbeta!=H_None ) 
+    yap_quit("Non-parametric beta unimplemented with merge\n");
+
+  for (k1=1; k1<ddN.T; k1++) {
+    for (k2=0; k2<k1; k2++) {
+      if ( ddP.PYalpha==H_None )
+	likelihood = likemerge_DIRalpha(k1,k2);
+      else
+	likelihood = likemerge_alpha(k1, k2, Tdt);
+      likelihood += likemerge_DIRbeta(k1,k2);
+      yap_message("   %d %d cor=%0.6f lik=%0.6g\n", k1, k2, cmtx[k1][k2]);
+    }
+  }
+  yap_message("\n");
+  free(Tdt);
+  free(cmtx[0]); free(cmtx);
+}
