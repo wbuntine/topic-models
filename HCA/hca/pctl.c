@@ -522,7 +522,7 @@ void pctl_fixalpha(char *file, char *resstem) {
  *    as some parameters need to know dimensions to be set
  *    further fixes done by pctl_dims() and pctl_fixbeta()
  */
-void pctl_fix(int ITER) {
+void pctl_fix(int ITER, int loadphi) {
   ddP.betapr = NULL;
   if ( ddP.ad==0 ) {
     ddT[ParAD].fix = 1;
@@ -581,7 +581,7 @@ void pctl_fix(int ITER) {
     ddP.betac = 0;
     ddT[ParBeta].fix = 1;
   }
-  if ( ddP.phi!=NULL ) {
+  if ( loadphi ) {
     /*
      *   PYtheta and beta are not used!!
      */

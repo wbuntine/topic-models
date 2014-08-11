@@ -123,8 +123,7 @@ void hca_alloc() {
   }
   ddS.NdT = u16vec(ddN.D);
   ddS.Ndt = u16mat(ddN.D,ddN.T);
-  if ( ddP.phi==NULL ) 
-    ddS.Nwt = u32mat(ddN.W,ddN.T);
+  ddS.Nwt = u32mat(ddN.W,ddN.T);
   ddS.NWt  = u32vec(ddN.T);
   sparsemap_null();
   tprob_null();
@@ -316,8 +315,7 @@ void hca_reset_stats(char *resstem,
   for (i=0; i<ddN.D; i++)
     /*   ddS.Ndt not allocated monolithically  */
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
-  if ( ddP.phi==NULL )
-    memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
+  memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
    */
@@ -349,10 +347,8 @@ void hca_reset_stats(char *resstem,
     for (l=ddD.NdTcum[usei]; l<ddD.NdTcum[usei+1]; l++) {
       t = Z_t(ddS.z[l]);
       if ( ( ddP.bdk==NULL ) || Z_issetr(ddS.z[l]) ) {
-	if ( ddP.phi==NULL ) {
-	  ddS.Nwt[ddD.w[l]][t]++;
-	  ddS.NWt[t]++;
-	}
+	ddS.Nwt[ddD.w[l]][t]++;
+	ddS.NWt[t]++;
       }
       ddS.Ndt[usei][t]++;
       ddS.NdT[usei]++;
@@ -360,22 +356,29 @@ void hca_reset_stats(char *resstem,
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {
+    int readOK = 0;
     if ( restart ) {
       char *fname = yap_makename(resstem,".twt");
-      read_u16sparse(ddN.W,ddN.T,ddS.Twt,fname);
-      free(fname);
-      /*  
-       *  check consistency
-       */
-      for (i=0; i<ddN.W; i++) {
-	for (t=0; t<ddN.T; t++) {
-	  if ( ((ddS.Nwt[i][t]>0) ^ (ddS.Twt[i][t]>0)) ||
-	       ddS.Nwt[i][t]<ddS.Twt[i][t] ) 
-	    yap_quit("Inconsistency:  ddS.Nwt[%d][%d]=%d, ddS.Twt[%d][%d]=%d\n",
-		     i, t, (int)ddS.Nwt[i][t],i, t, (int)ddS.Twt[i][t]);
+      /*  check if file is readable */
+      if ( access(fname,R_OK)==0 ) {
+	read_u16sparse(ddN.W,ddN.T,ddS.Twt,fname);
+	/*  
+	 *  check consistency
+	 */
+	for (i=0; i<ddN.W; i++) {
+	  for (t=0; t<ddN.T; t++) {
+	    if ( ((ddS.Nwt[i][t]>0) ^ (ddS.Twt[i][t]>0)) ||
+		 ddS.Nwt[i][t]<ddS.Twt[i][t] ) 
+	      yap_quit("Inconsistency:  ddS.Nwt[%d][%d]=%d, ddS.Twt[%d][%d]=%d\n",
+		       i, t, (int)ddS.Nwt[i][t],i, t, (int)ddS.Twt[i][t]);
+	  }
 	}
+	readOK = 1;
       }
-     } else {
+      free(fname);
+    }
+    if ( !readOK ) {
+      /* no read, so force initialise */
       for (i=0; i<ddN.W; i++) {
 	for (t=0; t<ddN.T; t++) {
 	  if ( ddS.Nwt[i][t]>0 ) 
@@ -401,23 +404,30 @@ void hca_reset_stats(char *resstem,
     }
   }
   if ( ddP.PYalpha  ) {
-     if ( restart ) {
+    int readOK = 0;
+    if ( restart ) {
       char *fname = yap_makename(resstem,".tdt");
-      read_u16sparse(ddN.DT,ddN.T,ddS.Tdt,fname);
-      free(fname);
-      /*  
-       *  check consistency
-       */
-      for (i=firstdoc; i<lastdoc; i++) {
-	int usei = (i+ddN.DT) % ddN.DT;
-	for (t=0; t<ddN.T; t++) {
-	  if ( ((ddS.Ndt[usei][t]>0) ^ (ddS.Tdt[usei][t]>0)) ||
-	       (ddS.Tdt[usei][t]>ddS.Ndt[usei][t])) 
-	    yap_quit("Inconsistency:  ddS.Ndt[%d][%d]=%d, ddS.Tdt[%d][%d]=%d\n",
-		     usei, t, (int)ddS.Ndt[usei][t], usei, t, (int)ddS.Tdt[usei][t]);
+      /*  check if file is readable */
+      if ( access(fname,R_OK)==0 ) {
+	read_u16sparse(ddN.DT,ddN.T,ddS.Tdt,fname);
+	/*  
+	 *  check consistency
+	 */
+	for (i=firstdoc; i<lastdoc; i++) {
+	  int usei = (i+ddN.DT) % ddN.DT;
+	  for (t=0; t<ddN.T; t++) {
+	    if ( ((ddS.Ndt[usei][t]>0) ^ (ddS.Tdt[usei][t]>0)) ||
+		 (ddS.Tdt[usei][t]>ddS.Ndt[usei][t])) 
+	      yap_quit("Inconsistency:  ddS.Ndt[%d][%d]=%d, ddS.Tdt[%d][%d]=%d\n",
+		       usei, t, (int)ddS.Ndt[usei][t], usei, t, (int)ddS.Tdt[usei][t]);
+	  }
 	}
+	readOK = 1;
       }
-    } else {
+      free(fname);
+    }
+    if ( !readOK ) {
+      /* no read, so force initialise */
       for (i=firstdoc; i<lastdoc; i++) {
 	int usei = (i+ddN.DT) % ddN.DT;
 	for (t=0; t<ddN.T; t++) {

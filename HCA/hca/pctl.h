@@ -149,7 +149,7 @@ extern D_pctl_t ddT[];
 enum ParType findpar(char *name);
 void pctl_init();
 void pctl_read(char *resstem, char *buf);
-void pctl_fix(int ITER);
+void pctl_fix(int ITER, int loadphi);
 void pctl_report();
 void pctl_sample(int iter, int procs);
 void pctl_update(int iter);

@@ -348,10 +348,12 @@ double likelihood() {
     /*
      *    no learning, just preexisting phi[][]
      */
-    for (t=0; t<ddN.T; t++) 
-      for (j=0; j<ddN.W; j++) 
-	if ( ddS.Nwt[j][t] )
-	  likelihood += ddS.Nwt[j][t]*log(ddP.phi[t][j]);
+    if ( ddS.Nwt ) {
+      for (t=0; t<ddN.T; t++) 
+	for (j=0; j<ddN.W; j++) 
+	  if ( ddS.Nwt[j][t] )
+	    likelihood += ddS.Nwt[j][t]*log(ddP.phi[t][j]);
+    }
   } else if ( ddP.PYbeta ) {
     likelihood += likelihood_PYbeta();
     /*

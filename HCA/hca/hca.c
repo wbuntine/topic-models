@@ -341,6 +341,7 @@ int main(int argc, char* argv[])
   int pmicount = 10;
   char *betafile = NULL;
   char *alphafile = NULL;
+  enum PDPType PYalphain=H_None, PYbetain=H_None;
   double betacin = 0;
   double alphacin = 0;
   int noerrorlog = 0;
@@ -407,6 +408,8 @@ int main(int argc, char* argv[])
 	ddP.PYalpha = H_None;
       else
 	yap_quit("Need a valid 'A' argument\n");
+      /*  save copy so later reload of par file wont loose it */
+      PYalphain = ddP.PYalpha;
       if ( ddP.PYalpha != H_HPDD ) {
 	/*  get file part */
 	char *farg = strchr(optarg,',');
@@ -432,6 +435,8 @@ int main(int argc, char* argv[])
 	ddP.PYbeta = H_None;
       } else
 	yap_quit("Need a valid 'B' argument\n");
+      /*  save copy so later reload of par file wont loose it */
+      PYbetain = ddP.PYbeta;
       if ( ddP.PYbeta != H_HPDD ) {
 	/*  get file part */
 	char *farg = strchr(optarg,',');
@@ -806,7 +811,12 @@ int main(int argc, char* argv[])
     free(fname);
     ddN.T = atoi(readpar(resstem,"T",buf,50));
     pctl_read(resstem, buf);
-    if ( ddP.training==0 ) {
+    /*   if command line had set to PDP, then restore */
+    if ( PYalphain == H_PDP )
+      ddP.PYalpha = H_PDP;
+    if ( PYbetain == H_PDP )
+      ddP.PYbeta = H_PDP;
+     if ( ddP.training==0 ) {
       char *pv = readpar(resstem,"TRAIN",buf,50);
       if ( pv ) 
 	 ddP.training = atoi(pv);
@@ -832,7 +842,7 @@ int main(int argc, char* argv[])
     for (t=0; t<ddN.T; t++)
       ddP.bdk[t]  = BDKval;
   }
-  pctl_fix(ITER);
+  pctl_fix(ITER, loadphi);
   pctl_samplereport();
   Tmax = ddP.Tinit;
   

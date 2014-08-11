@@ -107,7 +107,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
    *  do topic X word updates
    */
 
-  if ( ddP.phi==NULL && wid>=0 ) {
+  if ( wid>=0 ) {
     atomic_decr(ddS.NWt[t]);
     // assert(ddS.Nwt[wid][t]>0);
     atomic_decr(ddS.Nwt[wid][t]);
@@ -143,11 +143,11 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
     (*Td_)++;
     fix_tableidtopic(did, t);
   }
-  if ( ddP.phi==NULL && wid>=0 ) {
+  if ( wid>=0 ) {
     int val;
     atomic_incr(ddS.NWt[t]);
     val = atomic_incr(ddS.Nwt[wid][t]);
-    if ( ddP.PYbeta ) {
+    if ( ddP.PYbeta && ddP.phi==NULL) {
       /*
        *   figure out reassigning table id for word PYP
        */
