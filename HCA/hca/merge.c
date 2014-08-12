@@ -157,13 +157,20 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
     for (k=0; k<ddN.T; k++)
       TdT[d] += ddS.Tdt[d][k];
     TDt += Tdt[d];
+    assert(Tdt[d]<=Ndt[d]);
+    if ( d>0 )
+      assert(Tdt[d-1]<=Ndt[d-1]);
   }
   TDTm = ddS.TDT - TDt;
 
-  /*
+  for (d=0; d<ddN.DT; d++) {
+    assert(Tdt[d]<=Ndt[d]);
+  }
+ /*
    *  initialise sort
    */
   for (d=0; d<ddN.DT; d++) {
+    assert(Tdt[d]<=Ndt[d]);
     /*   don't change for some docs */
     Tdt_up[d] = d;
     Tdt_down[d] = d;
@@ -174,7 +181,10 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
     if ( Tdt[d]>1 )
       score_down[d] = S_V(ddC.SX,Ndt[d],Tdt[d])/(ddP.bpar + ddP.apar*(TdT[d]-1));
     else
-      score_down[d] = 0;
+      score_down[d] = 0;    
+    assert((Tdt[d]>1)||score_down[d]==0);
+    assert((Tdt[d]<Ndt[d])||score_up[d]==0);
+    assert(Tdt[d]<=Ndt[d]);
   }
   assert(TDt>0);
 
@@ -189,13 +199,13 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
     float downv;
     upv = merge_alphabasetopicprob(TDTm+TDt, TDt, k1)*score_up[heap_front(&up)];
     if ( TDt>1 )
-      downv = score_up[heap_front(&up)] 
+      downv = score_down[heap_front(&down)] 
         / merge_alphabasetopicprob(TDTm+TDt-1, TDt-1, k1);
     else
       downv = 0.0;
     if ( downv>upv && downv>1.0 ){
       //  decrement this
-      d = heap_front(&down);
+      d = heap_front(&down); 
       TdT[d]--;
       Tdt[d]--;
       assert(Tdt[d]>0);
@@ -223,6 +233,9 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
       score_down[d] = S_V(ddC.SX,Ndt[d],Tdt[d])/(ddP.bpar + ddP.apar*(TdT[d]-1));
     else
       score_down[d] = 0;
+    assert(Tdt[d]>1||score_down[d]==0);
+    assert(Tdt[d]<Ndt[d] ||score_up[d]==0);
+    assert(Tdt[d]<=Ndt[d]);
     /*
      *  now adjust the two heaps for new vals for [d]
      */
@@ -246,6 +259,10 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
         likelihood -= S_S(ddC.SX,ddS.Ndt[d][k2],ddS.Tdt[d][k2]);
         likelihood -= S_S(ddC.SX,ddS.Ndt[d][k1],ddS.Tdt[d][k1]);
         likelihood += S_S(ddC.SX,Ndt[d],Tdt[d]);
+	assert(Tdt[d]>=1);
+	assert(Tdt[d]<=Ndt[d]);
+	assert(ddS.Ndt[d][k2]==0 || ddS.Tdt[d][k2]>0);
+	assert(ddS.Ndt[d][k1]==0 || ddS.Tdt[d][k1]>0);
       }
       yap_infinite(likelihood);
       TD_diff += Td_diff = (Tdt[d]-ddS.Tdt[d][k2]-ddS.Tdt[d][k1]);
@@ -289,7 +306,6 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
 
   free(TdT);
   free(Ndt);
-  free(Tdt);
   free(score_up);
   free(score_down);
   heap_free(&up);
@@ -298,32 +314,79 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
   return likelihood;
 }
 
-void like_merge() {
+void like_merge(int mincount, double scale) {
   int k1, k2;
-  uint16_t *Tdt
-  double likelihood;
-  float **cmtx
+  uint16_t *Tdt=NULL, *Tdt_save=NULL;
+  double likediff, ml=0;
+  float **cmtx;
+  int m1=0, m2=0;
 
-  return;
+  assert(mincount>0);
+  assert(ddP.phi==NULL);
+  assert(ddP.theta==NULL);
 
-  Tdt = u16vec(ddN.DT); 
+  if ( ddP.PYalpha ) {
+    Tdt = u16vec(ddN.DT); 
+    Tdt_save = u16vec(ddN.DT); 
+    if ( !Tdt_save )
+      yap_quit("Out of memory in like_merge()\n");
+  }
   cmtx = hca_topmtx();
+  if ( !cmtx )
+    yap_quit("Out of memory in like_merge()\n");
  
-  yap_message("Merge report:\n");
   if ( ddP.PYbeta!=H_None ) 
     yap_quit("Non-parametric beta unimplemented with merge\n");
 
   for (k1=1; k1<ddN.T; k1++) {
+    if ( ddS.NWt[k1]<=mincount ) 
+      continue;
     for (k2=0; k2<k1; k2++) {
+      // ????? order k1, k2?
+      if ( ddS.NWt[k2]<=mincount )
+	continue;
       if ( ddP.PYalpha==H_None )
-	likelihood = likemerge_DIRalpha(k1,k2);
+	likediff = likemerge_DIRalpha(k1,k2);
       else
-	likelihood = likemerge_alpha(k1, k2, Tdt);
-      likelihood += likemerge_DIRbeta(k1,k2);
-      yap_message("   %d %d cor=%0.6f lik=%0.6g\n", k1, k2, cmtx[k1][k2]);
+	likediff = likemerge_alpha(k1, k2, Tdt);
+      likediff += likemerge_DIRbeta(k1,k2);
+      if ( likediff>0 ) {
+	if ( ml==0 ) {
+	  yap_message("\nPre merge log_2(perp)=%.4lf",  
+		      scale * likelihood() );
+	}
+	if ( verbose>1 ) {
+	  if ( ml==0 ) 
+	    yap_message(", merge report:\n");
+	  yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
+		      scale * likediff);
+	}     
+	if ( likediff>ml ) {
+	  ml = likediff;
+	  m1 = k1; 
+	  m2 = k2;
+	  if ( ddP.PYalpha ) {
+	    int d;
+	    for (d=0; d<ddN.DT; d++)
+	      Tdt_save[d] = Tdt[d];  
+	  } 
+	}
+      }
     }
   }
-  yap_message("\n");
-  free(Tdt);
+  if ( ml>0 ) {
+    /*
+     *   have a good merge, so do
+     */
+    yap_message("\n  best merge is %d with %d giving diff=%lf\n", m1, m2, 
+		scale* ml); 
+    hca_merge_stats(m1, m2,  Tdt_save,  NULL); 
+    hca_correct_tdt(1);
+  } else
+    yap_message("\n");
+  if ( ddP.PYalpha ) {
+    free(Tdt);
+    free(Tdt_save);
+  }
   free(cmtx[0]); free(cmtx);
 }

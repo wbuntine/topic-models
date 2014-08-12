@@ -88,7 +88,7 @@ int heap_init(struct heap_s *h,
 int heap_push(struct heap_s *h, uint32_t value)
 {
   uint32_t index, parent;
-  assert(value<h->count);
+  assert(value<h->size);
   
   // Resize the heap if it is too small to hold all the data
   if (h->count == h->size)
@@ -181,6 +181,7 @@ int heap_pop(struct heap_s *h)
 
 #ifdef HEAP_MAIN
 #include <stdio.h>
+#include <time.h>
 
 void heap_print(struct heap_s *h) {
   int i;
@@ -211,8 +212,10 @@ int icmp(uint32_t k1, uint32_t k2, void *par) {
 
 int main(int argc, char* argv[]) {
   struct heap_s heap;
-  uint32_t data[DIM];
+  uint32_t *data = malloc(DIM*sizeof(data[0]));
   int i,j;
+  uint32_t s1, s2, s3;
+  srand(time(NULL)%1000);  
 
   for (i=0; i<DIM; i++)
     data[i] = i;
@@ -236,19 +239,35 @@ int main(int argc, char* argv[]) {
 
   printf("top: %u\n", heap_front(&heap));
   heap_pop(&heap);
-  printf("top: %u\n", heap_front(&heap));
+  printf("top: %u\n", s1=heap_front(&heap));
   heap_pop(&heap);
   printf("top: %u\n", heap_front(&heap));
   heap_print(&heap);
   printf("removing %u\n",data[5]);
+  s2=heap_front(&heap);
   heap_remove(&heap,data[5]);
+  printf("pushing %u\n", s1);
+  heap_push(&heap, s1);
   heap_print(&heap);
   printf("removing %u\n",data[6]);
   heap_remove(&heap,data[6]);
   heap_print(&heap);
   printf("removing %u\n",data[12]);
+  s1 = heap_front(&heap);
   heap_remove(&heap,data[12]);
+  printf("pushing %u\n", s2);
+
+  heap_push(&heap, s2);
   heap_print(&heap);
+
+  heap_pop(&heap);
+  heap_pop(&heap);
+  heap_push(&heap, s1);
+  heap_pop(&heap);
+  heap_remove(&heap,data[5]);
+  heap_print(&heap);
+
+  heap_free(&heap);
 
   return 0;
 }

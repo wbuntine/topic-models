@@ -295,6 +295,65 @@ void hca_write_z(char *resstem)
   free(fname);
 }
 
+void hca_merge_stats(int k1, int k2,  uint16_t *Tdt,  uint16_t *Twt) {
+  int d, i, w;
+  int32_t Tdiff1=0;
+
+  for (i=0; i<ddN.N; i++)
+    if ( Z_t(ddS.z[i])==k2 ) {
+      Z_sett(ddS.z[i],k1);
+    }
+
+  /*
+   *  reset Alpha side stats
+   */
+  for (d=0; d<ddN.D; d++) {
+    ddS.Ndt[d][k1] += ddS.Ndt[d][k2];
+    ddS.Ndt[d][k2] = 0;
+  }
+  if ( ddP.PYalpha ) {
+    Tdiff1 = 0;
+    ddS.TDT -= ddS.TDt[k1] + ddS.TDt[k2];
+    for (d=0; d<ddN.DT; d++) {
+      Tdiff1 += Tdt[d];
+      ddS.Tdt[d][k1] = Tdt[d];
+      ddS.Tdt[d][k2] = 0;
+    }
+    ddS.TDt[k1] = Tdiff1;
+    ddS.TDT += ddS.TDt[k1];
+    ddS.TDt[k2] = 0;
+    ddS.Tlife[k2] = 0;
+    ddS.TDTnz--;
+    for (d=ddN.DT; d<ddN.D; d++) {
+      ddS.Tdt[d][k1] += ddS.Tdt[d][k2];
+      ddS.Tdt[d][k2] = 0;
+    }
+  }
+
+  /*
+   *  reset Beta side stats
+   */
+  for (w=0; w<ddN.W; w++) {
+    ddS.Nwt[w][k1] += ddS.Nwt[w][k2];
+    ddS.Nwt[w][k2] = 0;
+  }
+  ddS.NWt[k1] += ddS.NWt[k2];
+  ddS.NWt[k2] = 0;
+  if ( ddP.PYbeta ) {
+    Tdiff1 = 0;
+    ddS.TWT -= ddS.TWt[k1] + ddS.TWt[k2];
+    for (w=0; w<ddN.W; w++) {
+      ddS.TwT[w] += Twt[w] - ddS.Twt[w][k1] - ddS.Twt[w][k2];
+      Tdiff1 += Twt[w];
+      ddS.Twt[w][k1] = Twt[w];
+      ddS.Twt[w][k2] = 0;
+    }
+    ddS.TWt[k1] = Tdiff1;
+    ddS.TWt[k2] = 0;
+    ddS.TWT += ddS.TWt[k1];
+  }
+}
+
 /*
  *    zero everything and rebuild entirely from z[] (both t and r)
  *    but only for training docs
@@ -480,5 +539,63 @@ void hca_correct_twt()  {
   for(w = 0; w < ddN.W; w++) {
     if ( ddS.TwT[w]>0 )
       ddS.TWTnz ++;
+  }
+}
+void hca_correct_tdt(int reset)  {
+  int d, t;
+  
+  if ( ddP.PYalpha==0 )
+    return;
+
+#ifndef NDEBUG
+  if ( reset==0 ) {
+    uint16_t **Tdt = u16mat(ddN.D,ddN.T);
+    int i;
+    for (d = 0; d < ddN.DT; d++) {
+      for (i=ddD.NdTcum[d]; i<ddD.NdTcum[d+1]; i++) 
+	Tdt[d][Z_t(ddS.z[i])]++;
+      for (t = 0; t < ddN.T; t++) {
+	if ( ddS.Tdt[d][t]!=Tdt[d][t] )
+	  yap_message("Unequal Tdt totals for doc %d\n", d);
+      }
+    }
+    free(Tdt[0]); free(Tdt);
+  }
+#endif
+
+  /*
+   *  reset Tdt
+   */
+  if ( reset ) {
+    for (d=0; d<ddN.D; d++) {
+      int i;
+      /*   ddS.Tdt not allocated monolithically  */
+      memset((void*)ddS.Tdt[d], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
+      for (i=ddD.NdTcum[d]; i<ddD.NdTcum[d+1]; i++) 
+	ddS.Tdt[d][Z_t(ddS.z[i])]++;
+    }
+  }
+  /*
+   *  correct derived stats
+   */
+  ddS.TDT = 0;
+  ddS.TDTnz = 0;
+  memset((void*)ddS.TDt, 0, sizeof(ddS.TDt[0])*ddN.T);
+  for (t = 0; t < ddN.T; t++) {
+    for (d = 0; d < ddN.D; d++) {
+      if ( reset==0 ) {
+	if ( ddS.Tdt[d][t]>ddS.Ndt[d][t] )
+	  ddS.Tdt[d][t] = ddS.Ndt[d][t];
+	if ( ddS.Tdt[d][t]==0 && ddS.Ndt[d][t]>0 )
+	  ddS.Tdt[d][t] = 1;
+      }
+      if ( d<ddN.DT ) 
+	ddS.TDt[t] += ddS.Tdt[d][t];
+    }
+    ddS.TDT += ddS.TDt[t];
+  }
+  for(t = 0; t < ddN.T; t++) {
+    if ( ddS.TDt[t]>0 )
+      ddS.TDTnz ++;
   }
 }

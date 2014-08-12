@@ -170,6 +170,9 @@ void pctl_init() {
   ddP.query = NULL;
   ddP.qword = NULL;
   ddP.n_query = 0;
+  ddP.mergeiter = 0;
+  ddP.mergeinit = 0;
+  ddP.mergemin = 5;
 
   ddP.Tinc = 5;
   ddP.Tcycle = 20;

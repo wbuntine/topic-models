@@ -154,6 +154,8 @@ static void usage() {
 	  "   -e             #  send error log to STDERR\n"
 	  "   -f FMT         #  'ldac', 'witdit', 'docword', 'bag', 'lst' for data format\n"
           "   -I init,cycle,inc,free  #  controls constrains on topic changes\n"
+	  "   -J init,cycle,min #  do a merge step starting at init, every cycle\n"
+	  "                  #     and ignore topics <= min entries (default=5)\n"
           "   -K topics      #  maximum number of topics\n"
 	  "   -m             #  up the memory conservation by one\n"
 	  "   -M maxtime     #  maximum training seconds (wall time), quit early if reached\n"
@@ -391,7 +393,7 @@ int main(int argc, char* argv[])
   pctl_init();
   diag_alloc();
 
-  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:vVw:W:xX"))>=0 ) {
+  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:J:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:vVw:W:xX"))>=0 ) {
     switch ( c ) {
     case 'A':
       if ( !optarg )
@@ -564,6 +566,12 @@ int main(int argc, char* argv[])
       if ( !optarg || sscanf(optarg,"%d,%d,%d,%d",
                              &ddP.Tinit,&ddP.Tcycle,&ddP.Tinc,&ddP.Tfree)<1 )
         yap_quit("Need a valid 'I' argument\n");
+      break;
+    case 'J':
+      if ( !optarg || sscanf(optarg,"%d,%d,%d",
+                             &ddP.mergeinit,&ddP.mergeiter,&ddP.mergemin)<1 
+	   || ddP.mergeinit<1 || ddP.mergeiter<2 )
+        yap_quit("Need a valid 'J' argument\n");
       break;
     case 'K':
       if ( !optarg || sscanf(optarg,"%d",&ddN.T)!=1 )
@@ -856,6 +864,13 @@ int main(int argc, char* argv[])
     yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
   if ( loadtheta && ddP.probiter>0 )
     yap_quit("Options '-l theta,...' and '-r theta' incompatible\n");
+  if ( loadphi && ddP.mergeiter>0 )
+    yap_quit("Options '-J...' and '-r phi' incompatible\n");
+  if ( loadtheta && ddP.mergeiter>0 )
+    yap_quit("Options '-J...' and '-r theta' incompatible\n");
+  if ( ddP.PYbeta && ddP.mergeiter>0 )
+    yap_quit("Option '-J...' must have plain Dirichlet on Beta side\n");
+  
 
   /*
    *   set random number generator
@@ -1228,6 +1243,14 @@ int main(int argc, char* argv[])
     }
     
     /*
+     *   merge step
+     */
+    if ( ddP.mergeiter>0 && 
+	 iter>ddP.mergeinit && (iter%ddP.mergeiter)==0 && iter-1<ITER ) {
+      like_merge(ddP.mergemin, showlike?1:(-M_LOG2E/ddN.NT));
+    }
+
+    /*
      *   sample hyperparameters
      */
     t3 = clock();
@@ -1288,7 +1311,6 @@ int main(int argc, char* argv[])
 			  (load_vocab>1)?1:0);
 	if ( ddG.n_words>0 && ddG.didcode ) 
 	  sparsemap_report(resstem,0.5,procs);
-	like_merge();
       }
       if ( ddP.window ) 
 	hca_reset_stats(resstem, 0, 0, ddP.window_left,  ddP.window_right);
@@ -1333,7 +1355,6 @@ int main(int argc, char* argv[])
 		      (load_vocab>1)?1:0);
     if ( ddG.n_words>0  && ddG.didcode) 
       sparsemap_report(resstem,0.5,procs);
-    like_merge();
   }
   
   if ( ddG.didtprob )

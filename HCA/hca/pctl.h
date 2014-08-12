@@ -76,6 +76,8 @@ typedef struct D_pars_s {
   int memory;               //  higher value means conserve more memory
   int training;             //  suggested training set size
   char *teststem;           //  stem for the test data, only if different
+  int mergeiter, mergeinit; //  when to start, number of iterations
+  int mergemin;             //  ignore topics with this or less entries
   /*
    *     window control ... only work on this much data at once
    */

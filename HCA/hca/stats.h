@@ -81,10 +81,12 @@ void hca_rand_z(int Tinit, int firstdoc, int lastdoc);
 void hca_read_z(char *resstem, int firstdoc, int lastdoc);
 void hca_reset_stats(char *resstem, int restart, int zero,
 		     int firstdoc, int lastdoc);
+void hca_merge_stats(int k1, int k2,  uint16_t *Tdt,  uint16_t *Twt);
 void hca_write_z(char *resstem);
 void hca_report(char *resstem, char *stem, int ITER, int procs,
 		enum GibbsType fix, int showlike, int nopar);
 void hca_correct_twt();
+void hca_correct_tdt(int reset);
 
 uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic);
 
