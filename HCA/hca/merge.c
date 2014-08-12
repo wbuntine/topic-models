@@ -371,7 +371,11 @@ void like_merge(int mincount, double scale) {
 	      Tdt_save[d] = Tdt[d];  
 	  } 
 	}
+      } else if ( verbose>2 ) {
+	  yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
+		      scale * likediff);
       }
+ 
     }
   }
   if ( ml>0 ) {
