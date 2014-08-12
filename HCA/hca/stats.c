@@ -547,7 +547,7 @@ void hca_correct_tdt(int reset)  {
   if ( ddP.PYalpha==0 )
     return;
 
-#ifndef NDEBUG
+#ifdef DEBUGTEST
   if ( reset==0 ) {
     uint16_t **Tdt = u16mat(ddN.D,ddN.T);
     int i;

@@ -378,10 +378,10 @@ void like_merge(int mincount, double scale) {
     /*
      *   have a good merge, so do
      */
-    yap_message("\n  best merge is %d with %d giving diff=%lf\n", m1, m2, 
+    yap_message("\n  best merge is %d+%d giving diff=%lf\n", m1, m2, 
 		scale* ml); 
     hca_merge_stats(m1, m2,  Tdt_save,  NULL); 
-    hca_correct_tdt(1);
+    hca_correct_tdt(0);
   } else
     yap_message("\n");
   if ( ddP.PYalpha ) {
