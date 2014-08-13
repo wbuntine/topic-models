@@ -105,7 +105,7 @@ static int fveccmp(uint32_t k1, uint32_t k2, void *par) {
  *  Tdt[] must be assigned on input
  *        Tdt = u16vec(ddN.DT); 
  */
-typedef struct merge_s {
+typedef struct merge_alpha_s {
   /*
    *   storing/saving the new/proposed version
    */
@@ -116,16 +116,34 @@ typedef struct merge_s {
   uint16_t *TdT;
   uint16_t *Ndt;
   uint16_t *Tdt;
-} merge_t;
+} merge_alpha_t;
+
+typedef struct merge_beta_s {
+  /*
+   *   storing/saving the new/proposed version
+   */
+  uint32_t NWt, TWt, TWTm;
+  /*
+   *  cache for doc side change
+   */
+  uint32_t *TwT;
+  uint32_t *Nwt;
+  uint16_t *Twt;
+} merge_beta_t;
 
 
-static void merge_free(merge_t *M) {
+static void merge_free_Tdt(merge_alpha_t *M) {
   free(M->Ndt);
   free(M->TdT);
   free(M->Tdt);
 }
+static void merge_free_Twt(merge_beta_t *M) {
+  free(M->Nwt);
+  free(M->TwT);
+  free(M->Twt);
+}
 
-static void merge_init(int k1, int k2, merge_t *M) {
+static void merge_init_Tdt(int k1, int k2, merge_alpha_t *M) {
   int d, k;
   /*
    *   build local store
@@ -139,17 +157,14 @@ static void merge_init(int k1, int k2, merge_t *M) {
   /*
    *  initialise all data entries to simple sum
    */
-  M->TDt = 0;
+  M->TDt = ddS.TDt[k1] + ddS.TDt[k2];
   for (d=0; d<ddN.DT; d++) {
     M->Tdt[d] = ddS.Tdt[d][k1] + ddS.Tdt[d][k2];
     M->Ndt[d] = ddS.Ndt[d][k1] + ddS.Ndt[d][k2];
     M->TdT[d] = 0;
     for (k=0; k<ddN.T; k++)
       M->TdT[d] += ddS.Tdt[d][k];
-    M->TDt += M->Tdt[d];
     assert(M->Tdt[d]<=M->Ndt[d]);
-    if ( d>0 )
-      assert(M->Tdt[d-1]<=M->Ndt[d-1]);
   }
   M->TDTm = ddS.TDT - M->TDt;
 #ifndef NDEBUG
@@ -159,8 +174,37 @@ static void merge_init(int k1, int k2, merge_t *M) {
 #endif
 }
 
+static void merge_init_Twt(int k1, int k2, merge_beta_t *M) {
+  int w;
+  /*
+   *   build local store
+   */
+  M->Twt = u16vec(ddN.W); 
+  M->TwT = u32vec(ddN.W); 
+  M->Nwt = u32vec(ddN.W);
+  if ( !M->Nwt || !M->TwT || !M->Twt  )
+    yap_quit("Out of memory in likemerge()\n");
+
+  /*
+   *  initialise all data entries to simple sum
+   */
+  M->NWt = ddS.NWt[k1] + ddS.NWt[k2];
+  M->TWt = ddS.TWt[k1] + ddS.TWt[k2];
+  for (w=0; w<ddN.W; w++) {
+    M->Twt[w] = ddS.Twt[w][k1] + ddS.Twt[w][k2];
+    M->Nwt[w] = ddS.Nwt[w][k1] + ddS.Nwt[w][k2];
+    M->TwT[w] = ddS.TwT[w];
+  }
+  M->TWTm = ddS.TWT - M->TWt;
+#ifndef NDEBUG
+  for (w=0; w<ddN.W; w++) {
+    assert(M->Twt[w]<=M->Nwt[w]);
+  }
+#endif
+}
+
 #ifndef NOOPT_MERGE
-static void merge_opt_Tdt(int k1, int k2, merge_t *M) {
+static void merge_opt_Tdt(int k1, int k2, merge_alpha_t *M) {
   struct heap_s up;
   struct heap_s down;
   /*
@@ -272,7 +316,62 @@ static void merge_opt_Tdt(int k1, int k2, merge_t *M) {
 /*
  *  compute likelihood ratio difference based on *M
  */
-static double merge_like(int k1, int k2, merge_t *M) {
+static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
+  int i;
+  double likelihood = 0;
+  double lbw = log(ddP.bwpar);
+  double law = log(ddP.awpar);
+  uint32_t Tw_ = 0;
+  for (i=0; i<ddN.W; i++) {
+    likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
+    likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
+    likelihood += S_S(ddC.SY,M->Nwt[i],M->Twt[i]);
+  }
+  if ( ddP.awpar==0 ) {
+    likelihood += (M->TWt-ddS.TWt[k1]-ddS.TWt[k2])*lbw;
+  } else {
+    likelihood += (M->TWt-ddS.TWt[k1]-ddS.TWt[k2])*law 
+      + gammadiff((int)M->TWt, ddP.bwpar/ddP.awpar, 0.0)
+      - gammadiff((int)ddS.TWt[k1], ddP.bwpar/ddP.awpar, 0.0)
+      - gammadiff((int)ddS.TWt[k2], ddP.bwpar/ddP.awpar, 0.0);
+  }
+  likelihood += gammadiff((int)ddS.NWt[k1], ddP.bwpar, 0.0);
+  likelihood += gammadiff((int)ddS.NWt[k2], ddP.bwpar, 0.0);
+  likelihood -= gammadiff((int)M->NWt, ddP.bwpar, 0.0);
+  yap_infinite(likelihood);
+  if ( ddP.PYbeta==H_PDP ) {
+    for (j=0; j<ddN.W; j++) {
+      if ( ddS.TwT[j]>0 ) {
+        likelihood += ???????ddS.TwT[j]*log(ddP.betapr[j]);
+      }
+    }      
+  } else if ( ddP.PYbeta==H_HDP ) {
+    likelihood += lgamma(M->TWTm+M->TDt-TW_diff+ddP.bw0) 
+      - lgamma(M->TWTm+M->TWt+ddP.bw0);
+    for (j=0; j<ddN.W; j++) {????
+      likelihood -= gammadiff(ddS.TWt[k1], ddP.bw0*ddP.betapr[k1], 0.0);
+      likelihood -= gammadiff(ddS.TWt[k2], ddP.bw0*ddP.betapr[k2], 0.0);
+      likelihood += gammadiff(M->TWt, ddP.bw0*ddP.betapr[k1], 0.0);
+    }
+  } else {
+    double lgaw0 = lgamma(1-ddP.aw0);
+    likelihood += lgamma(M->TWTm+M->TWt-TW_diff+ddP.bw0) 
+      - lgamma(M->TWTm+M->TWt+ddP.bw0);
+    /*   because k2 gone to zero, so one less topic */
+    likelihood -= log(ddP.bw0+ddP.aw0*(ddS.TWTnz-1));
+    if ( ddS.TWt[k2]>1 )
+      likelihood -= lgamma(ddS.TWt[k2]-ddP.aw0) - lgaw0;
+    if ( ddS.TWt[k1]>1 )
+      likelihood -= lgamma(ddS.TWt[k1]-ddP.aw0) - lgaw0;
+    likelihood += lgamma(M->TWt-ddP.aw0) - lgaw0;
+  }
+  yap_infinite(likelihood);
+}
+
+/*
+ *  compute likelihood ratio difference based on *M
+ */
+static double merge_like_Tdt(int k1, int k2, merge_alpha_t *M) {
   int d;
   double la = 0;
   double lb = log(ddP.bpar);
@@ -336,19 +435,39 @@ static double likemerge_alpha(int k1, int k2) {
   /*
    *   storing/saving the new/proposed version
    */
-  merge_t M;
+  merge_alpha_t M;
 
   double likelihood;
 
   if ( k1<=0 || k2<=0 || ddS.TDt[k1]==0 || ddS.TDt[k2]==0 ) 
     return 0.0;
-  merge_init(k1, k2, &M);
+  merge_init_Tdt(k1, k2, &M);
 #ifndef NOOPT_MERGE
   /*  optimise the table counts Tdt[.][k1] */
   merge_opt_Tdt(k1, k2, &M);
 #endif
-  likelihood = merge_like(k1, k2, &M);
-  merge_free(&M);
+  likelihood = merge_like_Tdt(k1, k2, &M);
+  merge_free_Tdt(&M);
+  return likelihood;
+}
+
+static double likemerge_beta(int k1, int k2) {
+  /*
+   *   storing/saving the new/proposed version
+   */
+  merge_beta_t M;
+
+  double likelihood;
+
+  if ( k1<=0 || k2<=0 || ddS.TWt[k1]==0 || ddS.TWt[k2]==0 ) 
+    return 0.0;
+  merge_init_Twt(k1, k2, &M);
+#ifndef NOOPT_MERGE
+  /*  optimise the table counts Tdt[.][k1] */
+  merge_opt_Twt(k1, k2, &M);
+#endif
+  likelihood = merge_like_Twt(k1, k2, &M);
+  merge_free_Twt(&M);
   return likelihood;
 }
 
@@ -406,7 +525,10 @@ void like_merge(float minprop, double scale, int best) {
 	likediff = likemerge_DIRalpha(k1,k2);
       else
 	likediff = likemerge_alpha(k1, k2);
-      likediff += likemerge_DIRbeta(k1,k2);
+      if ( ddP.PYbeta==H_None )
+        likediff += likemerge_DIRbeta(k1,k2);
+      else
+	likediff += likemerge_beta(k1, k2);
       if ( likediff>0 ) {
 	if ( title==0 ) {
 	  yap_message("\nPre merge log_2(perp)=%.4lf",  
@@ -428,23 +550,31 @@ void like_merge(float minprop, double scale, int best) {
 	  B[k2].k2 = k1; 
 	}
       } else if ( verbose>2 ) {
-	  yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
-		      scale * likediff);
+        yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
+                    scale * likediff);
       }
- 
     }
   }
   while ( best>0 && (k1=next_best(&B[0]))>=0 ) {
     /*
      *   have a good merge at position k1;
      */
-    merge_t M;
+    merge_alpha_t Ma;
+    merge_beta_t Mb;
     yap_message("\n  best merge is %d+%d giving diff=%lf\n", k1, B[k1].k2,
 		scale* B[k1].ml);
-    merge_init(k1, B[k1].k2, &M);
-    hca_merge_stats(k1, B[k1].k2, M.Tdt, NULL);
+    Ma.Tdt = NULL;
+    Mb.Twt = NULL;
+    if ( ddP.PYalpha ) 
+      merge_init_Tdt(k1, B[k1].k2, &Ma);
+    if ( ddP.PYbeta ) 
+      merge_init_Twt(k1, B[k1].k2, &Mb);
+    hca_merge_stats(k1, B[k1].k2, Ma.Tdt, Mb.Twt);
     // hca_correct_tdt(0);
-    merge_free(&M);
+    if ( ddP.PYalpha ) 
+      merge_free_Tdt(&Ma);
+    if ( ddP.PYbeta ) 
+      merge_free_Twt(&Mb);
     /*  block them from getting picked again */
     B[k1].ml = 0;
     B[B[k1].k2].ml = 0;
