@@ -118,6 +118,7 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
   uint16_t *TdT;
   uint16_t *Ndt;
 
+#ifndef NOOPT_MERGE
   struct heap_s up;
   struct heap_s down;
   /*
@@ -131,7 +132,7 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
    */
   float *score_up;
   float *score_down;
-
+#endif
   double likelihood;
 
   if ( k1<=0 || k2<=0 || ddS.TDt[k1]==0 || ddS.TDt[k2]==0 ) 
@@ -142,12 +143,7 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
    */
   TdT = u16vec(ddN.DT); 
   Ndt = u16vec(ddN.DT);
-  Tdt_up = u32vec(ddN.DT);
-  Tdt_down = u32vec(ddN.DT);
-  score_up = fvec(ddN.DT);
-  score_down = fvec(ddN.DT);
-  if ( !score_down || !score_up || !Ndt || !TdT ||
-       !Tdt || !Tdt_up || !Tdt_down )
+  if ( !Ndt || !TdT || !Tdt  )
     yap_quit("Out of memory in likemerge()\n");
 
   /*
@@ -174,7 +170,13 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
 #endif
 
 #ifndef NOOPT_MERGE
- /*
+  Tdt_up = u32vec(ddN.DT);
+  Tdt_down = u32vec(ddN.DT);
+  score_up = fvec(ddN.DT);
+  score_down = fvec(ddN.DT);
+  if ( !score_down || !score_up || !Tdt_up || !Tdt_down )
+    yap_quit("Out of memory in likemerge()\n");
+  /*
    *  initialise sort
    */
   for (d=0; d<ddN.DT; d++) {
@@ -313,10 +315,12 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
 
   free(TdT);
   free(Ndt);
+#ifndef NOOPT_MERGE
   free(score_up);
   free(score_down);
   heap_free(&up);
   heap_free(&down);
+#endif
   yap_infinite(likelihood);
   return likelihood;
 }
