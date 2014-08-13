@@ -573,15 +573,15 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     /*
      *   grab word prob vec for later use
      */
-    if ( ddP.phi ) 
-      fv_copy(pvec, ddP.phi[kk], ddN.W);
-    else if ( ddS.phi ) 
-      fv_copy(pvec, ddS.phi[kk], ddN.W);
-    else {
+    if ( ddS.Nwt ) {
       int w;
       for (w=0; w<ddN.W; w++)
 	pvec[w] = wordprob(w,kk);
-    }
+    } else if ( ddP.phi ) 
+      fv_copy(pvec, ddP.phi[kk], ddN.W);
+    else if ( ddS.phi ) 
+      fv_copy(pvec, ddS.phi[kk], ddN.W);
+
     /*
      *  rebuild word list
      */

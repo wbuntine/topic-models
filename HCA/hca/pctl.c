@@ -172,7 +172,8 @@ void pctl_init() {
   ddP.n_query = 0;
   ddP.mergeiter = 0;
   ddP.mergeinit = 0;
-  ddP.mergemin = 5;
+  ddP.mergemin = 0;
+  ddP.mergebest = 1;
 
   ddP.Tinc = 5;
   ddP.Tcycle = 20;

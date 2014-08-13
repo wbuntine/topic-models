@@ -154,8 +154,9 @@ static void usage() {
 	  "   -e             #  send error log to STDERR\n"
 	  "   -f FMT         #  'ldac', 'witdit', 'docword', 'bag', 'lst' for data format\n"
           "   -I init,cycle,inc,free  #  controls constrains on topic changes\n"
-	  "   -J init,cycle,min #  do a merge step starting at init, every cycle\n"
-	  "                  #     and ignore topics <= min entries (default=5)\n"
+	  "   -J init,cycle,prop,best #  do a merge step starting at init, every cycle\n"
+	  "                  #     and ignore topics with proportion < prop (default=1/(T*100))\n"
+	  "                  #     add the best merges at each stage (default=1)\n"
           "   -K topics      #  maximum number of topics\n"
 	  "   -m             #  up the memory conservation by one\n"
 	  "   -M maxtime     #  maximum training seconds (wall time), quit early if reached\n"
@@ -568,9 +569,10 @@ int main(int argc, char* argv[])
         yap_quit("Need a valid 'I' argument\n");
       break;
     case 'J':
-      if ( !optarg || sscanf(optarg,"%d,%d,%d",
-                             &ddP.mergeinit,&ddP.mergeiter,&ddP.mergemin)<1 
-	   || ddP.mergeinit<1 || ddP.mergeiter<2 )
+      if ( !optarg || sscanf(optarg,"%d,%d,%f,%d",
+                             &ddP.mergeinit,&ddP.mergeiter,&ddP.mergemin, 
+			     &ddP.mergebest)<1 
+	   || ddP.mergeinit<1 || ddP.mergeiter<2 || ddP.mergemin>0.5 )
         yap_quit("Need a valid 'J' argument\n");
       break;
     case 'K':
@@ -948,6 +950,11 @@ int main(int argc, char* argv[])
      ddP.betatot = betacin*ddN.W;
    if ( alphacin>0 )
      ddP.alphatot = alphacin*ddN.T;
+   if ( ddP.mergeiter>0 ) {
+     if ( ddP.mergemin==0 ) 
+       ddP.mergemin = 0.01/ddN.T;
+   }
+
    /*
     *   if ddP.betatot or ddP.alphatot ==0 they'll be set to defaults
     *   when PY=H_None
@@ -1251,7 +1258,7 @@ int main(int argc, char* argv[])
      */
     if ( ddP.mergeiter>0 && 
 	 iter>ddP.mergeinit && (iter%ddP.mergeiter)==0 && iter-1<ITER ) {
-      like_merge(ddP.mergemin, showlike?1:(-M_LOG2E/ddN.NT));
+      like_merge(ddP.mergemin, showlike?1:(-M_LOG2E/ddN.NT), ddP.mergebest);
     }
 
     /*

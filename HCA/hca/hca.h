@@ -78,7 +78,7 @@ double lp_test_LRS();
 double lp_test_ML(int procs, enum GibbsType fix);
 
 float **hca_topmtx();
-void like_merge(int mincount, double scale);
+void like_merge(float minprop, double scale, int best);
 
 void query_read(char *fname);
 void gibbs_query(char *stem, int K, char *qname, int dots, int this_qpart, int qparts);
