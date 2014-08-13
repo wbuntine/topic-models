@@ -13,6 +13,9 @@
  *
  */
 
+//   switch off TXt[] optimisation
+#define NOOPT_MERGE
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -72,6 +75,7 @@ static double likemerge_DIRbeta(k1,k2) {
   return likelihood;
 }
 
+#ifndef NOOPT_MERGE
 static double merge_alphabasetopicprob(uint32_t TDT, uint32_t TDt, int t) {
   assert(t>=0);
   if ( ddP.PYalpha==H_PDP ) 
@@ -93,7 +97,7 @@ static int fveccmp(uint32_t k1, uint32_t k2, void *par) {
     return 1;
   return 0;
 }
-
+#endif
 /*
  *  place all topic k2 data in topic k1;
  *  find optimal table counts Tdt[.][k1];
@@ -163,9 +167,13 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
   }
   TDTm = ddS.TDT - TDt;
 
+#ifndef NDEBUG
   for (d=0; d<ddN.DT; d++) {
     assert(Tdt[d]<=Ndt[d]);
   }
+#endif
+
+#ifndef NOOPT_MERGE
  /*
    *  initialise sort
    */
@@ -242,7 +250,8 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
     heap_push(&down,d);
     heap_push(&up,d);
   }
-  
+#endif
+
   /*
    *  so have optimal Tdt[] for merge;
    *  compute final likelihood ratio based on this
