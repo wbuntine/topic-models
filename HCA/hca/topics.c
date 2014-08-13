@@ -671,6 +671,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
        *   print top words:
        *     Mallet:   rank, count, prob, cumm, docs, coh
        */
+      yap_message("\ntopic %d/%d", kk, k);
       yap_message(" words=");
       for (w=0; w<cnt; w++) {
 	if ( w>0 ) yap_message(",");

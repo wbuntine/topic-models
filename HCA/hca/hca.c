@@ -852,7 +852,11 @@ int main(int argc, char* argv[])
   }
   pctl_fix(ITER, loadphi);
   pctl_samplereport();
+#ifdef EXPERIMENTAL2
   Tmax = ddP.Tinit;
+#else
+  Tmax = ddN.T;
+#endif
   
   assert(ddN.T>0);
   assert(ddN.TEST>=0);
@@ -1261,12 +1265,15 @@ int main(int argc, char* argv[])
     }
     if ( nosample==0 ) 
       pctl_sample(iter,procs);
+#ifdef EXPERIMENTAL2
     {
 	int Tmax_before = Tmax;
     	Tmax = pctl_Tmax(Tmax, iter);
-	if ( verbose>1 && Tmax_before < Tmax )
-		yap_message("T increased from %d to %d\n", Tmax_before, Tmax);
+	if ( verbose>1 && Tmax_before < Tmax ) {
+	  yap_message("T increased from %d to %d\n", Tmax_before, Tmax);
+	}
     }
+#endif
    
     /*
      *   do time calcs here to remove diagnostics+reporting

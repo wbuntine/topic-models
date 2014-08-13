@@ -254,7 +254,7 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
     if ( ddP.apar>0 ) la = log(ddP.apar);
     likelihood = 0;
     for (d=0; d<ddN.DT; d++) {
-      int Td_diff;
+      int Td_diff;  /*  total change in T for doc */
       if ( Ndt[d]>1 ) {
         likelihood -= S_S(ddC.SX,ddS.Ndt[d][k2],ddS.Tdt[d][k2]);
         likelihood -= S_S(ddC.SX,ddS.Ndt[d][k1],ddS.Tdt[d][k1]);
@@ -273,34 +273,32 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
       } else {
         likelihood += Td_diff*la;
         if ( Td_diff<0 ) 
-          likelihood -= gammadiff(-Td_diff, TDt-1+ddP.bpar/ddP.apar, 0.0);
+          likelihood -= 
+	    gammadiff(-Td_diff,TdT[d]+ddP.bpar/ddP.apar, 0.0);
         else
-          likelihood += gammadiff(Td_diff, TDt-Td_diff-1+ddP.bpar/ddP.apar, 0.0);
+          likelihood += 
+	    gammadiff(Td_diff, TdT[d]-Td_diff+ddP.bpar/ddP.apar, 0.0);
       }
       yap_infinite(likelihood);
     }      
-    if ( TD_diff!=0 ) {
-      if ( ddP.PYalpha==H_PDP ) {
-        likelihood += TD_diff*log(ddP.alphapr[k1]);
-      } else if ( ddP.PYalpha==H_HDP ) {
-        likelihood += lgamma(TDTm+TDt-TD_diff+ddP.b0) - lgamma(TDTm+TDt+ddP.b0);
-        if ( ddS.TDt[k2]>0 )
-          likelihood -= gammadiff(ddS.TDt[k2], ddP.b0*ddP.alphapr[k2], 0.0);
-        if ( TD_diff )
-          likelihood += gammadiff(TD_diff, TDt-TD_diff+ddP.b0*ddP.alphapr[k1], 0.0);
-        else
-          likelihood -= gammadiff(-TD_diff, TDt+ddP.b0*ddP.alphapr[k1], 0.0);
-      } else {
-        double lga0 = lgamma(1-ddP.a0);
-        likelihood += lgamma(TDTm+TDt-TD_diff+ddP.b0) - lgamma(TDTm+TDt+ddP.b0);
-        if ( ddS.TDt[k2]>0 )
-          likelihood -= log(ddP.b0+ddP.a0*(ddS.TDTnz-1));
-        if ( ddS.TDt[k2]>1 )
-          likelihood -= lgamma(ddS.TDt[k2]-ddP.a0) - lga0;
-        if ( ddS.TDt[k1]>1 )
-          likelihood -= lgamma(ddS.TDt[k1]-ddP.a0) - lga0;
-        likelihood += lgamma(TDt-ddP.a0) - lga0;
-      }
+    if ( ddP.PYalpha==H_PDP ) {
+      likelihood += (TDt-ddS.TDt[k1])*log(ddP.alphapr[k1])
+	- ddS.TDt[k2]*log(ddP.alphapr[k2]);
+    } else if ( ddP.PYalpha==H_HDP ) {
+      likelihood += lgamma(TDTm+TDt-TD_diff+ddP.b0) - lgamma(TDTm+TDt+ddP.b0);
+      likelihood -= gammadiff(ddS.TDt[k1], ddP.b0*ddP.alphapr[k1], 0.0);
+      likelihood -= gammadiff(ddS.TDt[k2], ddP.b0*ddP.alphapr[k2], 0.0);
+      likelihood += gammadiff(TDt, ddP.b0*ddP.alphapr[k1], 0.0);
+    } else {
+      double lga0 = lgamma(1-ddP.a0);
+      likelihood += lgamma(TDTm+TDt-TD_diff+ddP.b0) - lgamma(TDTm+TDt+ddP.b0);
+      /*   because k2 gone to zero, so one less topic */
+      likelihood -= log(ddP.b0+ddP.a0*(ddS.TDTnz-1));
+      if ( ddS.TDt[k2]>1 )
+	likelihood -= lgamma(ddS.TDt[k2]-ddP.a0) - lga0;
+      if ( ddS.TDt[k1]>1 )
+	likelihood -= lgamma(ddS.TDt[k1]-ddP.a0) - lga0;
+      likelihood += lgamma(TDt-ddP.a0) - lga0;
     }
   }
 
@@ -317,9 +315,11 @@ static double likemerge_alpha(int k1, int k2, uint16_t *Tdt) {
 void like_merge(int mincount, double scale) {
   int k1, k2;
   uint16_t *Tdt=NULL, *Tdt_save=NULL;
-  double likediff, ml=0;
+  double likediff;
   float **cmtx;
+  int title = 0;
   int m1=0, m2=0;
+  double ml=0;
 
   assert(mincount>0);
   assert(ddP.phi==NULL);
@@ -351,16 +351,17 @@ void like_merge(int mincount, double scale) {
 	likediff = likemerge_alpha(k1, k2, Tdt);
       likediff += likemerge_DIRbeta(k1,k2);
       if ( likediff>0 ) {
-	if ( ml==0 ) {
+	if ( title==0 ) {
 	  yap_message("\nPre merge log_2(perp)=%.4lf",  
 		      scale * likelihood() );
 	}
 	if ( verbose>1 ) {
-	  if ( ml==0 ) 
+	  if ( title==0 ) 
 	    yap_message(", merge report:\n");
 	  yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
 		      scale * likediff);
 	}     
+	title = 1;
 	if ( likediff>ml ) {
 	  ml = likediff;
 	  m1 = k1; 
@@ -385,7 +386,7 @@ void like_merge(int mincount, double scale) {
     yap_message("\n  best merge is %d+%d giving diff=%lf\n", m1, m2, 
 		scale* ml); 
     hca_merge_stats(m1, m2,  Tdt_save,  NULL); 
-    hca_correct_tdt(0);
+    // hca_correct_tdt(0);
   } else
     yap_message("\n");
   if ( ddP.PYalpha ) {

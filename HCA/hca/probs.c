@@ -76,7 +76,7 @@ int get_probs(double *vp) {
      */
     if ( ddP.PYalpha!=H_HPDD || ddS.TDt[t]>0 || zerod ) {
       tot += vp[t] = alphabasetopicprob(t);
-      if (zerod) zerod = 0;
+      if (zerod && ddS.TDt[t]==0) zerod = 0;
     } else {
       empty++;
       vp[t] = 0;
@@ -84,7 +84,13 @@ int get_probs(double *vp) {
   }
 #ifndef NDEBUG
   if ( fabs(tot-1.0)>1e-4 ) {
+    uint32_t Ttot = 0;
     yap_message("get_probs() probs doesn't normalise, get %lf\n", tot);
+    yap_message("   PYalpha=%d, TDTnz=%d, ", (int)ddP.PYalpha, (int)ddS.TDTnz);
+    for (t=0; t<ddN.T; t++) {
+      Ttot += ddS.TDt[t];
+    }
+    yap_message(" stored TDT=%u, comp TDT=%u\n", ddS.TDT, Ttot);
   }
 #endif
   for (t=0; t<ddN.T; t++) 
