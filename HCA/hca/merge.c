@@ -203,8 +203,50 @@ static void merge_init_Twt(int k1, int k2, merge_beta_t *M) {
 #endif
 }
 
+#ifdef UNMADE
+#define K_BOUND 10
+static int getTdT(int d) {
+  int k1;
+  int TdT=0;
+  uint16_t *Tdt = ddS.Tdt[d];
+  for (k=0; k<ddN.T; k++)
+    TdT += Tdt[k];
+  return TdT;
+}
+static double merge_sumapprox_Tdt(int k) {
+  double x[ddN.DT];
+  int d;
+  for (d=0; d<ddN.DT; d++) {
+    double xp = 0, xm = 0;
+    int nn, tt, TdT;
+    nn = ddS.Ndt[d][k];
+    if ( nn<=1 ) {
+      x[d] = 0;
+      continue;
+    }
+    tt = ddS.Tdt[d][k];
+    TdT = getTdT(d);
+    if ( tt<nn )
+      xp = (ddP.bpar + ddP.apar*TdT) * S_V(ddC.SX,nn,tt+1)
+	* alphabasetopicprob(k);
+    if ( tt>1) {
+      ddS.TDt[k]--; ddS.TDT--;
+      xm = 1.0/(ddP.bpar + ddP.apar*(TdT-1)) / S_V(ddC.SX,nn,tt)
+	/ alphabasetopicprob(k);
+      ddS.TDt[k]++; ddS.TDT++;
+    }
+    if ( xm>xp )
+      x[d] = xm;
+    else 
+      x[d] = xp;
+  }
+  // ?????????
+}
+#endif
+
 #ifndef NOOPT_MERGE
 static void merge_opt_Tdt(int k1, int k2, merge_alpha_t *M) {
+int d;
   struct heap_s up;
   struct heap_s down;
   /*
@@ -235,11 +277,11 @@ static void merge_opt_Tdt(int k1, int k2, merge_alpha_t *M) {
     Tdt_down[d] = d;
     if ( M->Tdt[d]<M->Ndt[d] )
       score_up[d] = (ddP.bpar + ddP.apar*M->TdT[d]) 
-	/ S_V(ddC.SX,M->Ndt[d],M->Tdt[d]+1);
+	* S_V(ddC.SX,M->Ndt[d],M->Tdt[d]+1);
     else 
       score_up[d] = 0;
     if ( M->Tdt[d]>1 )
-      score_down[d] = S_V(ddC.SX,M->Ndt[d],M->Tdt[d])
+      score_down[d] = 1.0 / S_V(ddC.SX,M->Ndt[d],M->Tdt[d])
 	/(ddP.bpar + ddP.apar*(M->TdT[d]-1));
     else
       score_down[d] = 0;    
@@ -289,11 +331,11 @@ static void merge_opt_Tdt(int k1, int k2, merge_alpha_t *M) {
     }
     if ( M->Tdt[d]<M->Ndt[d] )
       score_up[d] = (ddP.bpar + ddP.apar*M->TdT[d]) 
-	/ S_V(ddC.SX,M->Ndt[d],M->Tdt[d]+1);
+	* S_V(ddC.SX,M->Ndt[d],M->Tdt[d]+1);
     else 
       score_up[d] = 0;
     if ( M->Tdt[d]>1 )
-      score_down[d] = S_V(ddC.SX,M->Ndt[d],M->Tdt[d])
+      score_down[d] = 1.0 / S_V(ddC.SX,M->Ndt[d],M->Tdt[d])
 	/(ddP.bpar + ddP.apar*(M->TdT[d]-1));
     else
       score_down[d] = 0;
@@ -317,11 +359,11 @@ static void merge_opt_Tdt(int k1, int k2, merge_alpha_t *M) {
  *  compute likelihood ratio difference based on *M
  */
 static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
-  int i;
+  int i, w;
   double likelihood = 0;
   double lbw = log(ddP.bwpar);
   double law = log(ddP.awpar);
-  uint32_t Tw_ = 0;
+  double TW_diff = 0;
   for (i=0; i<ddN.W; i++) {
     likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
     likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
@@ -340,15 +382,18 @@ static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
   likelihood -= gammadiff((int)M->NWt, ddP.bwpar, 0.0);
   yap_infinite(likelihood);
   if ( ddP.PYbeta==H_PDP ) {
-    for (j=0; j<ddN.W; j++) {
-      if ( ddS.TwT[j]>0 ) {
-        likelihood += ???????ddS.TwT[j]*log(ddP.betapr[j]);
+    for (w=0; w<ddN.W; w++) {
+      if ( ddS.TwT[w]>0 ) {
+	// ???????????????
+        likelihood += ddS.TwT[w]*log(ddP.betapr[w]);
       }
     }      
   } else if ( ddP.PYbeta==H_HDP ) {
-    likelihood += lgamma(M->TWTm+M->TDt-TW_diff+ddP.bw0) 
+    yap_quit("merge with PYbeta unimplemented\n");
+    likelihood += lgamma(M->TWTm+M->TWt-TW_diff+ddP.bw0) 
       - lgamma(M->TWTm+M->TWt+ddP.bw0);
-    for (j=0; j<ddN.W; j++) {????
+    for (w=0; w<ddN.W; w++) {
+      // ???????????
       likelihood -= gammadiff(ddS.TWt[k1], ddP.bw0*ddP.betapr[k1], 0.0);
       likelihood -= gammadiff(ddS.TWt[k2], ddP.bw0*ddP.betapr[k2], 0.0);
       likelihood += gammadiff(M->TWt, ddP.bw0*ddP.betapr[k1], 0.0);
@@ -366,6 +411,7 @@ static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
     likelihood += lgamma(M->TWt-ddP.aw0) - lgaw0;
   }
   yap_infinite(likelihood);
+  return likelihood;
 }
 
 /*
@@ -436,7 +482,6 @@ static double likemerge_alpha(int k1, int k2) {
    *   storing/saving the new/proposed version
    */
   merge_alpha_t M;
-
   double likelihood;
 
   if ( k1<=0 || k2<=0 || ddS.TDt[k1]==0 || ddS.TDt[k2]==0 ) 
@@ -464,7 +509,7 @@ static double likemerge_beta(int k1, int k2) {
   merge_init_Twt(k1, k2, &M);
 #ifndef NOOPT_MERGE
   /*  optimise the table counts Tdt[.][k1] */
-  merge_opt_Twt(k1, k2, &M);
+  //  ???????merge_opt_Twt(k1, k2, &M);
 #endif
   likelihood = merge_like_Twt(k1, k2, &M);
   merge_free_Twt(&M);
@@ -485,14 +530,13 @@ static int next_best(bestmerge_t *B) {
       v = B[k].ml;
     }
   }
-  if ( bk>=0 ) 
-    return bk;
-  return -1;
+  return bk;
 }
 
 void like_merge(float minprop, double scale, int best) {
   int k1, k2;
   double likediff;
+  int got=0;
   float **cmtx;
   int title = 0;
   int mincount = minprop * ddN.NT;
@@ -530,6 +574,7 @@ void like_merge(float minprop, double scale, int best) {
       else
 	likediff += likemerge_beta(k1, k2);
       if ( likediff>0 ) {
+	got++;
 	if ( title==0 ) {
 	  yap_message("\nPre merge log_2(perp)=%.4lf",  
 		      scale * likelihood() );
@@ -537,7 +582,7 @@ void like_merge(float minprop, double scale, int best) {
 	if ( verbose>1 ) {
 	  if ( title==0 ) 
 	    yap_message(", merge report:\n");
-	  yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
+	  yap_message("   %d+%d cor=%0.6f like+=%0.6g\n", k1, k2, cmtx[k1][k2], 
 		      scale * likediff);
 	}     
 	title = 1;
@@ -550,18 +595,21 @@ void like_merge(float minprop, double scale, int best) {
 	  B[k2].k2 = k1; 
 	}
       } else if ( verbose>2 ) {
-        yap_message("\n   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
+        yap_message("   %d+%d cor=%0.6f like+=%0.6g\n", k1, k2, cmtx[k1][k2], 
                     scale * likediff);
       }
     }
   }
-  while ( best>0 && (k1=next_best(&B[0]))>=0 ) {
+  if ( got==0 && verbose>1 ) {
+    yap_message("Merge found no candidates\n");
+  }
+  while ( got && best-->0 && (k1=next_best(&B[0]))>=0 ) {
     /*
      *   have a good merge at position k1;
      */
     merge_alpha_t Ma;
     merge_beta_t Mb;
-    yap_message("\n  best merge is %d+%d giving diff=%lf\n", k1, B[k1].k2,
+    yap_message("  best merge is %d+%d giving diff=%lf\n", k1, B[k1].k2,
 		scale* B[k1].ml);
     Ma.Tdt = NULL;
     Mb.Twt = NULL;

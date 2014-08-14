@@ -146,7 +146,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     if ( !indk )
       yap_quit("Cannot allocate indk\n");
     
-    yap_message("\nEpoch %d", (int)tscoree);
+    yap_message("\nEpoch %d\n", (int)tscoree);
     for (k=0; k<ddN.T; k++) {
       int cnt;
       double spw;
@@ -168,7 +168,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       
       if ( ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
 	underused++;
-      yap_message("\nTopic %d/%d (", k, (int)tscoree);
+      yap_message("Topic %d/%d (", k, (int)tscoree);
       yap_message("p=%.2lf%%/%.2lf%%,", 
 		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
 		  100.0*getNk(k)/(double)NWK );
