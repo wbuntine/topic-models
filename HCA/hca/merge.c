@@ -14,7 +14,7 @@
  */
 
 //   switch off TXt[] optimisation
-#define NOOPT_MERGE
+// #define NOOPT_MERGE
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -524,6 +524,13 @@ typedef struct bestmerge_s {
 static int next_best(bestmerge_t *B) {
   int k, bk=-1;
   double v = 0;
+  yap_message("merge buffer: ");
+  for (k=0; k<ddN.T; k++) {
+    if ( B[k].ml>0 ) {
+      yap_message("%d+%d ", k, B[k].k2);
+    }
+  }
+  yap_message("\n");
   for (k=0; k<ddN.T; k++) {
     if ( B[k].ml>v ) {
       bk = k;
@@ -575,33 +582,33 @@ void like_merge(float minprop, double scale, int best) {
 	likediff += likemerge_beta(k1, k2);
       if ( likediff>0 ) {
 	got++;
-	if ( title==0 ) {
+	if ( title==0 && verbose ) {
 	  yap_message("\nPre merge log_2(perp)=%.4lf",  
 		      scale * likelihood() );
 	}
 	if ( verbose>1 ) {
 	  if ( title==0 ) 
 	    yap_message(", merge report:\n");
-	  yap_message("   %d+%d cor=%0.6f like+=%0.6g\n", k1, k2, cmtx[k1][k2], 
+	  yap_message("   %d+%d cor=%0.6f like+=%0.6g", k1, k2, cmtx[k1][k2], 
 		      scale * likediff);
 	}     
 	title = 1;
 	if ( likediff>B[k1].ml ) {
 	  B[k1].ml = likediff;
 	  B[k1].k2 = k2; 
+	  if ( verbose>1 ) yap_message("  stored");
 	}
 	if ( likediff>B[k2].ml ) {
 	  B[k2].ml = likediff;
 	  B[k2].k2 = k1; 
+	  if ( verbose>1 ) yap_message("  stored");
 	}
+	if ( verbose>1 ) yap_message("\n");
       } else if ( verbose>2 ) {
         yap_message("   %d+%d cor=%0.6f like+=%0.6g\n", k1, k2, cmtx[k1][k2], 
                     scale * likediff);
       }
     }
-  }
-  if ( got==0 && verbose>1 ) {
-    yap_message("Merge found no candidates\n");
   }
   while ( got && best-->0 && (k1=next_best(&B[0]))>=0 ) {
     /*
@@ -634,6 +641,13 @@ void like_merge(float minprop, double scale, int best) {
 	  B[k].ml = 0;
       } 
     }
+  }	
+  if ( got && verbose ) {
+    yap_message("\nPost merge log_2(perp)=%.4lf",  
+		scale * likelihood() );
+  }  
+  if ( got==0 && verbose ) {
+    yap_message("Merge found no candidates\n");
   }
   free(cmtx[0]); free(cmtx);
 }
