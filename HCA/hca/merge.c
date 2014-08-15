@@ -609,15 +609,16 @@ void like_merge(float minprop, double scale, int best) {
      */
     merge_alpha_t Ma;
     merge_beta_t Mb;
-    yap_message("  best merge is %d+%d giving diff=%lf\n", k1, B[k1].k2,
+    k2 = B[k1].k2;
+    yap_message("  best merge is %d+%d giving diff=%lf\n", k1, k2,
 		scale* B[k1].ml);
     Ma.Tdt = NULL;
     Mb.Twt = NULL;
     if ( ddP.PYalpha ) 
-      merge_init_Tdt(k1, B[k1].k2, &Ma);
+      merge_init_Tdt(k1, k2, &Ma);
     if ( ddP.PYbeta ) 
-      merge_init_Twt(k1, B[k1].k2, &Mb);
-    hca_merge_stats(k1, B[k1].k2, Ma.Tdt, Mb.Twt);
+      merge_init_Twt(k1, k2, &Mb);
+    hca_merge_stats(k1, k2, Ma.Tdt, Mb.Twt);
     // hca_correct_tdt(0);
     if ( ddP.PYalpha ) 
       merge_free_Tdt(&Ma);
@@ -625,7 +626,14 @@ void like_merge(float minprop, double scale, int best) {
       merge_free_Twt(&Mb);
     /*  block them from getting picked again */
     B[k1].ml = 0;
-    B[B[k1].k2].ml = 0;
-  } 
+    B[k2].ml = 0;
+    {
+      int k;
+      for (k=0; k<ddN.T; k++) {
+	if ( B[k].k2==k1 || B[k].k2==k2 )
+	  B[k].ml = 0;
+      } 
+    }
+  }
   free(cmtx[0]); free(cmtx);
 }
