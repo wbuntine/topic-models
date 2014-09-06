@@ -78,11 +78,13 @@ void unfix_tableidtopic(int d, int t, int ind) {
       /*
        *    shouldn't happen as its a total
        */
-      yap_quit("Whoops atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40\n");
+      yap_quit("Whoops atomic_decr(ddS.C_eDt[%d][%d])==%u>=UINT32_MAX-40\n",
+	       e, t, (unsigned)ddS.C_eDt[e][t]);
     }
     ddS.C_dT[d]--;
     if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
-      yap_quit("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
+      yap_quit("Whoops atomic_decr(ddS.C_e[%d])==%u>=UINT32_MAX-40\n",e,
+	       (unsigned)ddS.C_e[e]);
     decr_dt = 1;
   } 
   if ( decr_dt ) {          
@@ -99,7 +101,8 @@ void unfix_tableidtopic(int d, int t, int ind) {
 	break;
       }           
       if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
-	yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
+	yap_quit("Whoops atomic_decr(ddS.Cp_e[%d])==%u>=UINT32_MAX-40\n", 
+		 i, (unsigned)ddS.Cp_e[i]);
     }
   } 
   {
