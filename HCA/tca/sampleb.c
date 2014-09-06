@@ -95,7 +95,7 @@ static double bterms_mu1(double b, void *mydata) {
 static double bterms_mu0(double b, void *mydata) {
   double val = pctl_gammaprior(b);
   val += poch(b, ddP.a_mu, ddS.Cp_e[0]);
-  val -= gammadiff((ddS.C_e[0]+(ddN.E>1)?ddS.Cp_e[1]:0), b, 0);
+  val -= gammadiff(ddS.C_e[0]+((ddN.E>1)?ddS.Cp_e[1]:0), b, 0);
   myarms_evals++;
 #ifdef B_DEBUG
   yap_message("Eval bterms_mu0(%lf) = %lf", b, val);
@@ -112,7 +112,7 @@ static double bterms_phi0(double b, void *mydata) {
   double lgb = lgamma(b);
   for (t=0; t<ddN.T; t++) {
     val += poch(b, ddP.a_phi1, ddS.S_eVt[0][t]);
-    val -= gammadiff(ddS.M_eVt[0][t] + (ddN.E>1)?ddS.S_eVt[1][t]:0, 
+    val -= gammadiff(ddS.M_eVt[0][t] + ((ddN.E>1)?ddS.S_eVt[1][t]:0), 
                      b, lgb);
   }
   myarms_evals++;
