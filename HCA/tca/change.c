@@ -116,7 +116,8 @@ void unfix_tableidtopic(int d, int t, int ind) {
 	 *    this may decrement below zero if two independently set ind
 	 *    so we catch it here
 	 */
-	yap_message("Whoops atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40\n");
+	yap_message("Whoops atomic_decr(ddS.cp_et[%d][%d])==%u>=UINT32_MAX-40\n", i, t,
+			(unsigned) ddS.cp_et[i][t]);
 	atomic_incr(ddS.cp_et[i][t]);
 	break;
       }           
