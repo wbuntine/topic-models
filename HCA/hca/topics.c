@@ -545,9 +545,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
    */
   //ttop_open(topfile);
   if ( fullreport ) {
-    rp = fopen(repfile,"a");
+    rp = fopen(repfile,"w");
     if ( !rp ) 
-      yap_sysquit("Cannot open file '%s' for append\n", repfile);
+      yap_sysquit("Cannot open file '%s' for write\n", repfile);
     fprintf(rp, "#topic index rank prop word-sparse doc-sparse eff-words eff-docs docs-bound top-one "
 	    "dist-unif dist-unigrm");
     if ( PCTL_BURSTY() ) 

@@ -109,7 +109,7 @@ void pctl_init() {
   ddT[ParB0M].fix = 1;
   // ddT[ParBP0].fix = 1;
   //WRAY  sampling BM0 causes weird memory bugs
-  ddT[ParBM0].fix = 1;
+  //  ddT[ParBM0].fix = 1;
   ddT[ParAP0].fix = 1;
   ddT[ParAP1].fix = 1;
 
