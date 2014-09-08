@@ -67,7 +67,6 @@ uint16_t comp_Td(int did) {
 
 void unfix_tableidtopic(int d, int t, int ind) { 
   int e = ddD.e[d];
-  int decr_dt = 0;
 #ifndef H_THREADS
   assert(ddS.c_dt[d][t]>0);
 #endif
@@ -85,28 +84,25 @@ void unfix_tableidtopic(int d, int t, int ind) {
     if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.C_e[%d])==%u>=UINT32_MAX-40\n",e,
 	       (unsigned)ddS.C_e[e]);
-    decr_dt = 1;
-  } 
-  if ( decr_dt ) {          
-    /*   decrementing up */
+    /*
+     *  decrementing up 
+     */
     int i;
     int end_e;
     end_e = e-ind;
     for (i = e; i>end_e; i--) {
-      int one = 1;
-      if ( !atomic_decr_val(ddS.cp_et[i][t],one) ) {
-	/*   result nonzero, so break here  */
-	ind -= (e-i);
-	e = i;
+      if ( atomic_decr(ddS.cp_et[i][t])>=UINT32_MAX-40 ) {
+	atomic_incr(ddS.cp_et[i][t]);
 	break;
-      }           
+      }       
       if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
 	yap_quit("Whoops atomic_decr(ddS.Cp_e[%d])==%u>=UINT32_MAX-40\n", 
 		 i, (unsigned)ddS.Cp_e[i]);
     }
-  } 
-  {
-    /*   decrementing down */
+  } else {
+    /*
+     *  decrementing down and expect non-zero at the end
+     */
     int i;
     int end_e;
     end_e = e-ind;
@@ -119,13 +115,11 @@ void unfix_tableidtopic(int d, int t, int ind) {
 	yap_message("Whoops atomic_decr(ddS.cp_et[%d][%d])==%u>=UINT32_MAX-40\n", i, t,
 			(unsigned) ddS.cp_et[i][t]);
 	atomic_incr(ddS.cp_et[i][t]);
-	break;
-      }           
-      if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
-	yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
+      } else {
+	if ( atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40 )
+	  yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
+      }
     }
-  }
-  if ( decr_dt==0 ) {
     ddS.c_dt[d][t]--;
     //   always safe since its associated with ddS.c_dt[d][t]
     if ( atomic_decr(ddS.C_eDt[e][t])>=UINT32_MAX-40 ) {
@@ -138,6 +132,17 @@ void unfix_tableidtopic(int d, int t, int ind) {
     if ( atomic_decr(ddS.C_e[e])>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.C_e[e])>=UINT32_MAX-40\n");
   }
+#if 0
+  if ( (ddS.C_eDt[e][t]+((e<ddN.E-1)?ddS.cp_et[e+1][t]:0))<ddS.cp_et[e][t] ) {
+    int ii;
+    yap_message("\ne=%d, ind=%d, C_eDt=%d+%d, cp_et=%d\n"
+		"ddS.C_eDt[e][t]<ddS.cp_et[e][t]\n", 
+		e, ind, i_eDt, ((e<ddN.E-1)?ddS.cp_et[e+1][t]:0),
+		i_et);
+  }
+#endif
+  assert( (ddS.C_eDt[e][t]+((e<ddN.E-1)?ddS.cp_et[e+1][t]:0))
+	  >= ddS.cp_et[e][t] );
 }
 
 void fix_tableidtopic(int d, int t, int ind) {

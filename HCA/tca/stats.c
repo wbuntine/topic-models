@@ -421,7 +421,23 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
       ddS.Cp_e[e] += ddS.cp_et[e][t];
 }
 
-
+void check_cp_et() {
+  int e, t;
+  for (e=ddN.E-1; e>=0; e--) {
+    for (t=0; t<ddN.T; t++) {
+      int thisc = ddS.C_eDt[e][t];
+      if ( e<ddN.E-1 )
+	thisc += ddS.cp_et[e+1][t];
+      if ( ((thisc>0) && (ddS.cp_et[e][t]==0)) 
+	   || ((thisc>0) ^ (ddS.cp_et[e][t]>0)) 
+	   || (ddS.cp_et[e][t]>thisc) ) {
+	yap_quit("Inconsistency:  ddS.C_eDt[%d][%d]=%d, "
+		 "ddS.cp_et[%d][%d]=%d\n",
+		 e, t, (int)thisc, e, t, (int)ddS.cp_et[e][t]);
+      }
+    }
+  }
+}
 
 void tca_reset_totals() {
   int e, i, t;

@@ -31,8 +31,8 @@
 /* 
  *    *no* atomic ops
  */
-#define atomic_incr(inttype) ++(inttype)
-#define atomic_decr(inttype) --(inttype)
+#define atomic_incr(inttype) (++(inttype))
+#define atomic_decr(inttype) (--(inttype))
 /*
  *   if its val, incr./decr. and return true, else do nothing and return false
  */

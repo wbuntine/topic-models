@@ -660,6 +660,7 @@ int main(int argc, char* argv[])
     if ( procs>1 )
       tca_reset_stats(NULL,1,1);
 #endif
+    check_cp_et();
 
 #ifdef IND_STATS
     {

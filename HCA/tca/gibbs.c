@@ -60,9 +60,9 @@ static int sampleindicator(int n, int t, char *ind) {
  *    return 0 if OK and set *rd
  *    return 1 if bad constraints
  *
- *    *rw is number of epochs back to take count
+ *    *rd is number of epochs back to take count
  *        0==none,  e+1==all the way to root
- *    max of #rw si ddP.back
+ *    max of #rd ddP.back
  */
 static int resample_doc_side_ind(int d, int t, int *rd) {
   int  e = ddD.e[d];
@@ -193,7 +193,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
    */
   if ( wid>=0 ) {
     if ( rw>=1 ) {
-      int decr = 0;
+      int decr = 0; 
       /*
        *  need to safely catch with atomic ops if it goes to zero
        */

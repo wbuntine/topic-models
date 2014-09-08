@@ -140,6 +140,7 @@ void check_n_dt(int d);
 void tca_checkO();
 void tca_checkO_A(int t);
 void check_m_evt(int e);
+void check_cp_et();
 
 #include "change.h"
 #endif
