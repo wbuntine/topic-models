@@ -414,9 +414,20 @@ static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
   return likelihood;
 }
 
+#if 0
 /*
  *  compute likelihood ratio difference based on *M
  */
+static double merge_like_Tdt_sum(int k1, int k2, merge_alpha_t *M) {
+  double *val;
+  int d;
+  val = dvec(ddN.DT);
+
+  for (d=0; d<ddN.DT; d++) {
+
+}
+#endif
+
 static double merge_like_Tdt(int k1, int k2, merge_alpha_t *M) {
   int d;
   double la = 0;

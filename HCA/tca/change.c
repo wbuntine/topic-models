@@ -177,7 +177,7 @@ void unfix_tableidword(int e, int w, int t, int ind) {
       return;
     } 
     if ( atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX-40 )
-      yap_message("Whoops atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX\n");
+      yap_quit("Whoops atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX\n");
     lasti = i;
   }    
   if ( lasti==0 ) {
@@ -191,10 +191,10 @@ void unfix_tableidword(int e, int w, int t, int ind) {
       return;
     }
     if ( atomic_decr(ddS.S_0)>=UINT32_MAX-40 )
-      yap_message("Whoops atomic_decr(ddS.S_0)>=UINT32_MAX %u\n", ddS.S_0);
+      yap_quit("Whoops atomic_decr(ddS.S_0)>=UINT32_MAX %u\n", ddS.S_0);
     if ( val==0 ) {
       if ( atomic_decr(ddS.S_0_nz)>=UINT32_MAX-40 )    
-	yap_message("Whoops atomic_decr(ddS.S_0_nz)>=UINT32_MAX %u\n", ddS.S_0_nz);
+	yap_quit("Whoops atomic_decr(ddS.S_0_nz)>=UINT32_MAX %u\n", ddS.S_0_nz);
     }
   }
 }

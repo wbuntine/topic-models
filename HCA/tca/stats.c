@@ -218,8 +218,11 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
      */
     memset((void*)ddS.N_dT, 0, sizeof(ddS.N_dT[i])*ddN.D);
     memset((void*)ddS.n_dt[0], 0, sizeof(ddS.n_dt[i][t])*ddN.D*ddN.T);
+    memset((void*)ddS.c_dt[0], 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
+    memset((void*)ddS.cp_et[0], 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
     memset((void*)ddS.m_evt[0][0], 0, sizeof(ddS.m_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
     memset((void*)ddS.M_eVt[0], 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
+    memset((void*)ddS.s_evt[0][0], 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
     for (i=0; i<ddN.NT; i++) { 
       int d = ddD.d[i];
       t = Z_t(ddS.z[i]);
@@ -237,15 +240,13 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
   memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
   memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
   memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
-  memset((void*)ddS.c_dt[0], 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
   memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
   memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.cp_et[0], 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.s_evt[0][0], 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
   ddS.S_0 = 0;
   ddS.S_0_nz = 0;
 
   if ( restart ) {
+    int inconsistency = 0;
     if ( resstem ) {
       char *fname = yap_makename(resstem,".sevt");
       read_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_evt,fname);
@@ -266,18 +267,22 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
 	    ddS.s_evt[e][i][t] = 1;
 	  else if ( ((thism>0) ^ (ddS.s_evt[e][i][t]>0)) ||
 		    (thism<ddS.s_evt[e][i][t]) ) {
-	    if ( restart )
-	      yap_quit("Inconsistency:  ddS.m_evt[%d][%d][%d]=%d, "
-		       "ddS.s_evt[%d][%d][%d]=%d\n",
-		       e, i, t, (int)thism,
-		     e, i, t, (int)ddS.s_evt[e][i][t]);
-	    else {
+	    if ( restart ) {
+	      inconsistency ++;
+	      if ( inconsistency<10)
+		yap_message("Inconsistency:  ddS.m_evt[%d][%d][%d]=%d, "
+			    "ddS.s_evt[%d][%d][%d]=%d\n",
+			    e, i, t, (int)thism,
+			    e, i, t, (int)ddS.s_evt[e][i][t]);
+	    } else {
 	      if ( ddS.s_evt[e][i][t]>thism )
 		ddS.s_evt[e][i][t] = thism;
 	    }
 	  }
 	}
       }
+    if (  inconsistency )
+      yap_quit("Inconsistencies = %d\n", inconsistency);
   } else {
     /*
      *    guess ddS.s_evt at 1;
@@ -312,7 +317,7 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
       ddS.S_0_nz++;
     }
   }
-  check_m_evt(0);
+  // check_m_evt(0);
   /*
    *     alpha part
    */
@@ -334,9 +339,10 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
 	  ddS.c_dt[i][t] = 1;
 	else if ( ((n>0) ^ (ddS.c_dt[i][t]>0)) ||
 		  (ddS.c_dt[i][t]>n)) { 
-	  if ( restart ) 
+	  if ( restart ) {
 	    yap_quit("Inconsistency:  ddS.n_dt[%d][%d]=%d, ddS.c_dt[%d][%d]=%d\n",
 		     i, t, (int)n, i, t, (int)ddS.c_dt[i][t]);
+	  }
 	  else {
 	    if ( ddS.c_dt[i][t]>n )
 	      ddS.c_dt[i][t] = n;
@@ -415,6 +421,67 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
       ddS.Cp_e[e] += ddS.cp_et[e][t];
 }
 
+
+
+void tca_reset_totals() {
+  int e, i, t;
+  /*
+   *  reset not done for:
+   *         ddS.n_dt, ddS.N_dT, ddS.c_dt, ddS.cp_et
+   *         ddS.s_evt,  ddS.m_evt
+   */
+  memset((void*)ddS.M_eVt[0], 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
+  memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
+  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  ddS.S_0 = 0;
+  ddS.S_0_nz = 0;
+
+  memset((void*)ddS.C_dT, 0, sizeof(ddS.C_dT[i])*ddN.D);
+  memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
+  memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
+  memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
+
+  /*
+   *     beta part
+   */
+  for (e=ddN.E-1; e>=0; e--)
+    for (i=0; i<ddN.W; i++) {
+      for (t=0; t<ddN.T; t++) {
+	ddS.M_eVt[e][t] += ddS.m_evt[e][i][t];
+	ddS.S_eVt[e][t] += ddS.s_evt[e][i][t];
+      } 
+    }
+  for (i=0; i<ddN.W; i++) {
+    for (t=0; t<ddN.T; t++) 
+      ddS.S_0vT[i] += ddS.s_evt[0][i][t];
+    assert(ddS.S_0vT[i]>=0);
+    if ( ddS.S_0vT[i]>0 ) {
+      ddS.S_0 += ddS.S_0vT[i];
+      ddS.S_0_nz++;
+    }
+  }
+  /*
+   *     alpha part
+   */
+  for (i=0; i<ddN.DT; i++) {
+    e = ddD.e[i];
+    for (t=0; t<ddN.T; t++) {
+      int tt = ddS.c_dt[i][t];
+      if ( tt>0 ) {
+	ddS.C_eDt[e][t] += tt;
+	ddS.C_dT[i] += tt;
+      }
+    }
+  }
+  for (e=0; e<ddN.E; e++)
+    for (t=0; t<ddN.T; t++)
+      ddS.C_e[e] += ddS.C_eDt[e][t];
+  for (e=0; e<ddN.E; e++) 
+    for (t=0; t<ddN.T; t++) 
+      ddS.Cp_e[e] += ddS.cp_et[e][t];
+}
+
+
 void check_n_dt(int d) {
 #ifndef NDEBUG
   int t;
@@ -426,6 +493,7 @@ void check_n_dt(int d) {
   }
 #endif
 }
+
 
 void check_m_evt(int e) {
 #ifndef NDEBUG

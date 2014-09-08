@@ -187,7 +187,7 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
     fname = yap_makename(resstem,".cpet");
     write_u32sparseco(ddN.E,ddN.T,ddS.cp_et,fname,1);
     free(fname);
-#if 0
+#if 1
     fname = yap_makename(resstem,".mevt");
     write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.m_evt,fname,0);
     free(fname);

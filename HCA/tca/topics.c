@@ -171,7 +171,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       yap_message("Topic %d/%d (", k, (int)tscoree);
       yap_message("p=%.2lf%%/%.2lf%%,", 
 		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
-		  100.0*getNk(k)/(double)NWK );
+		  100.0*getNk(k)/(double)NWK);
       yap_message("ws=%.1lf%%,", 100*(1-spw));
       yap_message("ds=%.1lf%%", 100*(1-spd) );
       fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);

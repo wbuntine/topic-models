@@ -170,7 +170,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
      */
     int n = ddS.n_dt[did][t];
     assert(n>0);
-    if ( 1 && n==1 ) {
+    if ( n==1 ) {
       /*  chains going to zero, work up  */
       // ??????????  wrong ... its ddS.c_dt[d][t] we should worry about!
       ddS.n_dt[did][t] = 0;

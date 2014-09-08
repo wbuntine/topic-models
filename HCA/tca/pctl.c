@@ -105,6 +105,7 @@ void pctl_init() {
   ddT[ParBP0].sampler = &sample_bp0;
   ddT[ParBP1].samplerk = &sample_bp1;
 
+  ddT[ParAB].fix = 1;
   ddT[ParB0P].fix = 1;
   ddT[ParB0M].fix = 1;
   // ddT[ParBP0].fix = 1;
