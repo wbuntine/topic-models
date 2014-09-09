@@ -499,7 +499,6 @@ void tca_reset_totals() {
 
 
 void check_n_dt(int d) {
-#ifndef NDEBUG
   int t;
   for (t=0; t<ddN.T; t++) {
     if ( ddS.n_dt[d][t]==0 && ddS.c_dt[d][t]>0 )
@@ -507,12 +506,10 @@ void check_n_dt(int d) {
     if ( ddS.n_dt[d][t]>0 && ddS.c_dt[d][t]==0 )
       assert(ddS.n_dt[d][t]==0 || ddS.c_dt[d][t]>0);
   }
-#endif
 }
 
 
 void check_m_evt(int e) {
-#ifndef NDEBUG
   int v, t;
   for (v=0; v<ddN.W; v++) {
     for (t=0; t<ddN.T; t++) {
@@ -549,7 +546,6 @@ void check_m_evt(int e) {
     assert(tot==ddS.S_0);
     assert(totnz==ddS.S_0_nz);        
   }
-#endif
 }
 
 

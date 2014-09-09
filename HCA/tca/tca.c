@@ -660,7 +660,19 @@ int main(int argc, char* argv[])
     if ( procs>1 )
       tca_reset_stats(NULL,1,1);
 #endif
-    check_cp_et();
+    /*
+     *  full check
+     */
+#ifndef NDEBUG
+    {
+      int e, d;
+      check_cp_et();
+      for (e=0; e<ddN.E; e++)
+        check_m_evt(e);
+      for (d=0; d<ddN.DT; d++)
+        check_n_dt(d);
+    }
+#endif
 
 #ifdef IND_STATS
     {
