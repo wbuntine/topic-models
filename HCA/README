@@ -7,7 +7,7 @@ and coherence measurements with PMI are also supported.  The code
 runs on multi-core (depending on your compiler) getting about 50% efficiency with 8 cores.
 
 The project home page and more details about the theory behind the software 
-can be found at:
+can be found in our KDD 2014 paper (Buntine and Mishra):
     http://www.researchgate.net/publication/263162682_Experiments_with_Non-parametric_Topic_Models
 
 A dynamic topic model (tca) is included but still in development.  While
@@ -59,6 +59,17 @@ Then:
         #  the last line should be a report such as:
         #         log_2(train perp) = 11.06904
         #  (where your value will vary a percent or so)
+
+TESTING
+=======
+A moderately extensive test script, copying examples from the man page,
+is available as "test.sh".   Run it in the current/main directory:
+       ./test.sh
+so it can find the right files.  While running it directs copious
+messages to stderr.     If it encounters an error, it will print 
+out a message starting with:
+       Cannot run hca/hca  ...
+then quit.
 
 BUILD for MULTICORE
 ==================

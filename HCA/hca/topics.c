@@ -684,7 +684,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	if ( fullreport ) {
 	  fprintf(rp, "word %d %d %d", kk, indk[w], w);
 	  if ( ddS.Nwt )
-	    fprintf(rp, " %d", ddS.Nwt[w][kk]);
+	    fprintf(rp, " %d", ddS.Nwt[indk[w]][kk]);
 	  pcumm += pvec[indk[w]];
 	  fprintf(rp, " %.6f %.6f", pvec[indk[w]], pcumm);
 	  fprintf(rp, " %d", dfmtx[w][w]); 
