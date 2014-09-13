@@ -74,6 +74,8 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
     int ee;
     //sample rd from 0 ...e+1 (e+1 means going back to prior)
     *rd = 0;
+    if ( ddP.mu )
+      return 0;
     for (ee=e; ee>=0; ee--) {
       int sec_part = 0;
       if (ee<ddN.E-1) 
@@ -108,6 +110,8 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
   char uw;
   // sample rw from 0 ...e+1 (e+1 means going back to prior)
   *rw = 0;
+  if ( ddP.phi )
+    return 0;
   for (ee=e;ee>=0;ee--) {
     int sec_part=0;
     if ( ee<ddN.E-1 ) 
@@ -273,7 +277,10 @@ void update_topic(int i, int did, int wid, int t, int mi,
    *   fix up topicXword side
    */
   if ( wid>=0 ) {
-    rw = word_side_ind(e, wid, t);
+    if ( ddP.phi )
+      rw = 0;
+    else
+      rw = word_side_ind(e, wid, t);
     assert(rw>=0 && rw<=e+1);
     if ( rw>0 ) {
       /*

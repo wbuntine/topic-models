@@ -80,15 +80,26 @@ void tca_alloc() {
   ddS.z = u16vec(ddN.N);
   if ( !ddS.z )
     yap_quit("Cannot allocate memory for data\n");
-  ddS.s_evt = u32tri(ddN.E,ddN.W,ddN.T);
-  ddS.S_0vT = u32vec(ddN.W);
-  ddS.S_eVt = u32mat(ddN.E,ddN.T);
+  if ( !ddP.phi ) {
+    ddS.s_evt = u32tri(ddN.E,ddN.W,ddN.T);
+    ddS.S_0vT = u32vec(ddN.W);
+    ddS.S_eVt = u32mat(ddN.E,ddN.T);
+  } else {
+    ddS.s_evt = NULL;
+    ddS.S_0vT = NULL;
+    ddS.S_eVt = NULL;
+  }
+  if ( !ddP.mu) {
+    ddS.cp_et = u32mat(ddN.E,ddN.T);
+    ddS.Cp_e = u32vec(ddN.E);
+  } else {
+    ddS.cp_et = NULL;
+    ddS.Cp_e = NULL;
+  }
   ddS.c_dt = u16mat(ddN.D,ddN.T);
   ddS.C_dT = u16vec(ddN.D);
-  ddS.C_eDt = u32mat(ddN.E,ddN.T);
-  ddS.cp_et = u32mat(ddN.E,ddN.T);
   ddS.C_e = u32vec(ddN.E);
-  ddS.Cp_e = u32vec(ddN.E);
+  ddS.C_eDt = u32mat(ddN.E,ddN.T);
   ddS.N_dT = u16vec(ddN.D);
   ddS.n_dt = u16mat(ddN.D,ddN.T);
   ddS.m_evt = u32tri(ddN.E,ddN.W,ddN.T);
@@ -104,15 +115,19 @@ void tca_free() {
   free(ddS.z);
   free(ddS.N_dT);
   free(ddS.n_dt[0]); free(ddS.n_dt);
-  free(ddS.S_0vT); 
-  free(ddS.S_eVt[0]); free(ddS.S_eVt);
-  free(ddS.s_evt[0][0]);  free(ddS.s_evt[0]);  free(ddS.s_evt);
+  if ( ddS.s_evt ) {
+    free(ddS.S_0vT); 
+    free(ddS.S_eVt[0]); free(ddS.S_eVt);
+    free(ddS.s_evt[0][0]);  free(ddS.s_evt[0]);  free(ddS.s_evt);
+  }
   free(ddS.C_eDt[0]);  free(ddS.C_eDt);
   free(ddS.c_dt[0]);  free(ddS.c_dt);
   free(ddS.C_dT);
   free(ddS.C_e);
-  free(ddS.cp_et[0]);  free(ddS.cp_et);
-  free(ddS.Cp_e);
+  if ( ddS.cp_et ) {
+    free(ddS.cp_et[0]);  free(ddS.cp_et);
+    free(ddS.Cp_e);
+  }
 }
 
 /*
@@ -219,10 +234,12 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
     memset((void*)ddS.N_dT, 0, sizeof(ddS.N_dT[i])*ddN.D);
     memset((void*)ddS.n_dt[0], 0, sizeof(ddS.n_dt[i][t])*ddN.D*ddN.T);
     memset((void*)ddS.c_dt[0], 0, sizeof(ddS.c_dt[i][t])*ddN.D*ddN.T);
-    memset((void*)ddS.cp_et[0], 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
+    if ( !ddP.mu ) 
+      memset((void*)ddS.cp_et[0], 0, sizeof(ddS.cp_et[i][t])*ddN.E*ddN.T);
     memset((void*)ddS.m_evt[0][0], 0, sizeof(ddS.m_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
     memset((void*)ddS.M_eVt[0], 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
-    memset((void*)ddS.s_evt[0][0], 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
+    if ( !ddP.phi ) 
+      memset((void*)ddS.s_evt[0][0], 0, sizeof(ddS.s_evt[e][i][t])*ddN.W*ddN.E*ddN.T);
     for (i=0; i<ddN.NT; i++) { 
       int d = ddD.d[i];
       t = Z_t(ddS.z[i]);
@@ -237,15 +254,19 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
     }
   }
   memset((void*)ddS.C_dT, 0, sizeof(ddS.C_dT[i])*ddN.D);
-  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
   memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
-  memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
-  memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
+  if ( !ddP.mu ) 
+    memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
+  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  if ( !ddP.phi )
+    memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
   memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
   ddS.S_0 = 0;
   ddS.S_0_nz = 0;
 
-  if ( restart ) {
+  if ( ddP.phi ) {
+    ;  // do nothing!
+  } else if ( restart ) {
     int inconsistency = 0;
     if ( resstem ) {
       char *fname = yap_makename(resstem,".sevt");
@@ -299,22 +320,24 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
 	}
       }
   } 
-  /*
-   *    compute S_eVt, S_0vT, S_0_nz, S_0
-   */
-  for (e=0; e<ddN.E; e++)
-    for (i=0; i<ddN.W; i++) {
-      for (t=0; t<ddN.T; t++) {
-	ddS.S_eVt[e][t] += ddS.s_evt[e][i][t];
+  if ( !ddP.phi ) {
+    /*
+     *    compute S_eVt, S_0vT, S_0_nz, S_0
+     */
+    for (e=0; e<ddN.E; e++)
+      for (i=0; i<ddN.W; i++) {
+	for (t=0; t<ddN.T; t++) {
+	  ddS.S_eVt[e][t] += ddS.s_evt[e][i][t];
+	}
       }
-    }
-  for (i=0; i<ddN.W; i++) {
-    for (t=0; t<ddN.T; t++) 
-      ddS.S_0vT[i] += ddS.s_evt[0][i][t];
-    assert(ddS.S_0vT[i]>=0);
-    if ( ddS.S_0vT[i]>0 ) {
-      ddS.S_0 += ddS.S_0vT[i];
-      ddS.S_0_nz++;
+    for (i=0; i<ddN.W; i++) {
+      for (t=0; t<ddN.T; t++) 
+	ddS.S_0vT[i] += ddS.s_evt[0][i][t];
+      assert(ddS.S_0vT[i]>=0);
+      if ( ddS.S_0vT[i]>0 ) {
+	ddS.S_0 += ddS.S_0vT[i];
+	ddS.S_0_nz++;
+      }
     }
   }
   // check_m_evt(0);
@@ -372,7 +395,9 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
   for (e=0; e<ddN.E; e++)
     for (t=0; t<ddN.T; t++)
       ddS.C_e[e] += ddS.C_eDt[e][t];
-  if ( restart ) {
+  if ( ddP.mu ) {
+    ;   // do nothing
+  } else if ( restart ) {
     if ( resstem ) {
       char *fname = yap_makename(resstem,".cpet");
       read_u32sparse(ddN.E,ddN.T,ddS.cp_et,fname);
@@ -416,13 +441,17 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
       }
     }
   }
-  for (e=0; e<ddN.E; e++) 
-    for (t=0; t<ddN.T; t++) 
-      ddS.Cp_e[e] += ddS.cp_et[e][t];
+  if ( !ddP.mu ) {
+    for (e=0; e<ddN.E; e++) 
+      for (t=0; t<ddN.T; t++) 
+	ddS.Cp_e[e] += ddS.cp_et[e][t];
+  }
 }
 
 void check_cp_et() {
   int e, t;
+  if ( ddP.mu )
+    return;
   for (e=ddN.E-1; e>=0; e--) {
     for (t=0; t<ddN.T; t++) {
       int thisc = ddS.C_eDt[e][t];
@@ -447,15 +476,18 @@ void tca_reset_totals() {
    *         ddS.s_evt,  ddS.m_evt
    */
   memset((void*)ddS.M_eVt[0], 0, sizeof(ddS.M_eVt[e][t])*ddN.E*ddN.T);
-  memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  if ( !ddP.phi ) {
+    memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
+    memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  }
   ddS.S_0 = 0;
   ddS.S_0_nz = 0;
 
   memset((void*)ddS.C_dT, 0, sizeof(ddS.C_dT[i])*ddN.D);
   memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
-  memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
   memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
+  if ( !ddP.mu ) 
+    memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
 
   /*
    *     beta part
@@ -464,16 +496,18 @@ void tca_reset_totals() {
     for (i=0; i<ddN.W; i++) {
       for (t=0; t<ddN.T; t++) {
 	ddS.M_eVt[e][t] += ddS.m_evt[e][i][t];
-	ddS.S_eVt[e][t] += ddS.s_evt[e][i][t];
+	if ( !ddP.phi ) ddS.S_eVt[e][t] += ddS.s_evt[e][i][t];
       } 
     }
-  for (i=0; i<ddN.W; i++) {
-    for (t=0; t<ddN.T; t++) 
-      ddS.S_0vT[i] += ddS.s_evt[0][i][t];
-    assert(ddS.S_0vT[i]>=0);
-    if ( ddS.S_0vT[i]>0 ) {
-      ddS.S_0 += ddS.S_0vT[i];
-      ddS.S_0_nz++;
+  if ( !ddP.phi ) {
+    for (i=0; i<ddN.W; i++) {
+      for (t=0; t<ddN.T; t++) 
+	ddS.S_0vT[i] += ddS.s_evt[0][i][t];
+      assert(ddS.S_0vT[i]>=0);
+      if ( ddS.S_0vT[i]>0 ) {
+	ddS.S_0 += ddS.S_0vT[i];
+	ddS.S_0_nz++;
+      }
     }
   }
   /*
@@ -492,9 +526,11 @@ void tca_reset_totals() {
   for (e=0; e<ddN.E; e++)
     for (t=0; t<ddN.T; t++)
       ddS.C_e[e] += ddS.C_eDt[e][t];
-  for (e=0; e<ddN.E; e++) 
-    for (t=0; t<ddN.T; t++) 
-      ddS.Cp_e[e] += ddS.cp_et[e][t];
+  if ( !ddP.mu ) {
+    for (e=0; e<ddN.E; e++) 
+      for (t=0; t<ddN.T; t++) 
+	ddS.Cp_e[e] += ddS.cp_et[e][t];
+  }
 }
 
 
@@ -511,6 +547,8 @@ void check_n_dt(int d) {
 
 void check_m_evt(int e) {
   int v, t;
+  if ( ddP.phi )
+    return;
   for (v=0; v<ddN.W; v++) {
     for (t=0; t<ddN.T; t++) {
       int m = ddS.m_evt[e][v][t] +((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);

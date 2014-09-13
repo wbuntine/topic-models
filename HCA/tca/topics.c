@@ -58,11 +58,11 @@ static int tscoree;
 
 static unsigned getnk(int w, int k) {
   return ddS.m_evt[tscoree][w][k]
-    + ((tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][k]:0);
+    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][k]:0);
 }
 static unsigned getNk(int k) {
   return ddS.M_eVt[tscoree][k]
-    + ((tscoree+1<ddN.E)?ddS.S_eVt[tscoree+1][k]:0);
+    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.S_eVt[tscoree+1][k]:0);
 }
 static unsigned getn(int w) {
   return getnk(w,tscorek);

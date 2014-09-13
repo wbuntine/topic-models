@@ -39,6 +39,11 @@
  */
 typedef struct D_pars_s {
   /*
+   *  parameters, only used for testing
+   */
+  float ***phi;
+  float **mu;
+  /*
    *    hyperparameters
    */
   double a_mu;             //  
@@ -92,6 +97,7 @@ typedef struct D_pars_s {
 } D_pars_t;
 
 #define PCTL_BURSTY()          (ddP.b_burst>0)
+#define PCTL_NOMU()  (ddP.b_mu[0]>PYP_CONC_MAX*100)
 
 /*
  *  hyperparameters control
@@ -132,5 +138,7 @@ int pctl_training(int D);
 void pctl_free();
 
 double pctl_gammaprior(double x);
+void pctl_loadphi(char *resstem);
+void pctl_loadmu(char *resstem);
 
 #endif

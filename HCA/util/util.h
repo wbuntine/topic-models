@@ -45,6 +45,7 @@ double **dmat(int nr, int nc);
 unsigned countntot(char *fname);
 void read_didwid(char *wfile, char *dfile, int N, uint32_t *d, uint32_t *w);
 void read_dvec(char *dfile, int N, double *d);
+void read_fmat(char *dfile, int N, int C, float **f);
 void read_u16vec(char *dfile, int N, uint16_t *d);
 void write_fvec(char *dfile, int N, float *d);
 void write_dvec(char *dfile, int N, double *d);

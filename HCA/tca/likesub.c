@@ -222,6 +222,8 @@ double topicnorm(int d) {
 
 static double mu_prob(int e, int t) { 
   double prob;
+  if ( ddP.mu )
+    return ddP.mu[e][t];
   if ( e==0 )
     prob = mu0_prob(t);
   else
@@ -234,6 +236,8 @@ static double mu_prob(int e, int t) {
 
 double word_side_prob(int e, int v, int t) { 
   double prob;
+  if ( ddP.phi )
+    return ddP.phi[e][v][t];
   if ( e==0 )
     prob = phi0_prob(v,t);
   else
@@ -269,6 +273,14 @@ int doc_side_ind(int d, int t) {
   double Ze[ddN.E+1];
   int i;
 
+  if ( ddP.mu ) {
+    double Z0 = theta_zero_fact(d,t);
+    Z = Z0 + theta_one_fact(d,t) * ddP.mu[e][t];
+    if ( Z0 > rng_unit(rngp)*Z ) 
+      return -1;
+    return 0;
+  }
+
   for (i=e ; i>=0; i--) {
     Z += Y * mu_zero_fact(i, t);
     Y *= mu_one_fact(i, t);
@@ -298,11 +310,15 @@ double doc_side_fact (int d, int t) {
   int e = ddD.e[d];
   double Y = 1;
 
-  for ( ; e>=0; e--) {
-    Z += Y * mu_zero_fact(e, t);
-    Y *= mu_one_fact(e, t);
+  if ( ddP.mu )
+    Z = ddP.mu[e][t];
+  else {
+    for ( ; e>=0; e--) {
+      Z += Y * mu_zero_fact(e, t);
+      Y *= mu_one_fact(e, t);
+    }
+    Z += Y * mu0_prob(t);
   }
-  Z += Y * mu0_prob(t);
   return theta_zero_fact(d,t) + theta_one_fact(d,t) * Z;
 }
 /*
@@ -320,6 +336,9 @@ int word_side_ind ( int e, int v, int t) {
   double Y = 1;
   double Ze[ddN.E];
   int i;
+
+  if ( ddP.phi )
+    return 0;
 
   for (i=e ; i>=0; i--) {
     Z += Y * phi_zero_fact(i, v, t);
@@ -343,6 +362,9 @@ int word_side_ind ( int e, int v, int t) {
 double word_side_fact ( int e, int v, int t) {
   double Z = 0;
   double Y = 1;
+
+  if ( ddP.phi )
+    return ddP.phi[e][v][t];
 
   for ( ; e>=0; e--) {
     Z += Y * phi_zero_fact(e, v, t);

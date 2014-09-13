@@ -162,6 +162,9 @@ void pctl_init() {
   ddP.hold_every = 0;
   ddP.hold_dict = 0;
   ddP.hold_fraction = 0;
+
+  ddP.mu = NULL;
+  ddP.phi = NULL;
 }
 
 static char *mystem;
@@ -232,6 +235,34 @@ void pctl_read(char *resstem, char *buf) {
   free(mybuf);
 }
 
+void pctl_loadphi(char *resstem) {
+  int e;
+  ddP.phi = malloc(sizeof(ddP.phi[0])*ddN.E);
+  if ( ddN.E>1000 )
+    yap_quit("Compiled topic size bound too small in pctl_loadphi()\n");
+  for (e=0; e<ddN.E; e++) {
+    char ebuf[10];
+    char *fname;
+    ddP.phi[e] = fmat(ddN.W, ddN.T);
+    if (  !ddP.phi[e] ) 
+      yap_quit("Cannot allocate memory in pctl_loadphi()\n");
+    sprintf(ebuf,".phi%03d",e);
+    fname = yap_makename(resstem, ebuf);
+    read_fmat(fname, ddN.E, ddN.T, ddP.mu);
+    free(fname);
+  }
+}
+
+void pctl_loadmu(char *resstem) {
+  char *fname = yap_makename(resstem, ".mu");
+  ddP.mu = fmat(ddN.E, ddN.T);
+  if ( !ddP.mu ) 
+    yap_quit("Cannot allocate memory in pctl_loadmu()\n");
+  read_fmat(fname, ddN.E, ddN.T, ddP.mu);
+  free(fname);
+}
+
+
 void pctl_free() {
   free(ddP.b_mu);
   ddP.b_mu = NULL;
@@ -240,6 +271,16 @@ void pctl_free() {
     free(ddP.b_phi[1]);
   free(ddP.b_phi);
   ddP.b_phi = NULL;
+  if ( ddP.mu ) {
+    free(ddP.mu[0]); free(ddP.mu);
+  }
+  if ( ddP.phi ) {
+    int e;
+    for (e=0; e<ddN.E; e++) {
+      free(ddP.phi[e][0]); free(ddP.phi[e]);
+    } 
+    free(ddP.phi);
+  }
 }
 
 void pctl_fix(int ITER) {
@@ -291,6 +332,20 @@ void pctl_fix(int ITER) {
   if ( ddN.E>1 ) {
     ddT[ParBM1].ptr = &ddP.b_mu[1];
     ddT[ParBP1].ptr = ddP.b_phi[1];
+  }
+
+  if ( ddP.mu ) {
+    ddT[ParAM].fix = 1; 
+    ddT[ParBM1].fix = 1; 
+    ddT[ParBM0].fix = 1; 
+    ddT[ParB0M].fix = 1;
+  }
+  if ( ddP.phi ) {
+    ddT[ParAP0].fix = 1; 
+    ddT[ParAP1].fix = 1; 
+    ddT[ParBP0].fix = 1; 
+    ddT[ParBP1].fix = 1; 
+    ddT[ParB0P].fix = 1; 
   }
 
   {

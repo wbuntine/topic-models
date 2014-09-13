@@ -105,8 +105,8 @@ static void usage() {
 	  "                  #     maxM is max #tables for all\n"
 	  "                  #     maxN is max count for a_mu and a_phi\n"
 	  "   -q threads     #  set number of threads, default 1\n"
-	  "   -r             #  restart using data saved\n"
-	  "   -R             #  restart from hca\n"
+	  "   -r type        #  restart using data saved where type equals\n"
+	  "                  #   tca, hca, phi, mu\n"
           "   -s seed        #  random number seed, default is a time value\n"
 	  "   -v             #  up the verbosity by one\n"
 	  "   -W W           #  change max W\n"
@@ -180,6 +180,8 @@ int main(int argc, char* argv[])
   int restart = 0;
   int dopmi = 0;
   int restart_hca = 0;
+  int load_phi = 0;
+  int load_mu = 0;
   int procs = 1;
   int maxW = 0;
   enum ScoreType score=ST_idf;
@@ -199,7 +201,7 @@ int main(int argc, char* argv[])
 
   pctl_init();
 
-  while ( (c=getopt(argc, argv,"b:c:C:d:ef:F:g:G:h:K:l:L:N:o:pq:vrRs:S:t:T:vVW:"))>=0 ) {
+  while ( (c=getopt(argc, argv,"b:c:C:d:ef:F:g:G:h:K:l:L:N:o:pq:vr:s:S:t:T:vVW:"))>=0 ) {
     switch ( c ) {
     case 'b':
       if ( !optarg || sscanf(optarg,"%d",&ddP.back)!=1 )
@@ -350,11 +352,17 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'q' argument\n");
       break;
     case 'r':
-      restart++;
-      break;
-    case 'R':
-      restart_hca++;
-      break;
+      if(!optarg )
+	yap_quit("Need a valid 'r' argument\n");
+      if ( strcmp(optarg,"tca")==0 )
+	restart++;
+      else if ( strcmp(optarg,"hca")==0 )
+	restart_hca++;
+      else if ( strcmp(optarg,"phi")==0 )
+	load_phi++;
+      else if ( strcmp(optarg,"mu")==0 )
+	load_mu++;
+       break;
     case 's':
       if ( !optarg || sscanf(optarg,"%d",&seed)!=1 )
 	yap_quit("Need a valid 's' argument\n");
@@ -531,6 +539,14 @@ int main(int argc, char* argv[])
   }
 
   data_read_epoch(stem);
+
+  /*
+   *  at this point, dimensions are fixed, so load phi and mu if needed
+   */
+  if ( load_phi )
+    pctl_loadphi();
+  if ( load_mu )
+    pctl_loadmu();
 
   /*
    *   correct parameters after command line

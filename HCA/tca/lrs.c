@@ -77,7 +77,7 @@ double lp_test_ML(/*
 #ifdef TRACE_WT
     int e = ddD.e[i];
 #endif
-    int  thisw =  add_doc(i, fix);
+    int  thisw = add_doc(i, fix);
     if ( thisw<=1 || (fix==GibbsHold && thisw>=ddD.N_dT[i]-1) ) {
 #ifdef TRACE_WT
       yap_message("remove_doc(d=%d,N=%d,T=%d) before continue\n",
@@ -97,7 +97,7 @@ double lp_test_ML(/*
      *   record harmonic mean of last (samples-burnin)
      */
     for (; r<ddP.mltiter; r++) 
-      hmean = logadd(hmean,-gibbs_lda(fix, i, ddD.N_dT[i], fact, &dD));
+      hmean = logadd(hmean, -gibbs_lda(fix, i, ddD.N_dT[i], fact, &dD));
     lik += log(ddP.mltiter-ddP.mltburn) - hmean;
     totw += thisw;
     if ( PCTL_BURSTY() ) misi_unbuild(&dD,i,0);

@@ -82,35 +82,44 @@ double likelihood_PYalpha() {
     yap_infinite(likelihood);
   }
 
-  // mu0 part, use a Dirichlet
-  for (t=0; t<ddN.T; t++) {
-    likelihood += gammadiff(ddS.cp_et[0][t], ddP.b_mu0/ddN.T, 0);
-  }
-  likelihood -= gammadiff(ddS.Cp_e[0], ddP.b_mu0, 0);
-  yap_infinite(likelihood);
-
-  // mu part
-  likelihood += pctl_gammaprior(ddP.b_mu[0]);
-  if ( ddN.E>1 )
-    likelihood += pctl_gammaprior(ddP.b_mu[1]);
-  for (e=0; e<ddN.E; e++) {
-    likelihood += poch(ddP.b_mu[e], ddP.a_mu, ddS.Cp_e[e]);
-    if (e<ddN.E-1) {
-      likelihood -= gammadiff(ddS.C_e[e]+ddS.Cp_e[e+1], ddP.b_mu[e], 0);
-    } else {
-      likelihood -= gammadiff(ddS.C_e[e], ddP.b_mu[e], 0);
-    }
+  if ( !ddP.mu ) {
+    // mu0 part, use a Dirichlet
     for (t=0; t<ddN.T; t++) {
-      if ( ddS.cp_et[e][t]==0 )
-	continue;
-      if (e==ddN.E-1) {
-      	// last epoch
-      	likelihood += S_S(ddC.a_mu, ddS.C_eDt[e][t], ddS.cp_et[e][t]);
-      } else {
-      	likelihood += S_S(ddC.a_mu, ddS.C_eDt[e][t] + ddS.cp_et[e+1][t], ddS.cp_et[e][t]);
-      }
+      likelihood += gammadiff(ddS.cp_et[0][t], ddP.b_mu0/ddN.T, 0);
     }
+    likelihood -= gammadiff(ddS.Cp_e[0], ddP.b_mu0, 0);
     yap_infinite(likelihood);
+    
+    // mu part
+    likelihood += pctl_gammaprior(ddP.b_mu[0]);
+    if ( ddN.E>1 )
+      likelihood += pctl_gammaprior(ddP.b_mu[1]);
+    for (e=0; e<ddN.E; e++) {
+      likelihood += poch(ddP.b_mu[e], ddP.a_mu, ddS.Cp_e[e]);
+      if (e<ddN.E-1) {
+	likelihood -= gammadiff(ddS.C_e[e]+ddS.Cp_e[e+1], ddP.b_mu[e], 0);
+      } else {
+	likelihood -= gammadiff(ddS.C_e[e], ddP.b_mu[e], 0);
+      }
+      for (t=0; t<ddN.T; t++) {
+	if ( ddS.cp_et[e][t]==0 )
+	  continue;
+	if (e==ddN.E-1) {
+	  // last epoch
+	  likelihood += S_S(ddC.a_mu, ddS.C_eDt[e][t], ddS.cp_et[e][t]);
+	} else {
+	  likelihood += S_S(ddC.a_mu, ddS.C_eDt[e][t] + ddS.cp_et[e+1][t], ddS.cp_et[e][t]);
+	}
+      }
+      yap_infinite(likelihood);
+    }
+  } else {
+    /*
+     *  where mu[][] is given
+     */
+    for (e=0; e<ddN.E; e++) 
+      for (t=0; t<ddN.T; t++)
+	likelihood += ddS.C_eDt[e][t] * log(ddP.mu[e][t]);
   }
   
   return likelihood;
@@ -184,7 +193,16 @@ double likelihood() {
   /*
    *  word X topic part
    */
-  likelihood += likelihood_PYbeta();
+  if ( ddP.phi ) {
+    int e, t, v;
+    for (e=0; e<ddN.E; e++) 
+      for (t=0; t<ddN.T; t++) 
+	for (v=0; v<ddN.W; v++) {
+	  if ( ddS.m_evt[e][v][t] )
+	    likelihood +=  ddS.m_evt[e][v][t] * log(ddP.phi[e][v][t]);
+	}
+  } else
+    likelihood += likelihood_PYbeta();
 
   /*
    *  doc burstiness
