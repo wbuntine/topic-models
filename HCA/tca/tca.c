@@ -116,7 +116,7 @@ static void usage() {
           "                  #  HOLD=doc, hold out at place l with (l%%arg)==0\n"
           "                  #  HOLD=fract, hold out last fract words in doc\n"
           "   -l DIAG,cycles,burn #  cycles for runtime calculations\n"
-	  "                  #  DIAG is one of 'prog'\n"
+	  "                  #  DIAG is one of 'mu', 'phi' or 'prog'\n"
           "   -L DIAG,cycles,burn #  cycles for diagnostic calculations\n"
 	  "                  #  DIAG is one of 'like'\n"
           "   -o SC          #  SC=score type, 'count', 'idf', 'cost', 'Q'\n"
@@ -301,7 +301,13 @@ int main(int argc, char* argv[])
     case 'l':
       if ( !optarg )
 	yap_quit("Need a valid 'l ' argument\n");
-      if ( strncmp(optarg,"prog,",5)==0 ) {
+      if ( strncmp(optarg,"phi,",4)==0 ) {
+	if ( sscanf(&optarg[4],"%d,%d",&ddP.phiiter, &ddP.phiburn)<2 )
+	  yap_quit("Need a valid 'l word,' argument\n");      
+      } else if ( strncmp(optarg,"mu,",3)==0 ) {
+	if ( sscanf(&optarg[4],"%d,%d",&ddP.muiter, &ddP.muburn)<2 )
+	  yap_quit("Need a valid 'l word,' argument\n");      
+      } else if ( strncmp(optarg,"prog,",5)==0 ) {
 	if ( sscanf(&optarg[5],"%d,%d",&ddP.progiter, &ddP.progburn)<2 )
 	  yap_quit("Need a valid 'l prog,' argument\n");
       } else
@@ -400,11 +406,13 @@ int main(int argc, char* argv[])
 	char *tname = data_name(optarg,data);
 	FILE *fp = fopen(tname,"r");
 	if ( fp==NULL ) {
+          free(tname);
 	  tname = data_name(optarg,testdata);
 	  fp = fopen(tname,"r");
         } else {
 	  testdata = data;
         }
+        free(tname);
 	if ( fp!=NULL ) {
 	  /*  its a valid test filename */
           ddP.teststem = optarg;
@@ -487,6 +495,11 @@ int main(int argc, char* argv[])
   assert(ddN.TEST>=0);
   assert(restart || restart_hca || ITER>0);
 	
+  if ( load_phi && ddP.phiiter>0 )
+    yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
+  if ( load_mu && ddP.muiter>0 )
+    yap_quit("Options '-l mu,...' and '-r mu' incompatible\n");
+
   /*
    *   set random number generator
    */
@@ -544,9 +557,9 @@ int main(int argc, char* argv[])
    *  at this point, dimensions are fixed, so load phi and mu if needed
    */
   if ( load_phi )
-    pctl_loadphi();
+    pctl_loadphi(resstem);
   if ( load_mu )
-    pctl_loadmu();
+    pctl_loadmu(resstem);
 
   /*
    *   correct parameters after command line
@@ -578,6 +591,14 @@ int main(int argc, char* argv[])
    *   all data structures
    */
   data_alloc();
+  if ( ddP.phiiter>0 )
+    phi_init(resstem);
+  else 
+    ddS.phi = NULL;
+  if ( ddP.muiter>0 )
+    mu_init(resstem);
+  else 
+    ddS.mu = NULL;
   tca_alloc();
   if ( PCTL_BURSTY() ) 
     dmi_init(&ddM, ddS.z, ddD.w, ddD.N_dTcum,
@@ -759,7 +780,10 @@ int main(int argc, char* argv[])
       tca_report(resstem, stem, ITER, procs, fix_hold, 
 		 (dopmi&&displayed>0)?1:0);
     }
-
+    if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
+      phi_update();
+    if ( ddP.muiter>0 && iter>ddP.muburn && (iter%ddP.muiter)==0 )
+      mu_update();
   } // over iter
   
   if ( ITER ) 
@@ -780,9 +804,16 @@ int main(int argc, char* argv[])
  
   tca_report(resstem, stem, ITER, procs, fix_hold, (dopmi&&displayed>0)?1:0);
 
+  if ( ddP.phiiter>0 )
+      phi_save(resstem);
+  if ( ddP.muiter>0 )
+      mu_save(resstem);
+
   /*
    *  free
    */
+  phi_free();
+  mu_free();
   cache_free();
   pctl_free();
   data_free();

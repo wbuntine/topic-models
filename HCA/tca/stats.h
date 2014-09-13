@@ -28,6 +28,14 @@
  */
 typedef struct D_stats_s {
   /*
+   *    this is only used sometimes ('-l phi,...', '-l mu,...')
+   *    and stores the estimated phi matrix
+   */
+  float ***phi;
+  float **mu;
+  int phi_cnt;
+  int mu_cnt;
+  /*
    *  Basic topic data for simplest LDA model
    *     we assume maximum number of words in single document
    *     fits in 15 bit, use top bit for indicator
@@ -124,6 +132,9 @@ double topicnorm(int d);
 double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
 double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
 
+void mu_prob_iter(int e, double *vec);
+void phi_prob_iter(int e, double **mtx) ;
+
 /*
  *    during Gibbs estimate proportion
  *    of topics for all documents
@@ -132,6 +143,22 @@ void tprob_init();
 void tprob_null();
 void tprob_free();
 void tprob_report(char *resstem, double epsilon);
+
+/*
+ *  optionally save/update phi matrix at end of cycles
+ */
+void phi_init(char *resstem);
+void phi_update();
+void phi_save();
+void phi_free();
+
+/*
+ *  optionally save/update mu matrix at end of cycles
+ */
+void mu_init(char *resstem);
+void mu_update();
+void mu_save();
+void mu_free();
 
 /*
  *  checks

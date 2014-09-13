@@ -220,6 +220,24 @@ double topicnorm(int d) {
   return ((double)ddS.N_dT[d]+ddP.b_theta);
 }
 
+/*
+ *    mu_prob() but do one epoch at a time
+ */
+void mu_prob_iter(int e, double *vec) {
+  int t;
+  if ( e<0 ) {
+    for (t=0; t<ddN.T; t++)
+      vec[t] = mu0_prob(t);
+  } else {
+    double norm = (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
+    double pwght = (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]);
+    for (t=0; t<ddN.T; t++) {
+      vec[t] =  ( (ddS.C_eDt[e][t] + ((e<ddN.E-1)?ddS.cp_et[e+1][t]:0)
+                   - ddP.a_mu * ddS.cp_et[e][t]) + pwght*vec[t] ) /norm;
+    }
+  }
+}
+
 static double mu_prob(int e, int t) { 
   double prob;
   if ( ddP.mu )
@@ -247,6 +265,32 @@ double word_side_prob(int e, int v, int t) {
 	   + (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])*prob )
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));					    
 }
+
+/*
+ *     word_side_prob() but done iteratively by epoch
+ */
+void phi_prob_iter(int e, double **mtx) { 
+  int v, t;
+  if ( e<0 ) {
+    for (v=0; v<ddN.W; v++)
+      for (t=0; t<ddN.T; t++)
+        mtx[v][t] = phi0_prob(v,t);
+    return;
+  } else {
+    double norm[ddN.T];
+    double wght[ddN.T];
+    for (t=0; t<ddN.T; t++) {
+      norm[t] = (ddP.b_phi[e][t] + ddS.M_eVt[e][t] 
+                 + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
+      wght[t] = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t]);
+    }
+    for (v=0; v<ddN.W; v++)
+      for (t=0; t<ddN.T; t++) 
+        mtx[v][t] = ( (ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0)
+                       - ddP.a_phi1 * ddS.s_evt[e][v][t]) + wght[t]*mtx[v][t] )
+          / norm[t];
+  }
+} 
 
 double doc_side_prob(int d, int t) { 
   int e = ddD.e[d];

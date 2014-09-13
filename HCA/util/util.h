@@ -10,7 +10,7 @@
  *
  * Author: Wray Buntine (wray.buntine@nicta.com.au)
  *
- *     
+ *   This is a good example of why C++ is better than C  
  */
 
 #ifndef __UTIL_H
@@ -50,6 +50,7 @@ void read_u16vec(char *dfile, int N, uint16_t *d);
 void write_fvec(char *dfile, int N, float *d);
 void write_dvec(char *dfile, int N, double *d);
 void write_dmat(char *dfile, int N, int C, double **d);
+void write_fmat(char *ffile, int N, int C, float **f);
 void write_u16sparse(int nr, int nc, uint16_t **x, char *fname);
 void write_u16sparseco(int nr, int nc, uint16_t **x, char *fname,
 		       uint16_t cutoff);

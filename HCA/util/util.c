@@ -356,6 +356,7 @@ void write_dvec(char *dfile, int N, double *d) //
     yap_sysquit("Error on writing file '%s' ", dfile);
   fclose(fp);
 }
+
 void write_dmat(char *dfile, int N, int C, double **d) //
 {
   int i, j;
@@ -365,6 +366,24 @@ void write_dmat(char *dfile, int N, int C, double **d) //
   for (i = 0; i < N; i++) {
     for (j = 0; j < C; j++) {
       if ( !fprintf(fp,"%d %d %lg\n",i, j, d[i][j]) ) {
+	yap_sysquit( "Cannot write to '%s' position %d,\n", dfile, i, j);
+      }
+    }
+  }
+  if ( ferror(fp) )
+    yap_sysquit("Error on writing file '%s' ", dfile);
+  fclose(fp);
+}
+
+void write_fmat(char *dfile, int N, int C, float **f) //
+{
+  int i, j;
+  FILE *fp = fopen(dfile ,"w");
+  if ( !fp ) 
+    yap_sysquit( "Cannot open file '%s' for write\n", dfile);
+  for (i = 0; i < N; i++) {
+    for (j = 0; j < C; j++) {
+      if ( !fprintf(fp,"%d %d %g\n",i, j, f[i][j]) ) {
 	yap_sysquit( "Cannot write to '%s' position %d,\n", dfile, i, j);
       }
     }

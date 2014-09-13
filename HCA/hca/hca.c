@@ -1389,13 +1389,14 @@ int main(int argc, char* argv[])
 #ifdef QUERY
  FINISH:
 #endif
-  /*
-   *  free
-   */
   if ( ddP.phiiter>0 )
       phi_save(resstem);
   if ( ddP.alphaiter>0 )
       alpha_save(resstem);
+
+  /*
+   *  free
+   */
   phi_free();
   alpha_free();
   pctl_free();

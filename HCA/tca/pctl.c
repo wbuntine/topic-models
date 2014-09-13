@@ -146,6 +146,10 @@ void pctl_init() {
   ddT[ParAP0].offset = 3%ACYCLES;
   ddT[ParAP1].offset = 3%ACYCLES;
 
+  ddP.phiiter = 0;
+  ddP.phiburn = 0;
+  ddP.muiter = 0;
+  ddP.muburn = 0;
   ddP.progiter = 2;
   ddP.progburn = 1;
   ddP.mltiter = 15;
@@ -237,12 +241,12 @@ void pctl_read(char *resstem, char *buf) {
 
 void pctl_loadphi(char *resstem) {
   int e;
+  char ebuf[10];
+  char *fname;
   ddP.phi = malloc(sizeof(ddP.phi[0])*ddN.E);
   if ( ddN.E>1000 )
     yap_quit("Compiled topic size bound too small in pctl_loadphi()\n");
   for (e=0; e<ddN.E; e++) {
-    char ebuf[10];
-    char *fname;
     ddP.phi[e] = fmat(ddN.W, ddN.T);
     if (  !ddP.phi[e] ) 
       yap_quit("Cannot allocate memory in pctl_loadphi()\n");
@@ -335,12 +339,14 @@ void pctl_fix(int ITER) {
   }
 
   if ( ddP.mu ) {
+    ddP.muiter = 0;
     ddT[ParAM].fix = 1; 
     ddT[ParBM1].fix = 1; 
     ddT[ParBM0].fix = 1; 
     ddT[ParB0M].fix = 1;
   }
   if ( ddP.phi ) {
+    ddP.phiiter = 0;
     ddT[ParAP0].fix = 1; 
     ddT[ParAP1].fix = 1; 
     ddT[ParBP0].fix = 1; 
@@ -379,7 +385,10 @@ void pctl_fix(int ITER) {
     if (  ddP.kbatch > ddN.T )
       ddP.kbatch = ddN.T;
   }
-  
+  if ( ddP.phiiter==1 )
+    ddP.phiiter = 2;
+  if ( ddP.muiter==1 )
+    ddP.muiter = 2;
 }
 
 void pctl_report() {

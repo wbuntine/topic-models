@@ -53,6 +53,9 @@ static void topk(int K, int N, int *ind, double (*foo)(int)) {
 static uint32_t NWK = 0;
 static uint32_t *NwK = NULL;
 
+/*
+ *  when sorting, need to know these indices
+ */
 static int tscorek;
 static int tscoree;
 
@@ -104,6 +107,14 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   double underused = 0;
   char *fname = yap_makename(resstem,".top");
   FILE *fp;
+  /*
+   *  store mu and phi estimates computed iteratively
+   */
+  double *pvec;
+  double **wmtx;
+
+  pvec = dvec(ddN.T);
+  wmtx = dmat(ddN.W, ddN.T);
 
   assert(ddN.tokens);
   
@@ -118,6 +129,9 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     lowerQ = 1.0/ddN.T;
   }    
 
+  indk = malloc(sizeof(*indk)*ddN.W);
+  if ( !indk )
+    yap_quit("Cannot allocate indk\n"); 
   NwK = u32vec(ddN.W);
   if ( !NwK )
     yap_quit("Out of memory in cca_displaytopics()\n");
@@ -125,7 +139,19 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   if ( !fp ) 
     yap_sysquit("Cannot open file '%s' for write\n", fname);
 
+  /*
+   *   initialise pvec and wmtx since computed iteratively
+   */
+  mu_prob_iter(-1, pvec);
+  phi_prob_iter(-1, wmtx);
+
   for (tscoree=0; tscoree<ddN.E; tscoree++) {
+    /*
+     *   update estimates for mu and phi
+     */
+    mu_prob_iter(tscoree, pvec);
+    phi_prob_iter(tscoree, wmtx);
+
     /*
      *  first collect counts of each word/term
      */
@@ -142,11 +168,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       M_tot += ddS.M_eVt[tscoree][k];
     }
     
-    indk = malloc(sizeof(*indk)*ddN.W);
-    if ( !indk )
-      yap_quit("Cannot allocate indk\n");
-    
-    yap_message("\nEpoch %d\n", (int)tscoree);
+   yap_message("\nEpoch %d\n", (int)tscoree);
     for (k=0; k<ddN.T; k++) {
       int cnt;
       double spw;
@@ -160,10 +182,10 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	if ( ddS.m_evt[tscoree][w][k]>0 ) indk[cnt++] = w;
       }
       topk(topword, cnt, indk, tscore);
-      spd = ((double)nonzero_n_dt(k))/((double)ddN.DT);
-      if ( tscoree==0 )
-	sparsitydoc += spd;
-      spw = ((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
+      spd = 1-((double)nonzero_n_dt(k))/((double)ddN.DT);
+      // if ( tscoree==0 )    ?  what was this for?
+      sparsitydoc += spd;
+      spw = 1-((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
       sparsityword += spw;
       
       if ( ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
@@ -171,22 +193,23 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       yap_message("Topic %d/%d (", k, (int)tscoree);
       yap_message("p=%.2lf%%/%.2lf%%,", 
 		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
-		  100.0*getNk(k)/(double)NWK);
-      yap_message("ws=%.1lf%%,", 100*(1-spw));
-      yap_message("ds=%.1lf%%", 100*(1-spd) );
+		  //  100.0*getNk(k)/(double)NWK,
+                  100.0*pvec[k]);
+      yap_message("ws=%.1lf%%,", 100*spw);
+      yap_message("ds=%.1lf%%", 100*spd );
       fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);
       yap_message(") words =");
       for (w=0; w<topword && w<cnt; w++) {
+        double prob;
+        if ( verbose>3 )
+          prob = ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
 	/*  print to file */
 	fprintf(fp," %d", (int)indk[w]);
 	if ( verbose>2 ) {
 	  fprintf(fp,"(");
 	  fprintf(fp,(scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
-	  if ( verbose>3 ) {
-	    double prob = 
-	      ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
-	    fprintf(fp,",%6lf", prob);
-	  } 
+	  if ( verbose>3 ) 
+	    fprintf(fp,",%6lf/%6lf", prob, wmtx[indk[w]][k]);
 	  fprintf(fp,")");
 	} 	
 	/*  yap to report */
@@ -195,11 +218,8 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	  yap_message("(");
 	  if ( verbose>3 ) yap_message("s=");
 	  yap_message((scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
-	  if ( verbose>3 ) {
-	    double prob = 
-	      ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
-	    yap_message(",p=%6lf", prob);
-	  } 
+	  if ( verbose>3 )
+	    yap_message(",p=%6lf/%6lf", prob, wmtx[indk[w]][k]);
 	  yap_message(")");
 	} 
       }
@@ -209,12 +229,14 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   }
 
   yap_message("Average topicXword sparsity = %.2lf%%, ",
-	      100*(1-sparsityword/ddN.T) );
+	      100*(sparsityword/ddN.T/ddN.E) );
   yap_message("Average docXtopic sparsity = %.2lf%%, "
 	      "underused topics = %.1lf%%\n",
-	      100*(1-sparsitydoc/ddN.T), 
+	      100*(sparsitydoc/ddN.T/ddN.E), 
 	      100.0*underused/(double)ddN.T);
   fclose(fp);
+  free(pvec);
+  free(wmtx[0]);  free(wmtx);
   free(fname);
   free(indk);
   free(NwK);
