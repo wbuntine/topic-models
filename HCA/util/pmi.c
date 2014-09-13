@@ -43,27 +43,27 @@ static char *buf;       /*  ptr to next spot in line */
 static char *ttop_file;
 static FILE *ttop_fp;
 
-void ttop_eol() {
+static void ttop_eol() {
   if ( line ) {
     free(line);
     line = NULL;
     buf = NULL;
   }
 }
-void ttop_close() {
+static void ttop_close() {
   fclose(ttop_fp);
   ttop_file = NULL;
   ttop_fp = NULL;
   ttop_eol();
 }      
-void ttop_open(char *topfile) {
+static void ttop_open(char *topfile) {
   ttop_file = topfile;
   ttop_fp = fopen(topfile,"r");
   if ( !ttop_fp ) 
     yap_sysquit("Topic file '%s' not read\n", topfile);
   lineno = 0;
 }
-int ttop_next(int T, int E, int *k, int *e) {
+static int ttop_next(int T, int E, int *k, int *e) {
   size_t n_line = 0;
   line = NULL;
   while ( xgetline(&line, &n_line, ttop_fp)>0 ) {
@@ -92,7 +92,7 @@ int ttop_next(int T, int E, int *k, int *e) {
   }
   return 0;
 }
-int ttop_word(int W, int n_word, unsigned int *j) {
+static int ttop_word(int W, int n_word, unsigned int *j) {
   while ( *buf ) {
     buf = strpbrk(buf," \t\n");    //   skip to next space
     if ( sscanf(buf, " %u", j) <1 ) {
@@ -229,7 +229,7 @@ double report_pmi(char *topfile,  /* name of topics file to read */
     }
     while (fscanf(fr, "%u %u %lg", &t1, &t2, &value)==3 ) { 
       if ( t1>=W || t2>= W )
-	yap_quit("Illegal word index in report_pmi()\n");
+	continue;
       if ( t1!= t2 && ( wuse[t1/32U] & (1U<<(t1%32U)) ) 
 	   && ( wuse[t2/32U] & (1U<<(t2%32U))) ) {
 	int i1, i2;
@@ -267,7 +267,6 @@ double report_pmi(char *topfile,  /* name of topics file to read */
     int i;
     unsigned j;
     int cnt = 0;
-    int e = 0;
     double coh = 0;
     if ( e!=thee ) {
       thee = e;

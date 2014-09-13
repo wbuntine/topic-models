@@ -368,7 +368,9 @@ int main(int argc, char* argv[])
 	load_phi++;
       else if ( strcmp(optarg,"mu")==0 )
 	load_mu++;
-       break;
+      else
+	yap_quit("Need a valid 'r' argument\n");
+      break;
     case 's':
       if ( !optarg || sscanf(optarg,"%d",&seed)!=1 )
 	yap_quit("Need a valid 's' argument\n");
