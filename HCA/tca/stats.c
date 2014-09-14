@@ -254,13 +254,14 @@ void tca_reset_stats(char *resstem, int restart, int warm) {
     }
   }
   memset((void*)ddS.C_dT, 0, sizeof(ddS.C_dT[i])*ddN.D);
+  memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
   memset((void*)ddS.C_e, 0, sizeof(ddS.C_e[i])*ddN.E);
   if ( !ddP.mu ) 
     memset((void*)ddS.Cp_e, 0, sizeof(ddS.Cp_e[i])*ddN.E);
-  memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
-  if ( !ddP.phi )
+  if ( !ddP.phi ) {
     memset((void*)ddS.S_eVt[0], 0, sizeof(ddS.S_eVt[i][t])*ddN.E*ddN.T);
-  memset((void*)ddS.C_eDt[0], 0, sizeof(ddS.C_eDt[i][t])*ddN.E*ddN.T);
+    memset((void*)ddS.S_0vT, 0, sizeof(ddS.S_0vT[i])*ddN.W);
+  }
   ddS.S_0 = 0;
   ddS.S_0_nz = 0;
 

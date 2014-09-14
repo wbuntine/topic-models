@@ -367,7 +367,6 @@ double gibbs_lda(/*
 
   if ( PCTL_BURSTY() ) {
     mi = ddM.MI[did];
-    assert(ddM.multiind[mi]<ddM.dim_Mi);
   }
   e = ddD.e[did];
 

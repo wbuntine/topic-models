@@ -252,7 +252,7 @@ void pctl_loadphi(char *resstem) {
       yap_quit("Cannot allocate memory in pctl_loadphi()\n");
     sprintf(ebuf,".phi%03d",e);
     fname = yap_makename(resstem, ebuf);
-    read_fmat(fname, ddN.E, ddN.T, ddP.mu);
+    read_fmat(fname, ddN.W, ddN.T, ddP.phi[e]);
     free(fname);
   }
 }

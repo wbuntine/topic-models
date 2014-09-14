@@ -111,13 +111,17 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
    *  store mu and phi estimates computed iteratively
    */
   double *pvec;
-  double **wmtx;
+  double **wmtx = NULL;
 
-  pvec = dvec(ddN.T);
-  wmtx = dmat(ddN.W, ddN.T);
+  if ( ! ddP.mu )
+    pvec = dvec(ddN.T);
+  if ( !ddP.phi ) 
+    wmtx = dmat(ddN.W, ddN.T);
 
   assert(ddN.tokens);
-  
+  if ( !ddP.phi && ! wmtx )
+    yap_quit("Cannot allocate memory tca_displaytopics()\n"); 
+
   if ( scoretype == ST_idf ) {
     tscore = idfscore;
   } else if ( scoretype == ST_count ) {
@@ -131,7 +135,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 
   indk = malloc(sizeof(*indk)*ddN.W);
   if ( !indk )
-    yap_quit("Cannot allocate indk\n"); 
+    yap_quit("Cannot allocate memory tca_displaytopics()\n"); 
   NwK = u32vec(ddN.W);
   if ( !NwK )
     yap_quit("Out of memory in cca_displaytopics()\n");
@@ -142,15 +146,19 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   /*
    *   initialise pvec and wmtx since computed iteratively
    */
-  mu_prob_iter(-1, pvec);
-  phi_prob_iter(-1, wmtx);
+  if ( ! ddP.mu )
+    mu_prob_iter(-1, pvec);
+  if ( ! ddP.phi )
+    phi_prob_iter(-1, wmtx);
 
   for (tscoree=0; tscoree<ddN.E; tscoree++) {
     /*
      *   update estimates for mu and phi
      */
-    mu_prob_iter(tscoree, pvec);
-    phi_prob_iter(tscoree, wmtx);
+    if ( ! ddP.mu )
+      mu_prob_iter(tscoree, pvec);
+    if ( ! ddP.phi )
+      phi_prob_iter(tscoree, wmtx);
 
     /*
      *  first collect counts of each word/term
@@ -194,7 +202,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       yap_message("p=%.2lf%%/%.2lf%%,", 
 		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
 		  //  100.0*getNk(k)/(double)NWK,
-                  100.0*pvec[k]);
+                  100.0*(ddP.mu?ddP.mu[tscoree][k]:pvec[k]));
       yap_message("ws=%.1lf%%,", 100*spw);
       yap_message("ds=%.1lf%%", 100*spd );
       fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);
@@ -209,7 +217,8 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	  fprintf(fp,"(");
 	  fprintf(fp,(scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
 	  if ( verbose>3 ) 
-	    fprintf(fp,",%6lf/%6lf", prob, wmtx[indk[w]][k]);
+	    fprintf(fp,",%6lf/%6lf", prob, 
+                    ddP.phi?ddP.phi[tscoree][indk[w]][k]:wmtx[indk[w]][k]);
 	  fprintf(fp,")");
 	} 	
 	/*  yap to report */
@@ -219,7 +228,8 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	  if ( verbose>3 ) yap_message("s=");
 	  yap_message((scoretype == ST_count)?"%.0lf":"%6lf",tscore(indk[w]));
 	  if ( verbose>3 )
-	    yap_message(",p=%6lf/%6lf", prob, wmtx[indk[w]][k]);
+	    yap_message(",p=%6lf/%6lf", prob, 
+                        ddP.phi?ddP.phi[tscoree][indk[w]][k]:wmtx[indk[w]][k]);
 	  yap_message(")");
 	} 
       }
@@ -235,8 +245,11 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	      100*(sparsitydoc/ddN.T/ddN.E), 
 	      100.0*underused/(double)ddN.T);
   fclose(fp);
-  free(pvec);
-  free(wmtx[0]);  free(wmtx);
+  if ( !ddP.mu ) 
+    free(pvec);
+  if ( !ddP.phi ) {
+    free(wmtx[0]);  free(wmtx);
+  }
   free(fname);
   free(indk);
   free(NwK);

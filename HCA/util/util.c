@@ -294,16 +294,19 @@ void read_u16vec(char *dfile, int N, uint16_t *d) //
   fclose(fp);
 }
 
+/*
+ *   assumes is zero filled already
+ */
 void read_fmat(char *dfile, int N, int C, float **f) //
 {
-  int i, j;
+  float val;
+  int n, c;
   FILE *fp = fopen(dfile ,"r"); 
   if ( !fp ) 
     yap_sysquit( "Cannot open file '%s' for read\n", dfile);
-  for (i = 0; i < N; i++) for (j = 0; j < C; j++) {
-    if ( !fscanf(fp," %g",&f[i][j]) ) {
-      yap_sysquit( "Cannot read from '%s' position %d\n", dfile, i);
-    }
+  while ( fscanf(fp,"%d %d %g",&n, &c, &val)==3 ) {
+    if ( n>=0 && c>=0 && n<N && c<C )
+      f[n][c] = val;
   }
   if ( ferror(fp) )
     yap_sysquit("Error on reading file '%s' ", dfile);

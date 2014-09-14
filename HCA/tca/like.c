@@ -198,11 +198,15 @@ double likelihood() {
     for (e=0; e<ddN.E; e++) 
       for (t=0; t<ddN.T; t++) 
 	for (v=0; v<ddN.W; v++) {
-	  if ( ddS.m_evt[e][v][t] )
+	  if ( ddS.m_evt[e][v][t] ) {
 	    likelihood +=  ddS.m_evt[e][v][t] * log(ddP.phi[e][v][t]);
+            if (!finite(likelihood)) 
+              yap_quit("ddP.phi[%d][%d][%d]=%g\n",e,v,t,ddP.phi[e][v][t]);
+          }
 	}
   } else
     likelihood += likelihood_PYbeta();
+  yap_infinite(likelihood);
 
   /*
    *  doc burstiness

@@ -66,10 +66,15 @@ void misi_zero(D_MiSi_t *ptr, int d) {
     ptr->Mi[t] = ptr->Si[t] = 0;
   /*  figure out lowest pdmi->multiind[mi] for this doc */
   mi = pdmi->MI[d];
-  ptr->mi_base = pdmi->multiind[mi];
-  for ( ; mi<pdmi->MI[d+1]; mi++)
-    if ( ptr->mi_base>pdmi->multiind[mi] )
-      ptr->mi_base = pdmi->multiind[mi];
+  if ( mi<pdmi->dim_multiind ) {
+    ptr->mi_base = pdmi->multiind[mi];
+    for ( ; mi<pdmi->MI[d+1]; mi++)
+      if ( ptr->mi_base>pdmi->multiind[mi] )
+        ptr->mi_base = pdmi->multiind[mi];
+  } else {
+    /*  don't care, no more multis */
+    ptr->mi_base = pdmi->multiind[pdmi->dim_multiind-1];
+  }
 }
 
 /*

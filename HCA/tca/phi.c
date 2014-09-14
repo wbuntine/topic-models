@@ -98,12 +98,31 @@ void mu_save() {
 
 void phi_update() {
   int e, t, w;
-
+  double **wmtx;
+  
+  wmtx = dmat(ddN.W, ddN.T);
+  phi_prob_iter(-1, wmtx);
+  for (e=0; e<ddN.E; e++) {
+    phi_prob_iter(e, wmtx);
+    for (w=0; w<ddN.W; w++)
+      for (t=0; t<ddN.T; t++)
+        ddS.phi[e][w][t] = (ddS.phi_cnt*ddS.phi[e][w][t] + wmtx[w][t]) 
+          / (ddS.phi_cnt+1);
+  }
+  free(wmtx[0]); free(wmtx);
   ddS.phi_cnt++;
 }
 
 void mu_update() {
   int e, t;
-  ;
+  double *pvec = dvec(ddN.T);
+  mu_prob_iter(-1, pvec);
+
+  for (e=0; e<ddN.E; e++) {
+    mu_prob_iter(e, pvec);
+    for (t=0; t<ddN.T; t++)
+      ddS.mu[e][t] = (ddS.mu_cnt*ddS.mu[e][t] + pvec[t]) / (ddS.mu_cnt+1);
+  }
+  free(pvec);
   ddS.mu_cnt++;
 }

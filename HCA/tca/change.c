@@ -271,23 +271,25 @@ int remove_doc(int d, enum GibbsType fix) {
        *    remove topic counts from cp stats to make consistent
        *    rippling back if needed
        */
-      i = e;
-      if ( i==ddN.E-1 ) {
-        if ( ddS.C_eDt[i][t]<ddS.cp_et[i][t] ) {
-          int diff = ddS.cp_et[i][t] - ddS.C_eDt[i][t];
-          ddS.cp_et[i][t] = ddS.C_eDt[i][t];
-          ddS.Cp_e[i] -= diff;
+      if ( !ddP.mu ) {
+        i = e;
+        if ( i==ddN.E-1 ) {
+          if ( ddS.C_eDt[i][t]<ddS.cp_et[i][t] ) {
+            int diff = ddS.cp_et[i][t] - ddS.C_eDt[i][t];
+            ddS.cp_et[i][t] = ddS.C_eDt[i][t];
+            ddS.Cp_e[i] -= diff;
+          }
+          i--;
         }
-	i--;
-      }
-      for (;  i>=0; i--) {
-	int thisc = ddS.C_eDt[i][t] + ddS.cp_et[i+1][t];
-	if ( thisc<ddS.cp_et[i][t] ) {
-	  int diff = ddS.cp_et[i][t]-thisc;
-	  ddS.cp_et[i][t] = thisc;
-	  ddS.Cp_e[i] -= diff;
-	} else
-	  break;
+        for (;  i>=0; i--) {
+          int thisc = ddS.C_eDt[i][t] + ddS.cp_et[i+1][t];
+          if ( thisc<ddS.cp_et[i][t] ) {
+            int diff = ddS.cp_et[i][t]-thisc;
+            ddS.cp_et[i][t] = thisc;
+            ddS.Cp_e[i] -= diff;
+          } else
+            break;
+        }
       }
       ddS.c_dt[d][t] = 0;
     }      
@@ -307,37 +309,39 @@ int remove_doc(int d, enum GibbsType fix) {
         ddS.M_eVt[e][t]--;
         assert(ddS.m_evt[e][w][t]>0);
         ddS.m_evt[e][w][t]--;
-	/*
-	 *    remove count from s_evt[][][] stats to make consistent
-	 *    rippling back if needed
-	 */
-	e1 = e;
-	if ( e1==ddN.E-1 ) {
-          if ( ddS.s_evt[e1][w][t]>ddS.m_evt[e1][w][t] ) {
-            ddS.s_evt[e1][w][t]--;
-            ddS.S_eVt[e1][t]--;
-            laste1 = e1;
+        if ( !ddP.phi ) {
+          /*
+           *    remove count from s_evt[][][] stats to make consistent
+           *    rippling back if needed
+           */
+          e1 = e;
+          if ( e1==ddN.E-1 ) {
+            if ( ddS.s_evt[e1][w][t]>ddS.m_evt[e1][w][t] ) {
+              ddS.s_evt[e1][w][t]--;
+              ddS.S_eVt[e1][t]--;
+              laste1 = e1;
+            }
+            e1--;
           }
-	  e1--;
-	}
-	for (;  e1>=0; e1--) {
-	  int thism = ddS.s_evt[e1+1][w][t]+ddS.m_evt[e1][w][t];
-	  if ( thism < ddS.s_evt[e1][w][t] ) {
-	    ddS.s_evt[e1][w][t]--;
-	    ddS.S_eVt[e1][t]--;
-            laste1 = e1;
-	  } else
-	    break;
-	}
-	if ( laste1==0 ) {
-	  /*   we decremented  ddS.s_evt[0][w][t] */
-	  ddS.S_0--;
-          assert(ddS.S_0vT[w]>0);
-	  ddS.S_0vT[w]--;
-	  if ( ddS.S_0vT[w]==0 ) {
-	    ddS.S_0_nz--;    
-	  }
-	}
+          for (;  e1>=0; e1--) {
+            int thism = ddS.s_evt[e1+1][w][t]+ddS.m_evt[e1][w][t];
+            if ( thism < ddS.s_evt[e1][w][t] ) {
+              ddS.s_evt[e1][w][t]--;
+              ddS.S_eVt[e1][t]--;
+              laste1 = e1;
+            } else
+              break;
+          }
+          if ( laste1==0 ) {
+            /*   we decremented  ddS.s_evt[0][w][t] */
+            ddS.S_0--;
+            assert(ddS.S_0vT[w]>0);
+            ddS.S_0vT[w]--;
+            if ( ddS.S_0vT[w]==0 ) {
+              ddS.S_0_nz--;    
+            }
+          }
+        }
       }
     }
   }
@@ -378,7 +382,7 @@ int add_doc(int d, enum GibbsType fix) {
         w = ddD.w[i];
         ddS.M_eVt[e][t]++;
         ddS.m_evt[e][w][t]++;
-        if ( ddS.s_evt[e][w][t]==0 ) 
+        if ( !ddP.phi && ddS.s_evt[e][w][t]==0 ) 
           add_tableidword(e,w,t);
       }
     }

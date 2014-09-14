@@ -119,7 +119,7 @@ double word_side_prob(int e, int j, int t);
  */
 int word_side_ind ( int e, int v, int t);
 
-double phi0_prob(int v, int t);
+double phi0_prob(int v);
 
 double doc_side_fact(int d, int t);
 double doc_side_prob(int d, int t);

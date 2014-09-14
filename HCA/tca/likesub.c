@@ -201,7 +201,7 @@ static double phi_zero_fact(int e, int v, int t) {
   return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
-double phi0_prob(int v, int t) {
+double phi0_prob(int v) {
   double term;
   if ( ddS.S_0vT[v]==0 )
     /*   spread the zero weight over all zero */
@@ -257,7 +257,7 @@ double word_side_prob(int e, int v, int t) {
   if ( ddP.phi )
     return ddP.phi[e][v][t];
   if ( e==0 )
-    prob = phi0_prob(v,t);
+    prob = phi0_prob(v);
   else
     prob = word_side_prob(e-1,v,t);
   return ( (ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0)
@@ -274,7 +274,7 @@ void phi_prob_iter(int e, double **mtx) {
   if ( e<0 ) {
     for (v=0; v<ddN.W; v++)
       for (t=0; t<ddN.T; t++)
-        mtx[v][t] = phi0_prob(v,t);
+        mtx[v][t] = phi0_prob(v);
     return;
   } else {
     double norm[ddN.T];
@@ -392,7 +392,7 @@ int word_side_ind ( int e, int v, int t) {
     if ( i<=e-ddP.back && ddS.s_evt[i][v][t]>0 ) break;
   }
   if ( i<0 ) {
-    Z += Y * phi0_prob(v, t);
+    Z += Y * phi0_prob(v);
   }
   i++;
   Z *= rng_unit(rngp);
@@ -414,7 +414,7 @@ double word_side_fact ( int e, int v, int t) {
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
   }
-  Z += Y * phi0_prob(v, t);
+  Z += Y * phi0_prob(v);
   return Z;
 }
 
