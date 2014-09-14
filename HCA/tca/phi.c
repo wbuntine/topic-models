@@ -72,7 +72,7 @@ void mu_free() {
     mu_file = NULL;
   }
   if ( ddS.mu ) {
-    free(ddS.mu[0]);free(ddS.mu[0]);
+    free(ddS.mu[0]);free(ddS.mu);
     ddS.mu = NULL;
   }
 }

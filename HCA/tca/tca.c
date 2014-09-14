@@ -305,7 +305,7 @@ int main(int argc, char* argv[])
 	if ( sscanf(&optarg[4],"%d,%d",&ddP.phiiter, &ddP.phiburn)<2 )
 	  yap_quit("Need a valid 'l word,' argument\n");      
       } else if ( strncmp(optarg,"mu,",3)==0 ) {
-	if ( sscanf(&optarg[4],"%d,%d",&ddP.muiter, &ddP.muburn)<2 )
+	if ( sscanf(&optarg[3],"%d,%d",&ddP.muiter, &ddP.muburn)<2 )
 	  yap_quit("Need a valid 'l word,' argument\n");      
       } else if ( strncmp(optarg,"prog,",5)==0 ) {
 	if ( sscanf(&optarg[5],"%d,%d",&ddP.progiter, &ddP.progburn)<2 )
