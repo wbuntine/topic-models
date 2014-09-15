@@ -32,7 +32,7 @@
  *    set to record stats of indicator values each cycle
  *    to RESSTEM.istats
  */
-#define IND_STATS
+// #define IND_STATS
 
 /*
  *  hyperparameters and test parameters
