@@ -54,3 +54,4 @@ but no self-contained man entries.
     pretty.xsl
     drep.pl
     msx2ms.pl
+    dtm2tca.pl

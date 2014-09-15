@@ -174,12 +174,32 @@ to count \texttt{maxM} and maximum table counts for $a_{\mu}$ and $a_{\phi}$ to 
 Default is 1000,10000. Higher numbers are needed when running with large number of documents.
 \item[\OptArg{-q}{threads}] If compiled with threading, enables
 this many threads.  Default is 1.
-\item[\Opt{-r}]
-Restart from a previous run, reloading data and parameters.
-\item[\OptArg{-R}]
+\item[\OptArg{-r}{type}]
+Restart using somethign previous, where \texttt{type} is:
+\begin{Description}[type]\setlength{\itemsep}{0cm}
+\item[hca]
 Restart from the output file from \Prog{hca}
 and the beta side is held constant and not sampled.
 Can significantly speed up testing or querying sometimes.
+\item[mu]
+Load up the \texttt{mu} matrix from file \File{RESSTEM.mu}
+where it is in standard sparse format
+(each line is "e k val" for e=epoch, k=topic index
+and the value).
+This means \texttt{mu} will not be estimated.
+Note the probabilities are expected to be normalised along the topic dimension.
+\item[phi]
+Load up the \texttt{phi} matrix from files \File{RESSTEM.phiNNN}
+for \texttt{NNN} is a 3-digit representation of the topic index
+(so, "000", "001", ...).
+The file is in standard sparse format
+(each line is "w k val" for w=word index, k=topic index
+and the value).
+This means \texttt{phi} will not be estimated.
+Note the probabilities are expected to be normalised along the word dimension.
+\item[tca] 
+Restart from a previous run, reloading data and parameters.
+\end{Description}
 \item[\OptArg{-s}{seed}]
 Initialise the random number seed.
 \item[\OptArg{-v}] Up verbosity by one increment.
