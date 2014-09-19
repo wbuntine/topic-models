@@ -48,22 +48,28 @@ static void topk(int K, int N, int *ind, double (*foo)(int)) {
 
 
 /*
- *  for IDF score
+ *  for IDF score and elsewhere, these are totals built using
+ *   getnk() for each epoch
  */
 static uint32_t NWK = 0;
 static uint32_t *NwK = NULL;
 
 /*
- *  when sorting, need to know these indices
+ *    when sorting, need to know these indices,
+ *    so we make them statics, ...
  */
 static int tscorek;
 static int tscoree;
 
 static unsigned getnk(int w, int k) {
+  if ( ddP.phi && ddP.mu )
+    return  round(ddP.mu[tscoree][k] * ddP.phi[tscoree][w][k] * NWK);
   return ddS.m_evt[tscoree][w][k]
     + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][k]:0);
 }
 static unsigned getNk(int k) {
+  if ( ddP.phi && ddP.mu )
+    return round(ddP.mu[tscoree][k] * NWK);
   return ddS.M_eVt[tscoree][k]
     + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.S_eVt[tscoree+1][k]:0);
 }
@@ -161,22 +167,43 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       phi_prob_iter(tscoree, wmtx);
 
     /*
-     *  first collect counts of each word/term
+     *  first collect counts of each word/term in epoch
      */
-    NWK = 0;
-    for (w=0; w<ddN.W; w++) {
-      NwK[w] = 0;
+    if ( !ddP.phi ) {
+      /*
+       *   get from stats
+       */
+      NWK = 0;
+      for (w=0; w<ddN.W; w++) {
+	NwK[w] = 0;
+	for (k=0; k<ddN.T; k++) {
+	  NwK[w] += getnk(w,k); 
+	}
+	NWK += NwK[w];
+      }    
+      M_tot = 0;
       for (k=0; k<ddN.T; k++) {
-	NwK[w] += getnk(w,k); 
+	M_tot += ddS.M_eVt[tscoree][k];
       }
-      NWK += NwK[w];
-    }    
-    M_tot = 0;
-    for (k=0; k<ddN.T; k++) {
-      M_tot += ddS.M_eVt[tscoree][k];
+    } else {
+      /*
+       *  get from raw data
+       */
+      int e, l;
+      int endd, startd = 0;
+      for (w=0; w<ddN.W; w++)
+	NwK[w] = 0;
+      for (e=0; e<tscoree; e++)
+	startd += ddD.esize[e];
+      endd = startd + ddD.esize[tscoree];
+      for (l=ddD.N_dTcum[startd]; l<ddD.N_dTcum[endd]; l++)
+	NwK[ddD.w[l]]++;
+      NWK = 0;
+      for (w=0; w<ddN.W; w++)
+	NWK += NwK[w];
     }
     
-   yap_message("\nEpoch %d\n", (int)tscoree);
+    yap_message("\nEpoch %d\n", (int)tscoree);
     for (k=0; k<ddN.T; k++) {
       int cnt;
       double spw;
@@ -190,21 +217,26 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
 	if ( ddS.m_evt[tscoree][w][k]>0 ) indk[cnt++] = w;
       }
       topk(topword, cnt, indk, tscore);
-      spd = 1-((double)nonzero_n_dt(k))/((double)ddN.DT);
-      // if ( tscoree==0 )    ?  what was this for?
-      sparsitydoc += spd;
-      spw = 1-((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
-      sparsityword += spw;
-      
-      if ( ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
-	underused++;
+      if ( !ddP.phi ) {
+	spd = 1-((double)nonzero_n_dt(k))/((double)ddN.DT);
+	sparsitydoc += spd;
+	spw = 1-((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
+	sparsityword += spw;
+	if ( !ddP.phi && ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
+	  underused++;
+      }
+
       yap_message("Topic %d/%d (", k, (int)tscoree);
-      yap_message("p=%.2lf%%/%.2lf%%,", 
-		  100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
-		  //  100.0*getNk(k)/(double)NWK,
-                  100.0*(ddP.mu?ddP.mu[tscoree][k]:pvec[k]));
-      yap_message("ws=%.1lf%%,", 100*spw);
-      yap_message("ds=%.1lf%%", 100*spd );
+      if ( !ddP.mu ) 
+	yap_message("p=%.2lf%%/%.2lf%%", 
+		    100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
+		    100.0*pvec[k]);
+      else
+	yap_message("p=%.2lf%%", 100.0*ddP.mu[tscoree][k]);
+      if ( !ddP.phi ) {      
+	yap_message(",ws=%.1lf%%,", 100*spw);
+	yap_message("ds=%.1lf%%", 100*spd );
+      }
       fprintf(fp,"%d,%d: ", (int)tscoree, (int)k);
       yap_message(") words =");
       for (w=0; w<topword && w<cnt; w++) {
@@ -238,12 +270,15 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     }
   }
 
-  yap_message("Average topicXword sparsity = %.2lf%%, ",
-	      100*(sparsityword/ddN.T/ddN.E) );
-  yap_message("Average docXtopic sparsity = %.2lf%%, "
-	      "underused topics = %.1lf%%\n",
-	      100*(sparsitydoc/ddN.T/ddN.E), 
-	      100.0*underused/(double)ddN.T);
+  if ( !ddP.phi ) {
+    yap_message("Average topicXword sparsity = %.2lf%%, ",
+		100*(sparsityword/ddN.T/ddN.E) );
+    yap_message("Average docXtopic sparsity = %.2lf%%, "
+		"underused topics = %.1lf%%\n",
+		100*(sparsitydoc/ddN.T/ddN.E), 
+		100.0*underused/ddN.T/ddN.E);
+  }
+  
   fclose(fp);
   if ( !ddP.mu ) 
     free(pvec);

@@ -45,7 +45,7 @@ typedef struct D_data_s {
   uint16_t *e;      //  epoch,   indexed by d=0,...,D-1
   uint16_t *j;      //  doc offset in epoch,   indexed by d=0,...,D-1
   uint32_t *esize;  //  size of epoch,   indexed by e=0,...,E-1
-  uint16_t *N_dT;    // number of words in doc
+  uint16_t *N_dT;    // number of words in doc, indexed by doc
   uint16_t N_dTmax;  // maximum of N_dT[]
   uint32_t *N_dTcum; //  cumsum(N_dT)
 } D_data_t;

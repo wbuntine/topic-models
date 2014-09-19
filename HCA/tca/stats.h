@@ -151,6 +151,7 @@ void phi_init(char *resstem);
 void phi_update();
 void phi_save();
 void phi_free();
+float *phi_mean(int k);
 
 /*
  *  optionally save/update mu matrix at end of cycles
@@ -159,6 +160,7 @@ void mu_init(char *resstem);
 void mu_update();
 void mu_save();
 void mu_free();
+float *mu_mean();
 
 /*
  *  checks

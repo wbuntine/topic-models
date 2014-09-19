@@ -321,6 +321,16 @@ void *testing_p(void *pargs)
   return NULL;
 }
 
+static float distH(float *p1, float *p2, int N) {
+  int n;
+  float tot = 0;
+  for (n=0; n<N; n++) {
+    float diff = sqrt(p1[n])-sqrt(p2[n]);
+    tot += diff*diff;
+  }
+  tot /= N;
+  return tot;
+}
 
 /*==========================================
  * main
@@ -998,7 +1008,7 @@ int main(int argc, char* argv[])
    }
 
    if ( loadphi ) {
-     phi_load(resstem);
+     phi_load(resstem);     
    } 
    if ( loadtheta ) {
      ddP.theta = fmat(ddN.D,ddN.T);

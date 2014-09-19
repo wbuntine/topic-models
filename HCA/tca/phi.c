@@ -126,3 +126,37 @@ void mu_update() {
   free(pvec);
   ddS.mu_cnt++;
 }
+
+float *phi_mean(int k) {
+  int e, w;
+  float tot=0, prop[ddN.E];
+  float *wvec;
+  if ( !ddP.phi )
+    return NULL;
+  wvec = fvec(ddN.W);
+  for (e=0; e<ddN.E; e++)
+    tot += prop[e] = ddD.esize[e];
+  for (e=0; e<ddN.E; e++)
+    prop[e] /= tot;
+  for (e=0; e<ddN.E; e++)
+    for (w=0; w<ddN.W; w++)
+      wvec[w] += ddP.phi[e][w][k] * prop[e];
+  return wvec;
+}
+
+float *mu_mean() {
+  int e, k;
+  float tot=0, prop[ddN.E];
+  float *kvec;
+  if ( !ddP.mu )
+    return NULL;
+  kvec = fvec(ddN.T);
+  for (e=0; e<ddN.E; e++)
+    tot += prop[e] = ddD.esize[e];
+  for (e=0; e<ddN.E; e++)
+    prop[e] /= tot;
+  for (e=0; e<ddN.E; e++)
+    for (k=0; k<ddN.T; k++)
+      kvec[k] += ddP.mu[e][k] * prop[e];
+  return kvec;
+}
