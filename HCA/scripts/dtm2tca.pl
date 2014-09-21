@@ -75,6 +75,7 @@ for (my $e=0; $e<$E; $e++) {
 }
 print STDERR "Wrote '$TCASTEM.mu'\n";
 
+print STDERR "Writing $TCASTEM.phi:";
 for (my $e=0; $e<$E; $e++) {
     my $tcaname = sprintf("$TCASTEM.phi%03d", $e);
     open(T,">$tcaname");
@@ -99,8 +100,9 @@ for (my $e=0; $e<$E; $e++) {
 	close(D);
     }
     close(T);
-    print STDERR "Wrote '$tcaname'\n";
+    print STDERR " $e";
 }
+print STDERR "\n";
 	
 system("perl -pi -e 's/^at\\s*=.*/at = 0/; s/^bt\\s*=.*/bt = $conc/; s/^bb\\s*=.*/bb = 0/;' $TCASTEM.par")==0 
   or die "cannot modify $TCASTEM.par\n";
