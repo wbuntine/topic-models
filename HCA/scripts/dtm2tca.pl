@@ -83,16 +83,16 @@ for (my $e=0; $e<$E; $e++) {
 	my $dtmname = sprintf("$DTMDIR/lda-seq/topic-%03d-var-e-log-prob.dat", $k);
 	open(D,"<$dtmname");
 	#  skip earlier epochs
-	for (my $cnt=$W*$e; $cnt>0; $cnt--) {
-	    <D>;
-	}
 	my $tot = 0.0;
-	for (my $w=0; $w<$W; $w++) {
-	    $vec[$w] = <D>;
-	    chomp($vec[$w]);
-	    $tot += $vec[$w] = exp($vec[$w]);
+        my $w = 0;
+	for (my $cnt=0; $cnt<$W*$E; $cnt++) {
+	    $_ = <D>;
+            if ( ($cnt % $E) == $e ) {
+                chomp();
+                $tot += $vec[$w++] = exp($_);
+            }
 	}
-	for (my $w=0; $w<$W; $w++) {
+	for ($w=0; $w<$W; $w++) {
 	    $vec[$w] /= $tot;
 	    print T "$w $k $vec[$w]\n";
 	}
