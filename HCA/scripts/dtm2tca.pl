@@ -3,6 +3,17 @@
 $DTMDIR = shift();
 $TCASTEM = shift();
 
+sub grabpar() {
+	my $par = shift();
+	open(I,"grep '^$par' $TCASTEM.par |");
+	$_ = <I>;
+	chomp($_);
+	close(I);
+	$_ =~ s/^$par\s*=\s*//;
+        # print STDERR "GOT PAR $par = '$_'\n";
+	return $_ ;
+}
+
 if ( ! -e "$DTMDIR/lda-seq/info.dat" ) {
     print STDERR "Cmd arg #1 should be directory with entry 'lda-seq/info.dat'\n";
     exit(1);
@@ -90,9 +101,11 @@ for (my $e=0; $e<$E; $e++) {
     close(T);
     print STDERR "Wrote '$tcaname'\n";
 }
+	
+system("perl -pi -e 's/^at\\s*=.*/at = 0/; s/^bt\\s*=.*/bt = $conc/; s/^bb\\s*=.*/bb = 0/;' $TCASTEM.par")==0 
+  or die "cannot modify $TCASTEM.par\n";
 
-system("perl -pi -e 's/^at = .*/at = 0.0/' $TCASTEM.par")==0 or die "Cannot modify $TCASTEM.par\n";
-system("perl -pi -e 's/^bb = .*/bb = 0.0/' $TCASTEM.par")==0 or die "Cannot modify $TCASTEM.par\n";
-system("perl -pi -e 's/^bt = .*/bt = $conc/' $TCASTEM.par")==0 or die "Cannot modify $TCASTEM.par\n";
-print STDERR "Modified $TCASTEM.par\n";
-
+$DATASTEM = &grabpar("stem");
+$TEST = &grabpar("TEST");
+system("tca -fldac -v -N40000,10000 -Llike,80,40 -W $W  -rtca -C0 -rmu -rphi -hdoc,5 -T$TEST -e -v -V $DATASTEM $TCASTEM")==0
+  or die "cannot run tca\n";
