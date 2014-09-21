@@ -107,5 +107,6 @@ system("perl -pi -e 's/^at\\s*=.*/at = 0/; s/^bt\\s*=.*/bt = $conc/; s/^bb\\s*=.
 
 $DATASTEM = &grabpar("stem");
 $TEST = &grabpar("TEST");
-system("tca -fldac -v -N40000,10000 -Llike,80,40 -W $W  -rtca -C0 -rmu -rphi -hdoc,5 -T$TEST -e -v -V $DATASTEM $TCASTEM")==0
+system("tca -fldac -v -N40000,10000 -Llike,80,40 -W $W  -rtca -C0 -rmu -rphi -hdoc,5 -T$TEST -v -V $DATASTEM $TCASTEM")==0
   or die "cannot run tca\n";
+system("tail -n2 $TCASTEM.log");
