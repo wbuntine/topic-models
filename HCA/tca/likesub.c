@@ -134,7 +134,10 @@ static double theta_one_fact(int d, int t) {
     int c = ddS.c_dt[d][t];
     if ( c<=0 ) 
       c=1;
-    fact = S_UV(ddC.a_theta, n, c+1) * (c+1.0)/(n+1);
+    if ( n>c+1 )
+      fact = S_UV(ddC.a_theta, n, c+1) * (c+1.0)/(n+1);
+    else if (n==c+1)
+      fact = n/(n-1.0);
   }
   return fact * 
     (ddP.b_theta + ddP.a_theta * ddS.C_dT[d]) / (ddP.b_theta + ddS.N_dT[d]);
@@ -146,8 +149,9 @@ static double theta_zero_fact(int d, int t) {
     return 0;
   c = ddS.c_dt[d][t];
   if ( c<=0 ) 
-      c=1;
-  return S_U(ddC.a_theta, n, c) * (n-c+1.0)/(n+1) 
+    c=1;
+  return 
+    ((n==1)?((1-ddP.a_theta)/2.0):(S_U(ddC.a_theta, n, c) * (n-c+1.0)/(n+1)))
     / (ddP.b_theta + ddS.N_dT[d]);
 }
 static double mu_one_fact(int e, int t) {
@@ -157,7 +161,10 @@ static double mu_one_fact(int e, int t) {
     int c = ddS.cp_et[e][t];
     if ( c<=0 )
       c = 1;
-    fact = S_UV(ddC.a_mu, n, c+1) * (c+1.0)/(n+1);
+    if ( n>c+1 )
+      fact = S_UV(ddC.a_mu, n, c+1) * (c+1.0)/(n+1);    
+    else if (n==c+1)
+      fact = n/(n-1.0);
   }
   return fact 
     * (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]) 
@@ -171,7 +178,8 @@ static double mu_zero_fact(int e, int t) {
   c = ddS.cp_et[e][t];
   if ( c<=0 )
     c = 1;
-  return S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1) 
+  return
+    ((n==1)?((1-ddP.a_mu)/2.0):(S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1))) 
     / (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
 }
 static double mu0_prob(int t) {
@@ -184,7 +192,10 @@ static double phi_one_fact(int e, int v, int t) {
     int c = ddS.s_evt[e][v][t];
     if ( c<=0 )
       c = 1;
-    fact = S_UV(ddC.a_phi1, n, c+1) * (c+1.0)/(n+1);
+    if ( n>c+1 )
+      fact = S_UV(ddC.a_phi1, n, c+1) * (c+1.0)/(n+1);
+    else if (n==c+1)
+      fact = n/(n-1.0);
   }
   return fact
     * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])
@@ -198,7 +209,8 @@ static double phi_zero_fact(int e, int v, int t) {
   c = ddS.s_evt[e][v][t];
   if ( c<=0 )
     c = 1;
-  return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
+  return 
+    S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
 double phi0_prob(int v) {

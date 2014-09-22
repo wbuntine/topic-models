@@ -40,7 +40,7 @@ static int sampleindicator(int n, int t, char *ind) {
     /*    
      *   shouldn't happen, but may due to inconsistency;
      *   since its sampling up, its zero but should have been
-     *   one,, so assume its one
+     *   one, so assume its one
      */
     *ind = 1;
     return 0;
@@ -77,17 +77,21 @@ static int resample_doc_side_ind(int d, int t, int *rd) {
     if ( ddP.mu )
       return 0;
     for (ee=e; ee>=0; ee--) {
-      int sec_part = 0;
+      int n = ddS.C_eDt[ee][t];
+      int c = ddS.cp_et[ee][t];
       if (ee<ddN.E-1) 
-	sec_part = ddS.cp_et[ee+1][t];
-      if (sampleindicator(ddS.C_eDt[ee][t]+sec_part,ddS.cp_et[ee][t],&ud)) 
-	return 1;
-      // equality condition means decrement is forced back regardless
-      if ( (ee>e-ddP.back || ddS.C_eDt[ee][t]+sec_part<=ddS.cp_et[ee][t])
-	   && ud) {
+	n += ddS.cp_et[ee+1][t];
+      if (n==c)
 	(*rd)++;
-      } else {
-	break;
+      else {
+	if (sampleindicator(n,c,&ud)) 
+	  return 1;
+	// equality condition means decrement is forced back regardless
+	if ( ee>e-ddP.back && ud ) {
+	  (*rd)++;
+	} else {
+	  break;
+	}
       }
     }
   } else
@@ -113,18 +117,21 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
   if ( ddP.phi )
     return 0;
   for (ee=e;ee>=0;ee--) {
-    int sec_part=0;
+    int n = ddS.m_evt[ee][v][t];
+    int c = ddS.s_evt[ee][v][t];
     if ( ee<ddN.E-1 ) 
-      sec_part=ddS.s_evt[ee+1][v][t];
-    if (sampleindicator(ddS.m_evt[ee][v][t]+sec_part,
-			ddS.s_evt[ee][v][t],&uw)) 
-      return 1;
-    // equality condition means decrement is forced back regardless
-    if ( (ee>e-ddP.back || ddS.m_evt[ee][v][t]+sec_part<=ddS.s_evt[ee][v][t])
-	&& uw) {
+      n += ddS.s_evt[ee+1][v][t];
+    if ( n<=c ) 
       (*rw)++;
-    } else {
-      break;
+    else {
+      if ( sampleindicator(n, c, &uw) ) 
+	return 1;
+      // equality condition means decrement is forced back regardless
+      if ( ee>e-ddP.back && uw ) {
+	(*rw)++;
+      } else {
+	break;
+      }
     }
   }
   return 0;
