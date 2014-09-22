@@ -154,6 +154,35 @@ static double theta_zero_fact(int d, int t) {
     ((n==1)?((1-ddP.a_theta)/2.0):(S_U(ddC.a_theta, n, c) * (n-c+1.0)/(n+1)))
     / (ddP.b_theta + ddS.N_dT[d]);
 }
+/*
+ * reorganises call to save on vector lookups
+ *  BUT testing show its 10% slower with mufact
+ */
+// #define mufact
+#ifdef mufact
+//    Z += mu_fact(e,t, &Y);
+static double mu_fact(int e, int t, double *Y) {
+  int n = ddS.C_eDt[e][t] + ((e<ddN.E-1)?ddS.cp_et[e+1][t]:0);
+  double denom = (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
+  double renum = (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]);
+  if ( n==0 ) {
+    *Y *= renum/denom;
+    return 0;
+  } else {
+    double fact = 1.0;
+    int c = ddS.cp_et[e][t];
+    double oldY = *Y;
+    if ( c<=0 ) c = 1;
+    if ( n>c+1 )
+      fact = S_UV(ddC.a_mu, n, c+1) * (c+1.0)/(n+1);    
+    else if (n==c+1)
+      fact = n/(n-1.0);
+    *Y *= fact * renum/denom;
+    return oldY * ((n==1)?((1-ddP.a_mu)/2.0):(S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1)))
+      / denom;
+  }
+}
+#else
 static double mu_one_fact(int e, int t) {
   int n = ddS.C_eDt[e][t] + ((e<ddN.E-1)?ddS.cp_et[e+1][t]:0);
   double fact = 1;
@@ -182,9 +211,42 @@ static double mu_zero_fact(int e, int t) {
     ((n==1)?((1-ddP.a_mu)/2.0):(S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1))) 
     / (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
 }
+#endif
 static double mu0_prob(int t) {
   return (ddS.cp_et[0][t] + ddP.b_mu0/ddN.T)/(ddS.Cp_e[0]+ddP.b_mu0);
 }
+/*
+ * reorganises call to save on vector lookups
+ */
+#define phifact
+#ifdef phifact
+//    Z += phi_fact(e,v,t, &Y);
+static double phi_fact(int e, int v, int t, double *Y) {
+  int n = ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);
+  double denom = (ddP.b_phi[e][t] + ddS.M_eVt[e][t] 
+                  + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
+  double renum = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t]);
+  if ( n==0 ) {
+    *Y *= renum/denom;
+    return 0;
+  } else {  
+    int c;
+    double fact = 1.0;
+    double oldY = *Y;
+    c = ddS.s_evt[e][v][t];
+    //  repair inconsistency errors
+    if ( c<=0 ) c = 1;
+    if ( n>c+1 )
+      fact = S_UV(ddC.a_phi1, n, c+1) * (c+1.0)/(n+1);
+    else if (n==c+1)
+      fact = n/(n-1.0);
+    *Y *= fact * renum/denom;
+    return oldY * S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) /denom;
+  }
+}
+#else
+//    Z += Y * phi_zero_fact(e, v, t);
+//    Y *= phi_one_fact(e, v, t);
 static double phi_one_fact(int e, int v, int t) {
   int n = ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);
   double fact = 1;
@@ -213,6 +275,7 @@ static double phi_zero_fact(int e, int v, int t) {
     S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
+#endif
 double phi0_prob(int v) {
   double term;
   if ( ddS.S_0vT[v]==0 )
@@ -338,8 +401,12 @@ int doc_side_ind(int d, int t) {
   }
 
   for (i=e ; i>=0; i--) {
+#ifdef mufact
+    Z += mu_fact(i, t, &Y);
+#else
     Z += Y * mu_zero_fact(i, t);
     Y *= mu_one_fact(i, t);
+#endif
     Ze[i+1] = Z;
     /*   cannot break if zeros so back is forced!  */
     if ( i<=e-ddP.back && ddS.cp_et[i][t]>0 ) break;
@@ -370,8 +437,12 @@ double doc_side_fact (int d, int t) {
     Z = ddP.mu[e][t];
   else {
     for ( ; e>=0; e--) {
+#ifdef mufact
+      Z += mu_fact(e, t, &Y);
+#else
       Z += Y * mu_zero_fact(e, t);
       Y *= mu_one_fact(e, t);
+#endif      
     }
     Z += Y * mu0_prob(t);
   }
@@ -397,8 +468,12 @@ int word_side_ind ( int e, int v, int t) {
     return 0;
 
   for (i=e ; i>=0; i--) {
-    Z += Y * phi_zero_fact(i, v, t);
-    Y *= phi_one_fact(i, v, t);
+#ifdef phifact
+    Z += phi_fact(e,v,t, &Y);
+#else
+    Z += Y * phi_zero_fact(e, v, t);
+    Y *= phi_one_fact(e, v, t);
+#endif
     Ze[i] = Z;
     /*   cannot break if zeros so back is forced!  */
     if ( i<=e-ddP.back && ddS.s_evt[i][v][t]>0 ) break;
@@ -423,8 +498,12 @@ double word_side_fact ( int e, int v, int t) {
     return ddP.phi[e][v][t];
 
   for ( ; e>=0; e--) {
+#ifdef phifact
+    Z += phi_fact(e,v,t, &Y);
+#else
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
+#endif
   }
   Z += Y * phi0_prob(v);
   return Z;
