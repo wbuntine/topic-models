@@ -158,7 +158,7 @@ static double theta_zero_fact(int d, int t) {
  * reorganises call to save on vector lookups
  *  BUT testing show its 10% slower with mufact
  */
-// #define mufact
+//  #define mufact
 #ifdef mufact
 //    Z += mu_fact(e,t, &Y);
 static double mu_fact(int e, int t, double *Y) {
@@ -259,8 +259,7 @@ static double phi_one_fact(int e, int v, int t) {
     else if (n==c+1)
       fact = n/(n-1.0);
   }
-  return fact
-    * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])
+  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])
     / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
 }
 static double phi_zero_fact(int e, int v, int t) {
@@ -427,26 +426,42 @@ int doc_side_ind(int d, int t) {
   return 0;
 }
 
+#if 0 
+/*
+ *  iterative version of mu_side_fact_rec() is slower
+ */
 // calculate p(z=t) from doc side using r1 (\sum_r1{P(z=t,r1)})
-double doc_side_fact (int d, int t) {
+static double mu_side_fact (int d, int t) {
   double Z = 0;
   int e = ddD.e[d];
   double Y = 1;
+  int back = e-ddP.back;
 
-  if ( ddP.mu )
-    Z = ddP.mu[e][t];
-  else {
-    for ( ; e>=0; e--) {
+  for ( ; e>=0; e--) {
 #ifdef mufact
-      Z += mu_fact(e, t, &Y);
+    Z += mu_fact(e, t, &Y);
 #else
-      Z += Y * mu_zero_fact(e, t);
+    Z += Y * mu_zero_fact(e, t);
       Y *= mu_one_fact(e, t);
-#endif      
-    }
-    Z += Y * mu0_prob(t);
+#endif
+      if ( e>0 && e<=back && ddS.cp_et[e][t]>0 ) break;
   }
-  return theta_zero_fact(d,t) + theta_one_fact(d,t) * Z;
+  if ( e<0 )
+    Z += Y * mu0_prob(t);
+  return Z;
+}
+#endif
+
+static double mu_side_fact_rec (int e, int t) {
+  if ( e<=0 ) 
+    return mu_zero_fact(e, t) + mu_one_fact(e, t) * mu0_prob(t);
+  return mu_zero_fact(e, t) + 
+    mu_one_fact(e, t) * mu_side_fact_rec(e-1,t);
+}
+double doc_side_fact (int d, int t) {
+    int e = ddD.e[d];
+    return theta_zero_fact(d,t) + theta_one_fact(d,t) 
+      * ((ddP.mu!=NULL)?ddP.mu[e][t]:mu_side_fact_rec(e,t));
 }
 /*
  *   return count to place table back:
@@ -469,10 +484,10 @@ int word_side_ind ( int e, int v, int t) {
 
   for (i=e ; i>=0; i--) {
 #ifdef phifact
-    Z += phi_fact(e,v,t, &Y);
+    Z += phi_fact(i,v,t, &Y);
 #else
-    Z += Y * phi_zero_fact(e, v, t);
-    Y *= phi_one_fact(e, v, t);
+    Z += Y * phi_zero_fact(i, v, t);
+    Y *= phi_one_fact(i, v, t);
 #endif
     Ze[i] = Z;
     /*   cannot break if zeros so back is forced!  */
@@ -493,6 +508,7 @@ int word_side_ind ( int e, int v, int t) {
 double word_side_fact ( int e, int v, int t) {
   double Z = 0;
   double Y = 1;
+  int back = e-ddP.back;
 
   if ( ddP.phi )
     return ddP.phi[e][v][t];
@@ -504,11 +520,24 @@ double word_side_fact ( int e, int v, int t) {
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
 #endif
+    if ( e>0 && e<=back && ddS.s_evt[e][v][t]>0 ) return Z;
   }
   Z += Y * phi0_prob(v);
   return Z;
 }
 
+#if 0
+/*
+ *   recursive version much slower
+ */
+double word_side_fact ( int e, int v, int t) {
+  if ( ddP.phi ) return ddP.phi[e][v][t];
+  if ( e==0 ) 
+    return phi_zero_fact(e, v, t) + phi_one_fact(e, v, t) * phi0_prob(v);
+  return phi_zero_fact(e, v, t) + 
+    phi_one_fact(e, v, t) * word_side_fact(e-1, v, t);
+}
+#endif
 
 
 
