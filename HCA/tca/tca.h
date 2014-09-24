@@ -34,7 +34,7 @@
 // #define H_THREADS
 
 /*
- *   when defined does traing of changes to a single m_evt
+ *   when defined does traing of changes to a single m_vte
  *   during sampling
  */
 // #define TRACE_WT

@@ -111,8 +111,8 @@ static double bterms_phi0(double b, void *mydata) {
   double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   for (t=0; t<ddN.T; t++) {
-    val += poch(b, ddP.a_phi1, ddS.S_eVt[0][t]);
-    val -= gammadiff(ddS.M_eVt[0][t] + ((ddN.E>1)?ddS.S_eVt[1][t]:0), 
+    val += poch(b, ddP.a_phi1, ddS.S_Vte[t][0]);
+    val -= gammadiff(ddS.M_Vte[t][0] + ((ddN.E>1)?ddS.S_Vte[t][1]:0), 
                      b, lgb);
   }
   myarms_evals++;
@@ -132,13 +132,13 @@ static double bterms_phi1(double b, void *mydata) {
   double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   for (e=1; e<ddN.E; e++) {
-    if ( ddS.S_eVt[e][k]==0 ) 
+    if ( ddS.S_Vte[k][e]==0 ) 
       continue;
-    val += poch(b, ddP.a_phi1, ddS.S_eVt[e][k]);
+    val += poch(b, ddP.a_phi1, ddS.S_Vte[k][e]);
     if (e<ddN.E-1) {
-      val -= gammadiff(ddS.M_eVt[e][k] + ddS.S_eVt[e+1][k], b, lgb);
+      val -= gammadiff(ddS.M_Vte[k][e] + ddS.S_Vte[k][e+1], b, lgb);
     } else {
-      val -= gammadiff(ddS.M_eVt[e][k], b, lgb);
+      val -= gammadiff(ddS.M_Vte[k][e], b, lgb);
     }
   }
   myarms_evals++;

@@ -168,8 +168,8 @@ extern void tca_write_z(char *resstem);
  *        STEM.n_dt = n_dt matrix in standard sparse format
  *        STEM.c_dt = c_dt matrix in standard sparse format
  *        STEM.cp_et = cp_et matrix in standard sparse format
- *        STEM.m_evt = m_evt matrix in standard sparse format
- *        STEM.s_evt = s_evt matrix in standard sparse format
+ *        STEM.m_vte = m_vte matrix in standard sparse format
+ *        STEM.s_vte = s_vte matrix in standard sparse format
  *        STEM.zt  = z vector for all training docs sequentially,
  *                  one value per line
  *        STEM.par = various parameters in readable form
@@ -191,12 +191,12 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
     }
 #if 1
     fname = yap_makename(resstem,".mevt");
-    write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.m_evt,fname,0);
+    write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.m_vte,fname,0);
     free(fname);
 #endif
     if ( !ddP.phi ) {
       fname = yap_makename(resstem,".sevt");
-      write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_evt,fname,1);
+      write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_vte,fname,1);
       free(fname);
     }
     tca_write_z(resstem);

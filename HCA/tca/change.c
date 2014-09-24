@@ -29,13 +29,13 @@
 #include "atomic.h"
 
 /*
- *  coount non-zero entries in m_evt[][t]
+ *  coount non-zero entries in m_vte[t][]
  */
-int nonzero_m_evt(int e, int t) {
+int nonzero_m_vte(int e, int t) {
   int w;
   int nz=0;
   for (w=0; w<ddN.W; w++ )
-    if ( ddS.m_evt[e][w][t]>0 )
+    if ( ddS.m_vte[w][t][e]>0 )
       nz++;
   return nz;
 }
@@ -188,18 +188,18 @@ void unfix_tableidword(int e, int w, int t, int ind) {
   assert(e-ind+1>=0);
   for (i=e; i>e-ind; i--) {
     assert(i>=0);
-    if ( (atomic_decr(ddS.s_evt[i][w][t]))>=UINT32_MAX-40 ) {
+    if ( (atomic_decr(ddS.s_vte[w][t][i]))>=UINT32_MAX-40 ) {
       /*
        *    this may decrement below zero if two independently set ind
        *    so we catch it here, and quit early
        */
       //WRAY   this tapped!!
-      yap_message("Whoops atomic_decr(ddS.s_evt[i][w][t])>=UINT32_MAX-40\n");
-      atomic_incr(ddS.s_evt[i][w][t]);
+      yap_message("Whoops atomic_decr(ddS.s_vte[w][t][i])>=UINT32_MAX-40\n");
+      atomic_incr(ddS.s_vte[w][t][i]);
       return;
     } 
-    if ( atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX-40 )
-      yap_quit("Whoops atomic_decr(ddS.S_eVt[i][t])>=UINT32_MAX\n");
+    if ( atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX-40 )
+      yap_quit("Whoops atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX\n");
     lasti = i;
   }    
   if ( lasti==0 ) {
@@ -225,8 +225,8 @@ void fix_tableidword(int e, int w, int t, int ind) {
   int i;
   int lasti = -1;
   for (i=e; i>e-ind; i--) {
-    atomic_incr(ddS.S_eVt[i][t]);
-    atomic_incr(ddS.s_evt[i][w][t]);
+    atomic_incr(ddS.S_Vte[t][i]);
+    atomic_incr(ddS.s_vte[w][t][i]);
     lasti = i;
   } 
   if ( lasti==0 ) {
@@ -240,26 +240,26 @@ void fix_tableidword(int e, int w, int t, int ind) {
 }
 
 /*
- *    add count to s_evt[][][] stats to make consistent
+ *    add count to s_vte[][][] stats to make consistent
  *    rippling back if needed
  */
 static void add_tableidword(int e, int w, int t) { 
   int laste = -1;
 #ifndef H_THREADS
-  assert(ddS.s_evt[e][w][t]==0);
+  assert(ddS.s_vte[w][t][e]==0);
 #endif
-  for (;  e>=0 && ddS.s_evt[e][w][t]==0; e--) {
+  for (;  e>=0 && ddS.s_vte[w][t][e]==0; e--) {
     int zero = 0;
     //WRAY ???  only increment if zero ... how to do safely
-    if ( atomic_incr_val(ddS.s_evt[e][w][t],zero) ) {
-      atomic_incr(ddS.S_eVt[e][t]);
+    if ( atomic_incr_val(ddS.s_vte[w][t][e],zero) ) {
+      atomic_incr(ddS.S_Vte[t][e]);
       laste = e;
     } else
       break;
   }
   if ( laste==0 ) {
     int val;
-    /*   we incremented  ddS.s_evt[0][w][t] */
+    /*   we incremented  ddS.s_vte[w][t][0] */
     atomic_incr(ddS.S_0);
     val = atomic_incr(ddS.S_0vT[w]);
     if ( val==1 ) {
@@ -323,34 +323,34 @@ int remove_doc(int d, enum GibbsType fix) {
         int e1;
         int laste1=-1;
         t = Z_t(ddS.z[i]);
-        ddS.M_eVt[e][t]--;
-        assert(ddS.m_evt[e][w][t]>0);
-        ddS.m_evt[e][w][t]--;
+        ddS.M_Vte[t][e]--;
+        assert(ddS.m_vte[w][t][e]>0);
+        ddS.m_vte[w][t][e]--;
         if ( !ddP.phi ) {
           /*
-           *    remove count from s_evt[][][] stats to make consistent
+           *    remove count from s_vte[][][] stats to make consistent
            *    rippling back if needed
            */
           e1 = e;
           if ( e1==ddN.E-1 ) {
-            if ( ddS.s_evt[e1][w][t]>ddS.m_evt[e1][w][t] ) {
-              ddS.s_evt[e1][w][t]--;
-              ddS.S_eVt[e1][t]--;
+            if ( ddS.s_vte[w][t][e1]>ddS.m_vte[w][t][e1] ) {
+              ddS.s_vte[w][t][e1]--;
+              ddS.S_Vte[t][e1]--;
               laste1 = e1;
             }
             e1--;
           }
           for (;  e1>=0; e1--) {
-            int thism = ddS.s_evt[e1+1][w][t]+ddS.m_evt[e1][w][t];
-            if ( thism < ddS.s_evt[e1][w][t] ) {
-              ddS.s_evt[e1][w][t]--;
-              ddS.S_eVt[e1][t]--;
+            int thism = ddS.s_vte[w][t][e1+1]+ddS.m_vte[w][t][e1];
+            if ( thism < ddS.s_vte[w][t][e1] ) {
+              ddS.s_vte[w][t][e1]--;
+              ddS.S_Vte[t][e1]--;
               laste1 = e1;
             } else
               break;
           }
           if ( laste1==0 ) {
-            /*   we decremented  ddS.s_evt[0][w][t] */
+            /*   we decremented  ddS.s_vte[w][t][0] */
             ddS.S_0--;
             assert(ddS.S_0vT[w]>0);
             ddS.S_0vT[w]--;
@@ -397,9 +397,9 @@ int add_doc(int d, enum GibbsType fix) {
       ddS.N_dT[d]++;  
       if ( !PCTL_BURSTY() || Z_issetr(ddS.z[i]) ) {
         w = ddD.w[i];
-        ddS.M_eVt[e][t]++;
-        ddS.m_evt[e][w][t]++;
-        if ( !ddP.phi && ddS.s_evt[e][w][t]==0 ) 
+        ddS.M_Vte[t][e]++;
+        ddS.m_vte[w][t][e]++;
+        if ( !ddP.phi && ddS.s_vte[w][t][e]==0 ) 
           add_tableidword(e,w,t);
       }
     }

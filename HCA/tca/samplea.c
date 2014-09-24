@@ -190,16 +190,16 @@ static double aterms_phi1(double mya, void *mydata) {
   S_remake(ddC.a_phi1, mya);
   for (e=0; e<ddN.E; e++) {
     for (t=0; t<ddN.T; t++) {
-      if ( ddS.S_eVt[e][t]==0 )
+      if ( ddS.S_Vte[t][e]==0 )
 	continue;
-      val += poch(ddP.b_phi[e][t], mya, ddS.S_eVt[e][t]);
+      val += poch(ddP.b_phi[e][t], mya, ddS.S_Vte[t][e]);
       for (v=0; v<ddN.W; v++) {
-	if ( ddS.s_evt[e][v][t]==0 )
+	if ( ddS.s_vte[v][t][e]==0 )
 	  continue;
 	if (e<ddN.E-1) {
-	  val += S_S(ddC.a_phi1, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
+	  val += S_S(ddC.a_phi1, ddS.m_vte[v][t][e] + ddS.s_vte[v][t][e+1] , ddS.s_vte[v][t][e]);
 	} else {
-	  val += S_S(ddC.a_phi1, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
+	  val += S_S(ddC.a_phi1, ddS.m_vte[v][t][e], ddS.s_vte[v][t][e]);
 	}
       }
     }

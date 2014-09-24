@@ -64,14 +64,14 @@ static int tscoree;
 static unsigned getnk(int w, int k) {
   if ( ddP.phi && ddP.mu )
     return  round(ddP.mu[tscoree][k] * ddP.phi[tscoree][w][k] * NWK);
-  return ddS.m_evt[tscoree][w][k]
-    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.s_evt[tscoree+1][w][k]:0);
+  return ddS.m_vte[w][k][tscoree]
+    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.s_vte[w][k][tscoree+1]:0);
 }
 static unsigned getNk(int k) {
   if ( ddP.phi && ddP.mu )
     return round(ddP.mu[tscoree][k] * NWK);
-  return ddS.M_eVt[tscoree][k]
-    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.S_eVt[tscoree+1][k]:0);
+  return ddS.M_Vte[k][tscoree]
+    + ((ddP.phi==NULL&&tscoree+1<ddN.E)?ddS.S_Vte[k][tscoree+1]:0);
 }
 static unsigned getn(int w) {
   return getnk(w,tscorek);
@@ -183,7 +183,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       }    
       M_tot = 0;
       for (k=0; k<ddN.T; k++) {
-	M_tot += ddS.M_eVt[tscoree][k];
+	M_tot += ddS.M_Vte[k][tscoree];
       }
     } else {
       /*
@@ -214,22 +214,22 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
        */
       cnt=0;
       for (w=0; w<ddN.W; w++) {
-	if ( ddS.m_evt[tscoree][w][k]>0 ) indk[cnt++] = w;
+	if ( ddS.m_vte[w][k][tscoree]>0 ) indk[cnt++] = w;
       }
       topk(topword, cnt, indk, tscore);
       if ( !ddP.phi ) {
 	spd = 1-((double)nonzero_n_dt(k))/((double)ddN.DT);
 	sparsitydoc += spd;
-	spw = 1-((double)nonzero_m_evt(tscoree,k))/((double)ddN.W);
+	spw = 1-((double)nonzero_m_vte(tscoree,k))/((double)ddN.W);
 	sparsityword += spw;
-	if ( !ddP.phi && ddS.M_eVt[tscoree][k]*ddN.T*100<M_tot ) 
+	if ( !ddP.phi && ddS.M_Vte[k][tscoree]*ddN.T*100<M_tot ) 
 	  underused++;
       }
 
       yap_message("Topic %d/%d (", k, (int)tscoree);
       if ( !ddP.mu ) 
 	yap_message("p=%.2lf%%/%.2lf%%", 
-		    100.0*((double)ddS.M_eVt[tscoree][k])/(double)M_tot,
+		    100.0*((double)ddS.M_Vte[k][tscoree])/(double)M_tot,
 		    100.0*pvec[k]);
       else
 	yap_message("p=%.2lf%%", 100.0*ddP.mu[tscoree][k]);
@@ -242,7 +242,7 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
       for (w=0; w<topword && w<cnt; w++) {
         double prob;
         if ( verbose>3 )
-          prob = ddS.m_evt[tscoree][indk[w]][k]/(double)ddS.M_eVt[tscoree][k];
+          prob = ddS.m_vte[indk[w]][k][tscoree]/(double)ddS.M_Vte[k][tscoree];
 	/*  print to file */
 	fprintf(fp," %d", (int)indk[w]);
 	if ( verbose>2 ) {

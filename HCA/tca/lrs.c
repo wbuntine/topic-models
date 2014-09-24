@@ -61,14 +61,14 @@ double lp_test_ML(/*
   /*
    *  must account for other totals over docs
    *  which would be modified by adding the test doc
-   *    m_evt[], Nt[] - we don't change these, usd in wordfact()
+   *    m_vte[], Nt[] - we don't change these, usd in wordfact()
    *    C_eDt[t]  = \sum_d c_dt[d][t]
    *    C_e = \sum_t C_eDt[t]
    *
    *   assume topic assignments are set up in z[], 
    *   but stats not added elsewhere
    */
-  // check_m_evt(0);
+  // check_m_vte(0);
   if ( PCTL_BURSTY() ) misi_init(&ddM,&dD);
 
   /*
@@ -83,12 +83,12 @@ double lp_test_ML(/*
     if ( thisw<=1 || (fix==GibbsHold && thisw>=ddD.N_dT[i]-1) ) {
 #ifdef TRACE_WT
       yap_message("remove_doc(d=%d,N=%d,T=%d) before continue\n",
-		  i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
+		  i, (int)ddS.m_vte[TR_W][TR_T][e],(int)ddS.s_vte[TR_W][TR_T][e]);
 #endif
       remove_doc(i, fix);
 #ifdef TRACE_WT
       yap_message("after remove_doc(d=%d,N=%d,T=%d)\n",
-		  i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
+		  i, (int)ddS.m_vte[TR_W][TR_T][e],(int)ddS.s_vte[TR_W][TR_T][e]);
 #endif
       continue;
     }
@@ -105,15 +105,15 @@ double lp_test_ML(/*
     if ( PCTL_BURSTY() ) misi_unbuild(&dD,i,0);
 #ifdef TRACE_WT
     yap_message("remove_doc(d=%d,N=%d,T=%d) end loop\n",
-		i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
+		i, (int)ddS.m_vte[TR_W][TR_T][e],(int)ddS.s_vte[TR_W][TR_T][e]);
 #endif
     remove_doc(i, fix);
 #ifdef TRACE_WT
     yap_message("after remove_doc(d=%d,N=%d,T=%d) end loop\n",
-		i, (int)ddS.m_evt[e][TR_W][TR_T],(int)ddS.s_evt[e][TR_W][TR_T]);
+		i, (int)ddS.m_vte[TR_W][TR_T][e],(int)ddS.s_vte[TR_W][TR_T][e]);
 #endif
     //  yap_message("%d:  %lf-%lf / %d\n", i, hmean, log(ddP.mltiter-ddP.mltburn) - hmean, thisw); 
-    // check_m_evt(ddD.e[i]);
+    // check_m_vte(ddD.e[i]);
   }
   free(fact);
   if ( PCTL_BURSTY() ) misi_free(&dD);

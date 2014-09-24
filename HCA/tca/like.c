@@ -149,23 +149,23 @@ double likelihood_PYbeta() {
   // phi part
   for (e=0; e<ddN.E; e++) {
     for (t=0; t<ddN.T; t++) {
-      if ( ddS.S_eVt[e][t]==0 )
+      if ( ddS.S_Vte[t][e]==0 )
 	continue;
-      likelihood += poch(ddP.b_phi[e][t], ddP.a_phi1, ddS.S_eVt[e][t]);
+      likelihood += poch(ddP.b_phi[e][t], ddP.a_phi1, ddS.S_Vte[t][e]);
       if (e<ddN.E-1) {
 	likelihood -=
-	  gammadiff(ddS.M_eVt[e][t] + ddS.S_eVt[e+1][t], ddP.b_phi[e][t], 0);
+	  gammadiff(ddS.M_Vte[t][e] + ddS.S_Vte[t][e+1], ddP.b_phi[e][t], 0);
       } else {
-	likelihood -= gammadiff(ddS.M_eVt[e][t], ddP.b_phi[e][t], 0);
+	likelihood -= gammadiff(ddS.M_Vte[t][e], ddP.b_phi[e][t], 0);
       }
       yap_infinite(likelihood);
       for (v=0; v<ddN.W; v++) {
-	if ( ddS.s_evt[e][v][t]==0 )
+	if ( ddS.s_vte[v][t][e]==0 )
 	  continue;
 	if (e<ddN.E-1) {
-	  likelihood += S_S(ddC.a_phi1, ddS.m_evt[e][v][t] + ddS.s_evt[e+1][v][t] , ddS.s_evt[e][v][t]);
+	  likelihood += S_S(ddC.a_phi1, ddS.m_vte[v][t][e] + ddS.s_vte[v][t][e+1] , ddS.s_vte[v][t][e]);
 	} else {
-	  likelihood += S_S(ddC.a_phi1, ddS.m_evt[e][v][t], ddS.s_evt[e][v][t]);
+	  likelihood += S_S(ddC.a_phi1, ddS.m_vte[v][t][e], ddS.s_vte[v][t][e]);
 	}
       }
       yap_infinite(likelihood);
@@ -198,8 +198,8 @@ double likelihood() {
     for (e=0; e<ddN.E; e++) 
       for (t=0; t<ddN.T; t++) 
 	for (v=0; v<ddN.W; v++) {
-	  if ( ddS.m_evt[e][v][t] ) {
-	    likelihood +=  ddS.m_evt[e][v][t] * log(ddP.phi[e][v][t]);
+	  if ( ddS.m_vte[v][t][e] ) {
+	    likelihood +=  ddS.m_vte[v][t][e] * log(ddP.phi[e][v][t]);
             if (!finite(likelihood)) 
               yap_quit("ddP.phi[%d][%d][%d]=%g\n",e,v,t,ddP.phi[e][v][t]);
           }

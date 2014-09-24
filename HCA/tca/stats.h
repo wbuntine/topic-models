@@ -13,7 +13,7 @@
  *          
  * CHANGES:
  *          don't have [e][d] as an index, just [d]
- *          for s_evt stuff, always put t index last
+ *          for s_vte stuff, always put t index last
  */
 
 #ifndef __STATS_H
@@ -43,8 +43,8 @@ typedef struct D_stats_s {
   uint16_t *z;
   uint16_t **n_dt;     // number of words in doc for topic
   uint16_t *N_dT;      // \sum_t n_dt[d][t]
-  uint32_t ***m_evt;   // number of words w in topic t for epoch e
-  uint32_t **M_eVt;    //  \sum_w m_evt[e][w][t]  
+  uint32_t ***m_vte;   // number of words w in topic t for epoch e
+  uint32_t **M_Vte;    //  \sum_w m_vte[w][t][e]  
   /*
    *   the doc PYP (with ad,bd) table totals;
    *   table counts matching ddD.Mi[] and ddD.MI[]
@@ -69,11 +69,11 @@ typedef struct D_stats_s {
    *       basic topic by word table counts and its various totals
    *       roughly matches **c_dt
    */
-  uint32_t ***s_evt;   // table counts for words in topic
+  uint32_t ***s_vte;   // table counts for words in topic
   uint32_t  S_0_nz;    //  = \sum_w 1(S_0vT[w]>0)
   uint32_t  S_0;       //  = \sum_w S_0vT[w]
-  uint32_t  *S_0vT;    //  = \sum_t s_evt[0][w][t]
-  uint32_t **S_eVt;    //  = \sum_w s_evt[e][w][t];  
+  uint32_t  *S_0vT;    //  = \sum_t s_vte[w][t][0]
+  uint32_t **S_Vte;    //  = \sum_w s_vte[w][t][e];  
 } D_stats_t;
 
 
@@ -123,7 +123,13 @@ double phi0_prob(int v);
 
 double doc_side_fact(int d, int t);
 double doc_side_prob(int d, int t);
-#define MU_CACHE
+
+#define MH_STEP
+
+/*
+ *  cache on the mu matrix
+ */
+// #define MU_CACHE
 //  incomplete ... didn't set mu_side_fact_change() where needed
 #ifdef MU_CACHE
 void mu_side_fact_init();
@@ -176,7 +182,7 @@ float *mu_mean();
 void check_n_dt(int d);
 void tca_checkO();
 void tca_checkO_A(int t);
-void check_m_evt(int e);
+void check_m_vte(int e);
 void check_cp_et();
 
 #include "change.h"

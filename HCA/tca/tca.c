@@ -43,7 +43,7 @@
 #include "atomic.h"
 
 void tca_displaytopics(char *resstem, int topword, enum ScoreType score);
-void checkm_evt(int w, int val);
+void checkm_vte(int w, int val);
 
 //==================================================
 // global variables
@@ -654,15 +654,6 @@ int main(int argc, char* argv[])
     /*
      *  sampling
      */
-#ifdef TRACE_WT
-    for (i=0; i<ddN.NT; i++) {
-      if ( ddD.w[i]==TR_W && Z_t(ddS.z[i])==TR_T )
-	yap_message("Word=%d, topic=%d:  d=%d, z=%d, i=%d\n",
-		    TR_W, TR_T, (int)ddD.d[i], (int)ddS.z[i], i);
-    }
-    yap_message("Word=%d, topic=%d:  start N=%d, T=%d\n",
-		TR_W, TR_T, (int)ddS.m_evt[TR_W][TR_T],(int)ddS.s_evt[TR_W][TR_T]);
-#endif
 #ifdef IND_STATS
     ddP.doc_ind_stats = u32tri(ddN.T,ddN.E,ddN.E);
     ddP.word_ind_stats = u32tri(ddN.T,ddN.E,ddN.E);
@@ -711,7 +702,7 @@ int main(int argc, char* argv[])
       int e, d;
       check_cp_et();
       for (e=0; e<ddN.E; e++)
-        check_m_evt(e);
+        check_m_vte(e);
       for (d=0; d<ddN.DT; d++)
         check_n_dt(d);
     }

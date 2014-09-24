@@ -29,7 +29,7 @@
 #include "stats.h"
 #include "atomic.h"
 
-void checkm_evt(int w, int var);
+void checkm_vte(int w, int var);
 /*
  *    sample single indicator given counts==n and multiplicity==t
  *    return 0 if OK and set *ind
@@ -117,10 +117,10 @@ static int resample_word_side_ind(int e,  int v, int t, int *rw) {
   if ( ddP.phi )
     return 0;
   for (ee=e;ee>=0;ee--) {
-    int n = ddS.m_evt[ee][v][t];
-    int c = ddS.s_evt[ee][v][t];
+    int n = ddS.m_vte[v][t][ee];
+    int c = ddS.s_vte[v][t][ee];
     if ( ee<ddN.E-1 ) 
-      n += ddS.s_evt[ee+1][v][t];
+      n += ddS.s_vte[v][t][ee+1];
     if ( n<=c ) 
       (*rw)++;
     else {
@@ -208,12 +208,12 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       /*
        *  need to safely catch with atomic ops if it goes to zero
        */
-      if ( e==ddN.E-1 || ddS.s_evt[e+1][wid][t]==0 ) {
+      if ( e==ddN.E-1 || ddS.s_vte[wid][t][e+1]==0 ) {
         int one = 1;
         /*  no data inherited from later epoch */
-        if ( atomic_decr_val(ddS.m_evt[e][wid][t],one) ) {
-          /*   m_evt[e][wid][t] was decremented to zero */
-          atomic_decr(ddS.M_eVt[e][t]);
+        if ( atomic_decr_val(ddS.m_vte[wid][t][e],one) ) {
+          /*   m_vte[wid][t][e] was decremented to zero */
+          atomic_decr(ddS.M_Vte[t][e]);
           decr = 1;
         }
       }
@@ -224,16 +224,16 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       if ( decr==0 ) {
         /*  not decremented to zero above */
 #ifndef H_THREADS
-        assert(ddS.m_evt[e][wid][t]>0);
+        assert(ddS.m_vte[wid][t][e]>0);
 #endif
         /*  safe because the count is uniquely associated with this word */
-        atomic_decr(ddS.m_evt[e][wid][t]);
-        atomic_decr(ddS.M_eVt[e][t]);
+        atomic_decr(ddS.m_vte[wid][t][e]);
+        atomic_decr(ddS.M_Vte[t][e]);
       }
     } else {
       /*  safe because the count is uniquely associated with this word */
-      atomic_decr(ddS.m_evt[e][wid][t]);
-      atomic_decr(ddS.M_eVt[e][t]);
+      atomic_decr(ddS.m_vte[wid][t][e]);
+      atomic_decr(ddS.M_Vte[t][e]);
     }
   }
   return 0;
@@ -296,17 +296,17 @@ void update_topic(int i, int did, int wid, int t, int mi,
        */
       int zero = 0;
       int incr = 0;
-      if ( atomic_incr_val(ddS.m_evt[e][wid][t],zero) ) {
+      if ( atomic_incr_val(ddS.m_vte[wid][t][e],zero) ) {
         if ( 1 ) {
-          atomic_incr(ddS.M_eVt[e][t]);
+          atomic_incr(ddS.M_Vte[t][e]);
           incr = 1;
         } else {
-          atomic_decr(ddS.m_evt[e][wid][t]);
+          atomic_decr(ddS.m_vte[wid][t][e]);
         }
         /*  cancel increment and do afterwards */
       } else {
-        atomic_incr(ddS.M_eVt[e][t]);
-        atomic_incr(ddS.m_evt[e][wid][t]);
+        atomic_incr(ddS.M_Vte[t][e]);
+        atomic_incr(ddS.m_vte[wid][t][e]);
         incr = 1;
       }
       /*
@@ -314,13 +314,13 @@ void update_topic(int i, int did, int wid, int t, int mi,
        */
       fix_tableidword(e,wid,t,rw);
       if ( !incr ) {
-        atomic_incr(ddS.M_eVt[e][t]);
-        atomic_incr(ddS.m_evt[e][wid][t]);
+        atomic_incr(ddS.M_Vte[t][e]);
+        atomic_incr(ddS.m_vte[wid][t][e]);
       }
     } else {
       /*  simple case, order doesn't matter  */
-      atomic_incr(ddS.M_eVt[e][t]);
-      atomic_incr(ddS.m_evt[e][wid][t]);
+      atomic_incr(ddS.M_Vte[t][e]);
+      atomic_incr(ddS.m_vte[wid][t][e]);
     }
   }
 #ifdef IND_STATS
@@ -360,6 +360,11 @@ double gibbs_lda(/*
   int StartWord = ddD.N_dTcum[did];
   int EndWord = StartWord + words;
   float dtip[ddN.T];
+#ifdef MH_STEP
+  double doc_side_cache[ddN.T];
+  for (t=0; t<ddN.T; t++) 
+    doc_side_cache[t] = doc_side_fact(did,t);
+#endif
 
   /*
    *   some of the latent variables are not sampled
@@ -378,55 +383,57 @@ double gibbs_lda(/*
   e = ddD.e[did];
 
   for (i=StartWord; i<EndWord; i++) {
+    int oldt;
     if ( fix==GibbsHold ) {
       if ( pctl_hold(i) )
 	fix_doc = GibbsHold;  //   this word is a hold out
       else
 	fix_doc = GibbsNone;
     }
-    // check_m_evt(e);
+    // check_m_vte(e);
     wid=ddD.w[i]; 
     /*******************
      *   first we remove affects of this word on the stats
      *******************/
-    t = Z_t(ddS.z[i]); 
+    oldt = t = Z_t(ddS.z[i]); 
     if ( fix_doc!=GibbsHold ) {
-#ifdef TRACE_WT
-      if ( wid==TR_W && t==TR_T )
-	yap_message("remove_topic(w=%d,t=%d,d=%d,l=%d, z=%d, N=%d,T=%d)\n",
-		    wid, t,did, i, (int)ddS.z[i],
-		    (int)ddS.m_evt[wid][t],(int)ddS.s_evt[wid][t]);
-#endif
       if ( remove_topic(i, did, (!PCTL_BURSTY()||Z_issetr(ddS.z[i]))?wid:-1, 
                         t, mi, dD) ) {
 	goto endword;
       }
     }
-#ifdef TRACE_WT
-    if ( wid==TR_W && t==TR_T)
-      yap_message("after remove_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
-		  wid,t,did,i, (int)ddS.z[i],
-		  (int)ddS.m_evt[e][wid][t],(int)ddS.s_evt[e][wid][t]);
-#endif
     /***********************
      *    get topic probabilities
      ***********************/
-    // check_m_evt(e);
+    // check_m_vte(e);
 #ifdef MU_CACHE
       mu_side_fact_update(e);
 #endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
+#ifdef MH_STEP
+      int saveback = ddP.back;
+      if ( fix_doc!=GibbsHold )
+        ddP.back = 0;
+#endif
       /*
        *   (fix_doc==GibbsHold) =>
        *       doing estimation, not sampling so use prob versions
        *    else
        *        doing sampling so use fact versions
        */
+#ifdef MH_STEP
+      double tf = (fix_doc==GibbsHold)?doc_side_prob(did,t):
+        doc_side_cache[t];
+      if ( tf>0 ) {
+        double wf = (fix_doc==GibbsHold)?word_side_prob(e, wid, t):
+          word_side_fact(e, wid, t);
+#else
       double tf = (fix_doc==GibbsHold)?doc_side_prob(did,t):
         doc_side_fact(did,t);
       if ( tf>0 ) {
         double wf = (fix_doc==GibbsHold)?word_side_prob(e, wid, t):
           word_side_fact(e, wid, t);
+#endif
         tot += tf;
         if ( PCTL_BURSTY() ) 
           wf = (fix_doc==GibbsHold)?docprob(dD, t, i, mi, wf):
@@ -434,6 +441,7 @@ double gibbs_lda(/*
         Z += p[t] = tf * wf;
       } else
         p[t] = 0;
+      ddP.back = saveback;
     }
     if ( fix!=GibbsHold || fix_doc==GibbsHold )
       logdoc += log(Z/tot);
@@ -452,19 +460,35 @@ double gibbs_lda(/*
        *  sample and update core stats 
        */
       t = samplet(p, Z, ddN.T, rng_unit(rngp));
+#ifdef MH_STEP
+      if ( t != oldt ) {
+        double ratio  = p[oldt]/p[t];
+        if ( PCTL_BURSTY() ) {
+          ratio *= docfact(dD, t, i, mi, word_side_fact(e, wid, t), &dtip[t])
+            * doc_side_fact(did,t);
+          ratio /= docfact(dD, oldt, i, mi, word_side_fact(e, wid, oldt), &dtip[oldt])
+            * doc_side_fact(did,oldt);
+        } else {
+          ratio *= word_side_fact(e, wid, t) * doc_side_fact(did, t);
+          ratio /= word_side_fact(e, wid, oldt) * doc_side_fact(did, oldt);
+        }
+        if ( ratio<1 && ratio<rng_unit(rngp) )
+          t = oldt;
+      }
+#endif
       Z_sett(ddS.z[i],t);
 #ifdef TRACE_WT
       if ( wid==TR_W && t==TR_T )
         yap_message("update_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
                     wid,t,did,i,ddS.z[i],
-                    (int)ddS.m_evt[e][wid][t],(int)ddS.s_evt[e][wid][t]);
+                    (int)ddS.m_vte[wid][t][e],(int)ddS.s_vte[wid][t][e]);
 #endif
       update_topic(i, did, wid, t, mi, dtip[t], dD);
 #ifdef TRACE_WT
       if ( wid==TR_W && t==TR_T )
         yap_message("after update_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
                     wid,t,did,i,ddS.z[i],
-                    (int)ddS.m_evt[e][wid][t],(int)ddS.s_evt[e][wid][t]);
+                    (int)ddS.m_vte[wid][t][e],(int)ddS.s_vte[wid][t][e]);
 #endif
     }
     endword:

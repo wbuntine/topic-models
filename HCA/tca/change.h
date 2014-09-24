@@ -31,7 +31,7 @@ void unfix_tableidword(int e, int w, int t, int ind);
  */
 uint16_t comp_Td(int did);
 int nonzero_n_dt(int t);
-int nonzero_m_evt(int e, int t);
+int nonzero_m_vte(int e, int t);
 
 /*
  *  changing all stats for doc

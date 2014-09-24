@@ -218,14 +218,14 @@ static double mu0_prob(int t) {
 /*
  * reorganises call to save on vector lookups
  */
-#define phifact
+// #define phifact
 #ifdef phifact
 //    Z += phi_fact(e,v,t, &Y);
 static double phi_fact(int e, int v, int t, double *Y) {
-  int n = ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);
-  double denom = (ddP.b_phi[e][t] + ddS.M_eVt[e][t] 
-                  + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
-  double renum = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t]);
+  int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
+  double denom = (ddP.b_phi[e][t] + ddS.M_Vte[t][e] 
+                  + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
+  double renum = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e]);
   if ( n==0 ) {
     *Y *= renum/denom;
     return 0;
@@ -233,7 +233,7 @@ static double phi_fact(int e, int v, int t, double *Y) {
     int c;
     double fact = 1.0;
     double oldY = *Y;
-    c = ddS.s_evt[e][v][t];
+    c = ddS.s_vte[v][t][e];
     //  repair inconsistency errors
     if ( c<=0 ) c = 1;
     if ( n>c+1 )
@@ -248,10 +248,10 @@ static double phi_fact(int e, int v, int t, double *Y) {
 //    Z += Y * phi_zero_fact(e, v, t);
 //    Y *= phi_one_fact(e, v, t);
 static double phi_one_fact(int e, int v, int t) {
-  int n = ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);
+  int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
   double fact = 1;
   if ( n>0 ) {
-    int c = ddS.s_evt[e][v][t];
+    int c = ddS.s_vte[v][t][e];
     if ( c<=0 )
       c = 1;
     if ( n>c+1 )
@@ -259,20 +259,20 @@ static double phi_one_fact(int e, int v, int t) {
     else if (n==c+1)
       fact = n/(n-1.0);
   }
-  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])
-    / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
+  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e])
+    / (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
 }
 static double phi_zero_fact(int e, int v, int t) {
-  int n = ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0);
+  int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
   int c;
   if ( n==0 )
     return 0;
-  c = ddS.s_evt[e][v][t];
+  c = ddS.s_vte[v][t][e];
   if ( c<=0 )
     c = 1;
   return 
     S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
-    / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
+    / (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
 }
 #endif
 double phi0_prob(int v) {
@@ -334,10 +334,10 @@ double word_side_prob(int e, int v, int t) {
     prob = phi0_prob(v);
   else
     prob = word_side_prob(e-1,v,t);
-  return ( (ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0)
-	    - ddP.a_phi1 * ddS.s_evt[e][v][t])
-	   + (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t])*prob )
-    / (ddP.b_phi[e][t] + ddS.M_eVt[e][t] + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));					    
+  return ( (ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0)
+	    - ddP.a_phi1 * ddS.s_vte[v][t][e])
+	   + (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e])*prob )
+    / (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));					    
 }
 
 /*
@@ -354,14 +354,14 @@ void phi_prob_iter(int e, double **mtx) {
     double norm[ddN.T];
     double wght[ddN.T];
     for (t=0; t<ddN.T; t++) {
-      norm[t] = (ddP.b_phi[e][t] + ddS.M_eVt[e][t] 
-                 + ((e<ddN.E-1)?ddS.S_eVt[e+1][t]:0));
-      wght[t] = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_eVt[e][t]);
+      norm[t] = (ddP.b_phi[e][t] + ddS.M_Vte[t][e] 
+                 + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
+      wght[t] = (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e]);
     }
     for (v=0; v<ddN.W; v++)
       for (t=0; t<ddN.T; t++) 
-        mtx[v][t] = ( (ddS.m_evt[e][v][t] + ((e<ddN.E-1)?ddS.s_evt[e+1][v][t]:0)
-                       - ddP.a_phi1 * ddS.s_evt[e][v][t]) + wght[t]*mtx[v][t] )
+        mtx[v][t] = ( (ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0)
+                       - ddP.a_phi1 * ddS.s_vte[v][t][e]) + wght[t]*mtx[v][t] )
           / norm[t];
   }
 } 
@@ -550,7 +550,7 @@ int word_side_ind ( int e, int v, int t) {
 #endif
     Ze[i] = Z;
     /*   cannot break if zeros so back is forced!  */
-    if ( i<=e-ddP.back && ddS.s_evt[i][v][t]>0 ) break;
+    if ( i<=e-ddP.back && ddS.s_vte[v][t][i]>0 ) break;
   }
   if ( i<0 ) {
     Z += Y * phi0_prob(v);
@@ -579,7 +579,7 @@ double word_side_fact ( int e, int v, int t) {
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
 #endif
-    if ( e>0 && e<=back && ddS.s_evt[e][v][t]>0 ) return Z;
+    if ( e>0 && e<=back && ddS.s_vte[v][t][e]>0 ) return Z;
   }
   Z += Y * phi0_prob(v);
   return Z;
