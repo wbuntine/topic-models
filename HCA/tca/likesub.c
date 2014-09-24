@@ -195,9 +195,7 @@ static double mu_one_fact(int e, int t) {
     else if (n==c+1)
       fact = n/(n-1.0);
   }
-  return fact 
-    * (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]) 
-    / (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
+  return fact * (ddP.b_mu[e] + ddP.a_mu * ddS.Cp_e[e]) ;
 }
 static double mu_zero_fact(int e, int t) {
   int n = ddS.C_eDt[e][t] + ((e<ddN.E-1)?ddS.cp_et[e+1][t]:0);
@@ -208,8 +206,10 @@ static double mu_zero_fact(int e, int t) {
   if ( c<=0 )
     c = 1;
   return
-    ((n==1)?((1-ddP.a_mu)/2.0):(S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1))) 
-    / (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
+    ((n==1)?((1-ddP.a_mu)/2.0):(S_U(ddC.a_mu, n, c) * (n-c+1.0)/(n+1))) ;
+}
+static double mu_norm_fact(int e) {
+  return (ddP.b_mu[e] + ddS.C_e[e] + ((e<ddN.E-1)?ddS.Cp_e[e+1]:0));
 }
 #endif
 static double mu0_prob(int t) {
@@ -403,6 +403,7 @@ int doc_side_ind(int d, int t) {
 #ifdef mufact
     Z += mu_fact(i, t, &Y);
 #else
+    Y /= mu_norm_fact(i);
     Z += Y * mu_zero_fact(i, t);
     Y *= mu_one_fact(i, t);
 #endif
@@ -441,8 +442,9 @@ static double mu_side_fact (int d, int t) {
 #ifdef mufact
     Z += mu_fact(e, t, &Y);
 #else
+    Y /= mu_norm_fact(e);
     Z += Y * mu_zero_fact(e, t);
-      Y *= mu_one_fact(e, t);
+    Y *= mu_one_fact(e, t);
 #endif
       if ( e>0 && e<=back && ddS.cp_et[e][t]>0 ) break;
   }
@@ -452,16 +454,73 @@ static double mu_side_fact (int d, int t) {
 }
 #endif
 
+#ifdef MU_CACHE
+/*   = mu_side_fact(e,t)  */
+static double **mu_side_fact_cache = NULL;
+/*   cache is valid up to this e */
+static int mu_side_fact_cache_e = -1;
+/*   cache needs changing back to this e */
+static int mu_side_fact_cache_backe = -1;
+
+void mu_side_fact_init() {
+  mu_side_fact_cache = dmat(ddN.E,ddN.T);
+  mu_side_fact_cache_e = -1;
+  mu_side_fact_cache_backe = -1;
+}
+void mu_side_fact_reinit() {
+  mu_side_fact_cache_e = -1;
+  mu_side_fact_cache_backe = -1;
+}
+void mu_side_fact_free() {
+  assert(mu_side_fact_cache);
+  free(mu_side_fact_cache[0]);
+  free(mu_side_fact_cache);
+}
+void mu_side_fact_change(int backe) {
+  if ( backe< mu_side_fact_cache_backe )
+    mu_side_fact_cache_backe = backe;
+}
+/*
+ *  just changed ddS.cp_et[backe][t];
+ *  currently filled to e=mu_side_fact_cache_e
+ *  want to fill to e=ce 
+ */
+void mu_side_fact_update(int ce) {
+  int e, t;
+  if ( mu_side_fact_cache_e < ce )
+    mu_side_fact_cache_backe = mu_side_fact_cache_e+2;
+  if ( mu_side_fact_cache_backe<=1 ) {
+    double Z = mu_norm_fact(0);
+    for (t=0; t<ddN.T; t++) 
+      mu_side_fact_cache[0][t] = 
+        (mu_zero_fact(0, t) + mu_one_fact(0, t) * mu0_prob(t))/Z;
+    mu_side_fact_cache_backe = 2;
+  }
+  for (e=mu_side_fact_cache_backe-1; e<=ce; e++) {
+    double Z = mu_norm_fact(e);
+    for (t=0; t<ddN.T; t++) 
+      mu_side_fact_cache[e][t] = 
+        (mu_zero_fact(e, t) + mu_one_fact(e, t) * mu_side_fact_cache[e-1][t])/Z;
+  }
+  mu_side_fact_cache_e = ce;
+  mu_side_fact_cache_backe = ce+2;
+} 
+#endif
 static double mu_side_fact_rec (int e, int t) {
   if ( e<=0 ) 
-    return mu_zero_fact(e, t) + mu_one_fact(e, t) * mu0_prob(t);
-  return mu_zero_fact(e, t) + 
-    mu_one_fact(e, t) * mu_side_fact_rec(e-1,t);
+    return (mu_zero_fact(0, t) + mu_one_fact(0, t) * mu0_prob(t))
+      / mu_norm_fact(0);
+  return (mu_zero_fact(e, t) + mu_one_fact(e, t) * mu_side_fact_rec(e-1,t)) 
+    / mu_norm_fact(e);
 }
 double doc_side_fact (int d, int t) {
     int e = ddD.e[d];
     return theta_zero_fact(d,t) + theta_one_fact(d,t) 
+#ifdef MU_CACHE
+      * ((ddP.mu!=NULL)?ddP.mu[e][t]:mu_side_fact_cache[e][t]);
+#else
       * ((ddP.mu!=NULL)?ddP.mu[e][t]:mu_side_fact_rec(e,t));
+#endif
 }
 /*
  *   return count to place table back:

@@ -644,6 +644,10 @@ int main(int argc, char* argv[])
     pthread_t thread[procs];
 #endif
     D_pargs_p parg[procs];
+    
+#ifdef MU_CACHE
+    mu_side_fact_reinit();
+#endif
 
     t1 = clock();
     

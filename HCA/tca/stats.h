@@ -123,7 +123,15 @@ double phi0_prob(int v);
 
 double doc_side_fact(int d, int t);
 double doc_side_prob(int d, int t);
-
+#define MU_CACHE
+//  incomplete ... didn't set mu_side_fact_change() where needed
+#ifdef MU_CACHE
+void mu_side_fact_init();
+void mu_side_fact_change(int backe);
+void mu_side_fact_update(int ce);
+void mu_side_fact_reinit();
+void mu_side_fact_free();
+#endif
 
 int doc_side_ind(int d, int t);
 

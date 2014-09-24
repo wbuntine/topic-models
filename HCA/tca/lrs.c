@@ -55,7 +55,9 @@ double lp_test_ML(/*
   double lik=0.0;
   int totw=0;
   D_MiSi_t dD;
-
+#ifdef MU_CACHE
+  mu_side_fact_reinit();
+#endif
   /*
    *  must account for other totals over docs
    *  which would be modified by adding the test doc

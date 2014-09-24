@@ -100,6 +100,9 @@ void unfix_tableidtopic(int d, int t, int ind) {
           yap_quit("Whoops atomic_decr(ddS.Cp_e[%d])==%u>=UINT32_MAX-40\n", 
                    i, (unsigned)ddS.Cp_e[i]);
       }
+#ifdef MU_CACHE
+      mu_side_fact_change(i+1);
+#endif
     }
   } else {
     if ( !ddP.mu ) {
@@ -123,6 +126,9 @@ void unfix_tableidtopic(int d, int t, int ind) {
             yap_quit("Whoops atomic_decr(ddS.Cp_e[i])>=UINT32_MAX-40\n");
         }
       }
+#ifdef MU_CACHE
+      mu_side_fact_change(end_e+1);
+#endif
     }
     ddS.c_dt[d][t]--;
     //   always safe since its associated with ddS.c_dt[d][t]
@@ -171,6 +177,9 @@ void fix_tableidtopic(int d, int t, int ind) {
     atomic_incr(ddS.Cp_e[i]);
     atomic_incr(ddS.cp_et[i][t]); 
   }
+#ifdef MU_CACHE
+  mu_side_fact_change(i+1);
+#endif
 }
 
 void unfix_tableidword(int e, int w, int t, int ind) {

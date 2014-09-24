@@ -412,6 +412,9 @@ double gibbs_lda(/*
      *    get topic probabilities
      ***********************/
     // check_m_evt(e);
+#ifdef MU_CACHE
+      mu_side_fact_update(e);
+#endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
       /*
        *   (fix_doc==GibbsHold) =>

@@ -104,6 +104,9 @@ void tca_alloc() {
   ddS.n_dt = u16mat(ddN.D,ddN.T);
   ddS.m_evt = u32tri(ddN.E,ddN.W,ddN.T);
   ddS.M_eVt  = u32mat(ddN.E,ddN.T);
+#ifdef MU_CACHE
+  mu_side_fact_init();
+#endif
 }
 
 void tca_free() {
@@ -128,6 +131,9 @@ void tca_free() {
     free(ddS.cp_et[0]);  free(ddS.cp_et);
     free(ddS.Cp_e);
   }
+#ifdef MU_CACHE
+  mu_side_fact_free();
+#endif
 }
 
 /*
@@ -545,6 +551,19 @@ void check_n_dt(int d) {
   }
 }
 
+double global_sparsity(int k) {
+  int v, e;
+  double sparsity = 0;
+  for (v=0; v<ddN.W; v++) {
+    for (e=0; e<ddN.E; e++) {
+      if ( ddS.m_evt[e][v][k]>0 ) {
+        sparsity++;
+        break;
+      }
+    }
+  }
+  return 1.0 - sparsity/ddN.W;
+}
 
 void check_m_evt(int e) {
   int v, t;
