@@ -124,12 +124,12 @@ double phi0_prob(int v);
 double doc_side_fact(int d, int t);
 double doc_side_prob(int d, int t);
 
-#define MH_STEP
+// #define MH_STEP
 
 /*
  *  cache on the mu matrix
  */
-// #define MU_CACHE
+#define MU_CACHE
 //  incomplete ... didn't set mu_side_fact_change() where needed
 #ifdef MU_CACHE
 void mu_side_fact_init();

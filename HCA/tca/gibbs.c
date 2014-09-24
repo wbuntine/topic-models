@@ -441,7 +441,9 @@ double gibbs_lda(/*
         Z += p[t] = tf * wf;
       } else
         p[t] = 0;
+#ifdef MH_STEP
       ddP.back = saveback;
+#endif
     }
     if ( fix!=GibbsHold || fix_doc==GibbsHold )
       logdoc += log(Z/tot);

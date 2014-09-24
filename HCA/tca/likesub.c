@@ -259,8 +259,7 @@ static double phi_one_fact(int e, int v, int t) {
     else if (n==c+1)
       fact = n/(n-1.0);
   }
-  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e])
-    / (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
+  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e]);
 }
 static double phi_zero_fact(int e, int v, int t) {
   int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
@@ -270,9 +269,10 @@ static double phi_zero_fact(int e, int v, int t) {
   c = ddS.s_vte[v][t][e];
   if ( c<=0 )
     c = 1;
-  return 
-    S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1) 
-    / (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
+  return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1);
+}
+static double phi_norm_fact(int e, int t) {
+  return (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
 }
 #endif
 double phi0_prob(int v) {
@@ -545,6 +545,7 @@ int word_side_ind ( int e, int v, int t) {
 #ifdef phifact
     Z += phi_fact(i,v,t, &Y);
 #else
+    Y /= phi_norm_fact(i, t);
     Z += Y * phi_zero_fact(i, v, t);
     Y *= phi_one_fact(i, v, t);
 #endif
@@ -576,6 +577,7 @@ double word_side_fact ( int e, int v, int t) {
 #ifdef phifact
     Z += phi_fact(e,v,t, &Y);
 #else
+    Y /= phi_norm_fact(e, t);
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
 #endif
@@ -592,9 +594,10 @@ double word_side_fact ( int e, int v, int t) {
 double word_side_fact ( int e, int v, int t) {
   if ( ddP.phi ) return ddP.phi[e][v][t];
   if ( e==0 ) 
-    return phi_zero_fact(e, v, t) + phi_one_fact(e, v, t) * phi0_prob(v);
-  return phi_zero_fact(e, v, t) + 
-    phi_one_fact(e, v, t) * word_side_fact(e-1, v, t);
+    return (phi_zero_fact(0, v, t) + phi_one_fact(0, v, t) * phi0_prob(v))
+      /phi_norm_fact(0, t);
+  return (phi_zero_fact(e,v,t) + phi_one_fact(e,v,t) * word_side_fact(e-1,v,t)) 
+    /phi_norm_fact(e, t);
 }
 #endif
 

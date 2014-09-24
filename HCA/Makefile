@@ -15,7 +15,7 @@ export STB_HOME
 #  add "-g" or "-O5 -DNDEBUG" or ....
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
-# MYDEBUG=-pg -O5 -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
+# MYDEBUG=-pg -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
 MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
 # MYDEBUG=-g
 CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)

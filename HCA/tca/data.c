@@ -191,12 +191,12 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
     }
 #if 1
     fname = yap_makename(resstem,".mevt");
-    write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.m_vte,fname,0);
+    write_u32sparsetri(ddN.W,ddN.T,ddN.E,ddS.m_vte,fname,0);
     free(fname);
 #endif
     if ( !ddP.phi ) {
       fname = yap_makename(resstem,".sevt");
-      write_u32sparsetri(ddN.E,ddN.W,ddN.T,ddS.s_vte,fname,1);
+      write_u32sparsetri(ddN.W,ddN.T,ddN.E,ddS.s_vte,fname,1);
       free(fname);
     }
     tca_write_z(resstem);
