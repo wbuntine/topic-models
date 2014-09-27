@@ -107,6 +107,9 @@ void tca_alloc() {
 #ifdef MU_CACHE
   mu_side_fact_init();
 #endif
+#ifdef PHI_NORM_CACHE
+  phi_norm_init();
+#endif
 }
 
 void tca_free() {
@@ -133,6 +136,9 @@ void tca_free() {
   }
 #ifdef MU_CACHE
   mu_side_fact_free();
+#endif
+#ifdef PHI_NORM_CACHE
+  phi_norm_free();
 #endif
 }
 

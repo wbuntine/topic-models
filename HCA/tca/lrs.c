@@ -58,6 +58,9 @@ double lp_test_ML(/*
 #ifdef MU_CACHE
   mu_side_fact_reinit();
 #endif
+#ifdef PHI_NORM_CACHE
+  phi_norm_reinit();
+#endif
   /*
    *  must account for other totals over docs
    *  which would be modified by adding the test doc

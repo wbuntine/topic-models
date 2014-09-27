@@ -648,6 +648,9 @@ int main(int argc, char* argv[])
 #ifdef MU_CACHE
     mu_side_fact_reinit();
 #endif
+#ifdef PHI_NORM_CACHE
+    phi_norm_reinit();
+#endif
 
     t1 = clock();
     

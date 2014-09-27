@@ -407,7 +407,10 @@ double gibbs_lda(/*
      ***********************/
     // check_m_vte(e);
 #ifdef MU_CACHE
-      mu_side_fact_update(e);
+    mu_side_fact_update(e);
+#endif
+#ifdef PHI_NORM_CACHE
+    phi_norm_update(e);
 #endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
 #ifdef MH_STEP
