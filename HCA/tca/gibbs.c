@@ -321,6 +321,9 @@ void update_topic(int i, int did, int wid, int t, int mi,
       /*  simple case, order doesn't matter  */
       atomic_incr(ddS.M_Vte[t][e]);
       atomic_incr(ddS.m_vte[wid][t][e]);
+#ifdef PHI_NORM_CACHE
+      phi_norm_change(t,e);
+#endif
     }
   }
 #ifdef IND_STATS

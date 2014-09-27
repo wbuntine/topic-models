@@ -101,7 +101,7 @@ void unfix_tableidtopic(int d, int t, int ind) {
                    i, (unsigned)ddS.Cp_e[i]);
       }
 #ifdef MU_CACHE
-      mu_side_fact_change(i+1);
+      mu_side_fact_change(i);
 #endif
     }
   } else {
@@ -127,7 +127,7 @@ void unfix_tableidtopic(int d, int t, int ind) {
         }
       }
 #ifdef MU_CACHE
-      mu_side_fact_change(end_e+1);
+      mu_side_fact_change(end_e);
 #endif
     }
     ddS.c_dt[d][t]--;
@@ -178,7 +178,7 @@ void fix_tableidtopic(int d, int t, int ind) {
     atomic_incr(ddS.cp_et[i][t]); 
   }
 #ifdef MU_CACHE
-  mu_side_fact_change(i+1);
+  mu_side_fact_change(i);
 #endif
 }
 
@@ -186,6 +186,7 @@ void unfix_tableidword(int e, int w, int t, int ind) {
   int i;
   int lasti=-1;
   assert(e-ind+1>=0);
+  assert(ind>0);
   for (i=e; i>e-ind; i--) {
     assert(i>=0);
     if ( (atomic_decr(ddS.s_vte[w][t][i]))>=UINT32_MAX-40 ) {
@@ -202,6 +203,9 @@ void unfix_tableidword(int e, int w, int t, int ind) {
       yap_quit("Whoops atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX\n");
     lasti = i;
   }    
+#ifdef PHI_NORM_CACHE
+  phi_norm_change(t,lasti-1);
+#endif
   if ( lasti==0 ) {
     int val;
 #ifndef H_THREADS

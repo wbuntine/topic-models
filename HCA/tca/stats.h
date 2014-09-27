@@ -129,12 +129,12 @@ double doc_side_prob(int d, int t);
 /*
  *  cache on the phi_norm part matrix
  */
-#define PHI_NORM_CACHE
+//#define PHI_NORM_CACHE
 //  incomplete ... didn't set mu_side_fact_change() where needed
 #ifdef PHI_NORM_CACHE
 void phi_norm_init();
 void phi_norm_change(int t, int backe);
-void phi_norm_update(int t, int ce);
+void phi_norm_update(int ce);
 void phi_norm_reinit();
 void phi_norm_free();
 #endif

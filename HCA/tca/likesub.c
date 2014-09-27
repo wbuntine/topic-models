@@ -246,31 +246,34 @@ static double phi_fact(int e, int v, int t, double *Y) {
 }
 #else
 #ifdef PHI_NORM_CACHE
-/*   = phi_norm_fact(e,t)  */
+/*   
+ *     = phi_norm_fact(e,t)  
+ *
+ *  needs to be updated before every sampling
+ *  whenever ddS.S_Vte is changed
+ */
 static double **phi_norm_cache = NULL;
 /*   cache is valid up to this e */
-static int *phi_norm_cache_e;
+static int phi_norm_cache_e;
 /*   cache needs changing back to this e */
-static int *phi_norm_cache_backe;
+static uint32_t *phi_norm_cache_backe;
 
-void mu_side_fact_init() {
-  phi_norm_cache = dmat(ddN.E,ddN.T);
-  phi_norm_cache_e = dvec(ddN.T);
-  phi_norm_cache_backe = dvec(ddN.T);
+void phi_norm_init() {
+  phi_norm_cache = dmat(ddN.T,ddN.E);
+  phi_norm_cache_backe = malloc(ddN.T*sizeof(phi_norm_cache_backe[0]));
   phi_norm_reinit();
 }
 void phi_norm_reinit() {
   int t;
   for (t=0; t<ddN.T; t++) {
-    phi_norm_cache_e[t] = -1;
     phi_norm_cache_backe[t] = -1;
   }
+  phi_norm_cache_e = -1;
 }
 void phi_norm_free() {
   assert(phi_norm_cache);
   free(phi_norm_cache[0]);
   free(phi_norm_cache);
-  free(phi_norm_cache_e);
   free(phi_norm_cache_backe);
 }
 void phi_norm_change(int t, int backe) {
@@ -278,30 +281,35 @@ void phi_norm_change(int t, int backe) {
     phi_norm_cache_backe[t] = backe;
 }
 /*
- *  just changed ddS.M_Vte 
+ *  this is what we cache
+ */
+static double phi_norm_fact(int e, int t) {
+  return (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
+}
+/*
+ *  may have just changed ddS.S_Vte 
  *  currently filled to e=phi_norm_cache_e
  *  want to fill to e=ce 
  */
 void phi_norm_update(int ce) {
-????
   int e, t;
-  if ( phi_norm_cache_e < ce )
-    phi_norm_cache_backe = phi_norm_cache_e+2;
-  if ( phi_norm_cache_backe<=1 ) {
-    double Z = mu_norm_fact(0);
+  if ( phi_norm_cache_e<ce ) {
+    /*
+     *   moving to new epoch so set backe[]'s
+     */
     for (t=0; t<ddN.T; t++) 
-      phi_norm_cache[0][t] = 
-        (mu_zero_fact(0, t) + mu_one_fact(0, t) * mu0_prob(t))/Z;
-    phi_norm_cache_backe = 2;
+      if ( phi_norm_cache_backe[t]>phi_norm_cache_e )
+        phi_norm_cache_backe[t] = phi_norm_cache_e+1;
   }
-  for (e=phi_norm_cache_backe-1; e<=ce; e++) {
-    double Z = mu_norm_fact(e);
-    for (t=0; t<ddN.T; t++) 
-      phi_norm_cache[e][t] = 
-        (mu_zero_fact(e, t) + mu_one_fact(e, t) * phi_norm_cache[e-1][t])/Z;
+  for (t=0; t<ddN.T; t++) {
+    if ( phi_norm_cache_backe[t]>ce )
+      continue;
+    for (e=phi_norm_cache_backe[t]; e<=ce; e++) {
+      phi_norm_cache[t][e] = phi_norm_fact(e, t);
+    }
+    phi_norm_cache_backe[t] = ce+1;
   }
   phi_norm_cache_e = ce;
-  phi_norm_cache_backe = ce+2;
 } 
 
 //    Z += Y * phi_zero_fact(e, v, t);
@@ -329,9 +337,6 @@ static double phi_zero_fact(int e, int v, int t) {
   if ( c<=0 )
     c = 1;
   return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1);
-}
-static double phi_norm_fact(int e, int t) {
-  return (ddP.b_phi[e][t] + ddS.M_Vte[t][e] + ((e<ddN.E-1)?ddS.S_Vte[t][e+1]:0));
 }
 #else
 //    Z += Y * phi_zero_fact(e, v, t);
@@ -571,29 +576,34 @@ void mu_side_fact_change(int backe) {
     mu_side_fact_cache_backe = backe;
 }
 /*
- *  just changed ddS.cp_et[backe][t];
+ *  must update mu_side_fact_cache[e][t]
  *  currently filled to e=mu_side_fact_cache_e
  *  want to fill to e=ce 
  */
 void mu_side_fact_update(int ce) {
   int e, t;
-  if ( mu_side_fact_cache_e < ce )
-    mu_side_fact_cache_backe = mu_side_fact_cache_e+2;
-  if ( mu_side_fact_cache_backe<=1 ) {
+  if ( mu_side_fact_cache_e < ce ) {
+    if ( mu_side_fact_cache_backe> mu_side_fact_cache_e+1 )
+      mu_side_fact_cache_backe = mu_side_fact_cache_e+1;
+  } else {
+    if ( mu_side_fact_cache_backe>ce )
+      return;
+  }
+  if ( mu_side_fact_cache_backe<=0 ) {
     double Z = mu_norm_fact(0);
     for (t=0; t<ddN.T; t++) 
       mu_side_fact_cache[0][t] = 
         (mu_zero_fact(0, t) + mu_one_fact(0, t) * mu0_prob(t))/Z;
-    mu_side_fact_cache_backe = 2;
+    mu_side_fact_cache_backe = 1;
   }
-  for (e=mu_side_fact_cache_backe-1; e<=ce; e++) {
+  for (e=mu_side_fact_cache_backe; e<=ce; e++) {
     double Z = mu_norm_fact(e);
     for (t=0; t<ddN.T; t++) 
       mu_side_fact_cache[e][t] = 
         (mu_zero_fact(e, t) + mu_one_fact(e, t) * mu_side_fact_cache[e-1][t])/Z;
   }
   mu_side_fact_cache_e = ce;
-  mu_side_fact_cache_backe = ce+2;
+  mu_side_fact_cache_backe = ce+1;
 } 
 #endif
 static double mu_side_fact_rec (int e, int t) {
@@ -635,7 +645,11 @@ int word_side_ind ( int e, int v, int t) {
 #ifdef phifact
     Z += phi_fact(i,v,t, &Y);
 #else
+#ifdef PHI_NORM_CACHE
+    Y /= phi_norm_cache[t][i];
+#else
     Y /= phi_norm_fact(i, t);
+#endif
     Z += Y * phi_zero_fact(i, v, t);
     Y *= phi_one_fact(i, v, t);
 #endif
@@ -667,7 +681,11 @@ double word_side_fact ( int e, int v, int t) {
 #ifdef phifact
     Z += phi_fact(e,v,t, &Y);
 #else
+#ifdef PHI_NORM_CACHE
+    Y /= phi_norm_cache[t][e];
+#else
     Y /= phi_norm_fact(e, t);
+#endif
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
 #endif
@@ -685,9 +703,17 @@ double word_side_fact ( int e, int v, int t) {
   if ( ddP.phi ) return ddP.phi[e][v][t];
   if ( e==0 ) 
     return (phi_zero_fact(0, v, t) + phi_one_fact(0, v, t) * phi0_prob(v))
+#ifdef PHI_NORM_CACHE
+      / phi_norm_cache[t][0];
+#else
       /phi_norm_fact(0, t);
+#endif
   return (phi_zero_fact(e,v,t) + phi_one_fact(e,v,t) * word_side_fact(e-1,v,t)) 
-    /phi_norm_fact(e, t);
+#ifdef PHI_NORM_CACHE
+      / phi_norm_cache[t][e];
+#else
+      / phi_norm_fact(e, t);
+#endif
 }
 #endif
 
