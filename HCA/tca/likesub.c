@@ -245,7 +245,7 @@ static double phi_fact(int e, int v, int t, double *Y) {
   }
 }
 #else
-#ifdef PHI_NORM_CACHE
+#ifdef PHI_CACHE
 /*   
  *     = phi_norm_fact(e,t)  
  *
@@ -256,27 +256,70 @@ static double **phi_norm_cache = NULL;
 /*   cache is valid up to this e */
 static int phi_norm_cache_e;
 /*   cache needs changing back to this e */
-static uint32_t *phi_norm_cache_backe;
+static int *phi_norm_cache_backe;
+static double ***phi_zero_cache = NULL;
+static double ***phi_one_cache = NULL;
+/*   cache is valid up to this e */
+static int phi_cache_e;
+/*   cache needs changing back to this e */
+static int **phi_cache_backe;
 
-void phi_norm_init() {
+void phi_cache_init() {
+  int i;
   phi_norm_cache = dmat(ddN.T,ddN.E);
   phi_norm_cache_backe = malloc(ddN.T*sizeof(phi_norm_cache_backe[0]));
+  //  make this 
+  phi_cache_backe = malloc(ddN.W*sizeof(phi_cache_backe[0]));
+  phi_cache_backe[0] = malloc(ddN.T*ddN.W*sizeof(phi_cache_backe[0]));
+  for (i=1; i<ddN.W; i++)
+    phi_cache_backe[i] = phi_cache_backe[i-1]+ddN.T;
+  //  make this too
+  phi_zero_cache = malloc(ddN.W*sizeof(phi_zero_cache[0]));
+  for (i=0; i<ddN.W; i++)
+    phi_zero_cache[i] = dmat(ddN.T,ddN.E);
+  phi_one_cache = malloc(ddN.W*sizeof(phi_one_cache[0]));
+  for (i=0; i<ddN.W; i++)
+    phi_one_cache[i] = dmat(ddN.T,ddN.E);
+  if ( phi_one_cache[i-1]==NULL )
+    yap_quit("Cannot allocate memory in phi_norm_init()\n");
   phi_norm_reinit();
 }
-void phi_norm_reinit() {
-  int t;
+void phi_cache_reinit() {
+  int w, t;
   for (t=0; t<ddN.T; t++) {
-    phi_norm_cache_backe[t] = -1;
+    phi_norm_cache_backe[t] = 0;
+    for (w=0; w<ddN.W; w++)
+      phi_cache_backe[w][t] = 0;
   }
+  phi_cache_e = -1;
   phi_norm_cache_e = -1;
 }
-void phi_norm_free() {
+void phi_cache_free() {
+  int i;
   assert(phi_norm_cache);
+  free(phi_cache_backe[0]);
+  free(phi_cache_backe);
   free(phi_norm_cache[0]);
   free(phi_norm_cache);
-  free(phi_norm_cache_backe);
+  free(phi_norm_cache_backe); 
+  for (i=0; i<ddN.W; i++) {
+    free(phi_one_cache[i][0]);
+    free(phi_one_cache[i]);
+    free(phi_zero_cache[i][0]);
+    free(phi_zero_cache[i]);
+  }
+  free(phi_one_cache);
+  free(phi_zero_cache);
 }
 void phi_norm_change(int t, int backe) {
+  if ( backe<0 )
+    backe = 0;
+  if ( backe< phi_norm_cache_backe[t] )
+    phi_norm_cache_backe[t] = backe;
+}
+void phi_unit_change(int w, int t, int backe) {
+  if ( backe<0 )
+    backe = 0;
   if ( backe< phi_norm_cache_backe[t] )
     phi_norm_cache_backe[t] = backe;
 }

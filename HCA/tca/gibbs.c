@@ -234,6 +234,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       /*  safe because the count is uniquely associated with this word */
       atomic_decr(ddS.m_vte[wid][t][e]);
       atomic_decr(ddS.M_Vte[t][e]);
+#ifdef PHI_NORM_CACHE
+      phi_norm_change(t,e);
+#endif
     }
   }
   return 0;

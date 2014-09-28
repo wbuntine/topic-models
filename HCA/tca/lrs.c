@@ -59,7 +59,7 @@ double lp_test_ML(/*
   mu_side_fact_reinit();
 #endif
 #ifdef PHI_NORM_CACHE
-  phi_norm_reinit();
+  phi_cache_reinit();
 #endif
   /*
    *  must account for other totals over docs
