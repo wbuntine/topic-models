@@ -221,6 +221,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
        *    subtract affect of table indicator for word PYP
        */
       unfix_tableidword(e,wid,t,rw);
+#ifdef PHI_CACHE
+      /*   changes to cache guaranteed to be flagged in unfix_tableidword() */
+#endif
       if ( decr==0 ) {
         /*  not decremented to zero above */
 #ifndef H_THREADS

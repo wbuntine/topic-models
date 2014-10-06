@@ -197,12 +197,19 @@ void unfix_tableidword(int e, int w, int t, int ind) {
       //WRAY   this tapped!!
       yap_message("Whoops atomic_decr(ddS.s_vte[w][t][i])>=UINT32_MAX-40\n");
       atomic_incr(ddS.s_vte[w][t][i]);
+#ifdef PHI_NORM_CACHE
+      phi_norm_change(t,i);
+#endif
+#ifdef PHI_CACHE
+      phi_unit_change(w,t,i);
+#endif
       return;
     } 
     if ( atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX\n");
     lasti = i;
   }    
+  assert(lasti>=0);
 #ifdef PHI_NORM_CACHE
   phi_norm_change(t,lasti-1);
 #endif
@@ -270,6 +277,12 @@ static void add_tableidword(int e, int w, int t) {
     } else
       break;
   }
+#ifdef PHI_NORM_CACHE
+  phi_norm_change(t,laste-1);
+#endif
+#ifdef PHI_CACHE
+  phi_unit_change(w,t,laste-1);
+#endif
   if ( laste==0 ) {
     int val;
     /*   we incremented  ddS.s_vte[w][t][0] */
@@ -278,7 +291,7 @@ static void add_tableidword(int e, int w, int t) {
     if ( val==1 ) {
        atomic_incr(ddS.S_0_nz);    
     }
- }
+  }
 }
 
 /*
@@ -362,6 +375,9 @@ int remove_doc(int d, enum GibbsType fix) {
             } else
               break;
           }
+#ifdef PHI_CACHE
+	  ??? phi_unit_change(w,t,i);
+#endif
           if ( laste1==0 ) {
             /*   we decremented  ddS.s_vte[w][t][0] */
             ddS.S_0--;
@@ -414,6 +430,14 @@ int add_doc(int d, enum GibbsType fix) {
         ddS.m_vte[w][t][e]++;
         if ( !ddP.phi && ddS.s_vte[w][t][e]==0 ) 
           add_tableidword(e,w,t);
+	else {
+#ifdef PHI_NORM_CACHE
+	  phi_norm_change(t,e);
+#endif
+#ifdef PHI_CACHE
+	  phi_unit_change(w,t,e);
+#endif
+	}
       }
     }
     if ( PCTL_BURSTY() && M_multi(i) ) mi++;
