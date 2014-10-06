@@ -389,7 +389,9 @@ double gibbs_lda(/*
   e = ddD.e[did];
 
   for (i=StartWord; i<EndWord; i++) {
+#ifdef MH_STEP
     int oldt;
+#endif
     if ( fix==GibbsHold ) {
       if ( pctl_hold(i) )
 	fix_doc = GibbsHold;  //   this word is a hold out
@@ -401,7 +403,10 @@ double gibbs_lda(/*
     /*******************
      *   first we remove affects of this word on the stats
      *******************/
-    oldt = t = Z_t(ddS.z[i]); 
+#ifdef MH_STEP
+    oldt = 
+#endif
+      t = Z_t(ddS.z[i]); 
     if ( fix_doc!=GibbsHold ) {
       if ( remove_topic(i, did, (!PCTL_BURSTY()||Z_issetr(ddS.z[i]))?wid:-1, 
                         t, mi, dD) ) {

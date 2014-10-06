@@ -680,6 +680,10 @@ int word_side_ind ( int e, int v, int t) {
   double Y = 1;
   double Ze[ddN.E];
   int i;
+#ifdef PHI_CACHE
+  double *zerocache = phi_zero_cache[v][t];
+  double *onecache = phi_one_cache[v][t];
+#endif
 
   if ( ddP.phi )
     return 0;
@@ -693,8 +697,13 @@ int word_side_ind ( int e, int v, int t) {
 #else
     Y /= phi_norm_fact(i, t);
 #endif
+#ifdef PHI_CACHE
+    Z += Y * zerocache[i];
+    Y *= onecache[i];
+#else
     Z += Y * phi_zero_fact(i, v, t);
     Y *= phi_one_fact(i, v, t);
+#endif
 #endif
     Ze[i] = Z;
     /*   cannot break if zeros so back is forced!  */
