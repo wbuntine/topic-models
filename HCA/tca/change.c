@@ -206,6 +206,9 @@ void unfix_tableidword(int e, int w, int t, int ind) {
 #ifdef PHI_NORM_CACHE
   phi_norm_change(t,lasti-1);
 #endif
+#ifdef PHI_CACHE
+  phi_unit_change(w,t,lasti-1);
+#endif
   if ( lasti==0 ) {
     int val;
 #ifndef H_THREADS
@@ -233,6 +236,9 @@ void fix_tableidword(int e, int w, int t, int ind) {
     atomic_incr(ddS.s_vte[w][t][i]);
     lasti = i;
   } 
+#ifdef PHI_CACHE
+  phi_unit_change(w,t,lasti-1);
+#endif
 #ifdef PHI_NORM_CACHE
   phi_norm_change(t,lasti-1);
 #endif

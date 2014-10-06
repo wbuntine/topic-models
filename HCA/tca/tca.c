@@ -648,7 +648,7 @@ int main(int argc, char* argv[])
 #ifdef MU_CACHE
     mu_side_fact_reinit();
 #endif
-#ifdef PHI_NORM_CACHE
+#ifdef PHI_CACHE
     phi_cache_reinit();
 #endif
 

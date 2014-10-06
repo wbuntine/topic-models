@@ -282,7 +282,7 @@ void phi_cache_init() {
     phi_one_cache[i] = dmat(ddN.T,ddN.E);
   if ( phi_one_cache[i-1]==NULL )
     yap_quit("Cannot allocate memory in phi_norm_init()\n");
-  phi_norm_reinit();
+  phi_cache_reinit();
 }
 void phi_cache_reinit() {
   int w, t;
@@ -382,6 +382,7 @@ static double phi_zero_fact(int e, int v, int t) {
   return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1);
 }
 #else
+/*  no PHI_CACHE  */
 //    Z += Y * phi_zero_fact(e, v, t);
 //    Y *= phi_one_fact(e, v, t);
 static double phi_one_fact(int e, int v, int t) {

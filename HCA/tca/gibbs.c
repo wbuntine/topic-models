@@ -237,6 +237,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
 #ifdef PHI_NORM_CACHE
       phi_norm_change(t,e);
 #endif
+#ifdef PHI_CACHE
+      phi_unit_change(wid,t,e);
+#endif
     }
   }
   return 0;
@@ -326,6 +329,9 @@ void update_topic(int i, int did, int wid, int t, int mi,
       atomic_incr(ddS.m_vte[wid][t][e]);
 #ifdef PHI_NORM_CACHE
       phi_norm_change(t,e);
+#endif
+#ifdef PHI_CACHE
+      phi_unit_change(wid,t,e);
 #endif
     }
   }
@@ -422,6 +428,9 @@ double gibbs_lda(/*
 #endif
 #ifdef PHI_NORM_CACHE
     phi_norm_update(e);
+#endif
+#ifdef PHI_CACHE
+    phi_unit_update(wid,e);
 #endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
 #ifdef MH_STEP
