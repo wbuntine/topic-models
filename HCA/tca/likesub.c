@@ -320,8 +320,8 @@ void phi_norm_change(int t, int backe) {
 void phi_unit_change(int w, int t, int backe) {
   if ( backe<0 )
     backe = 0;
-  if ( backe< phi_norm_cache_backe[t] )
-    phi_norm_cache_backe[t] = backe;
+  if ( backe< phi_cache_backe[w][t] )
+    phi_cache_backe[w][t] = backe;
 }
 /*
  *  this is what we cache
@@ -381,6 +381,32 @@ static double phi_zero_fact(int e, int v, int t) {
     c = 1;
   return S_U(ddC.a_phi1, n, c) * (n-c+1.0)/(n+1);
 }
+/*
+ *  may have just changed ddS.S_Vte 
+ *  currently filled to e=phi_unit_cache_e
+ *  want to fill to e=ce 
+ */
+void phi_unit_update(int w, int ce) {
+  int e, t;
+  if ( phi_cache_e<ce ) {
+    /*
+     *   moving to new epoch so set backe[]'s
+     */
+    for (t=0; t<ddN.T; t++) 
+      if ( phi_cache_backe[w][t]>phi_cache_e )
+        phi_cache_backe[w][t] = phi_cache_e+1;
+  }
+  for (t=0; t<ddN.T; t++) {
+    if ( phi_cache_backe[w][t]>ce )
+      continue;
+    for (e=phi_cache_backe[w][t]; e<=ce; e++) {
+      phi_zero_cache[w][t][e] = phi_zero_fact(e, w, t);
+      phi_one_cache[w][t][e] = phi_one_fact(e, w, t);
+     }
+    phi_cache_backe[w][t] = ce+1;
+  }
+  phi_cache_e = ce;
+} 
 #else
 /*  no PHI_CACHE  */
 //    Z += Y * phi_zero_fact(e, v, t);
@@ -726,6 +752,10 @@ double word_side_fact ( int e, int v, int t) {
   double Z = 0;
   double Y = 1;
   int back = e-ddP.back;
+#ifdef PHI_CACHE
+  double *zerocache = phi_zero_cache[v][t];
+  double *onecache = phi_one_cache[v][t];
+#endif
 
   if ( ddP.phi )
     return ddP.phi[e][v][t];
@@ -739,8 +769,13 @@ double word_side_fact ( int e, int v, int t) {
 #else
     Y /= phi_norm_fact(e, t);
 #endif
+#ifdef PHI_CACHE
+    Z += Y * zerocache[e];
+    Y *= onecache[e];
+#else
     Z += Y * phi_zero_fact(e, v, t);
     Y *= phi_one_fact(e, v, t);
+#endif
 #endif
     if ( e>0 && e<=back && ddS.s_vte[v][t][e]>0 ) return Z;
   }
