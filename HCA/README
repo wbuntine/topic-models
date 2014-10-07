@@ -140,6 +140,13 @@ GETTING STARTED
 Work through the examples in the documentation using the data in "data/"
 
 
+BUGS
+====
+The current multi-core (threading+atomic) support for tca hasn't been maintained.
+It needs to be redesigned.  So don't use it.
+Caching for tca (switch PHI_CACHE in "stats.h" has subtle differences to no caching,
+so may be wrong).
+
 LICENSES
 ========
 Most of the code is under MPL version 2.0.
