@@ -333,6 +333,9 @@ int remove_doc(int d, enum GibbsType fix) {
           } else
             break;
         }
+#ifdef MU_CACHE
+	mu_side_fact_change(i);
+#endif
       }
       ddS.c_dt[d][t] = 0;
     }      
@@ -375,8 +378,11 @@ int remove_doc(int d, enum GibbsType fix) {
             } else
               break;
           }
+#ifdef PHI_NORM_CACHE
+	  phi_norm_change(t,e1-1);
+#endif
 #ifdef PHI_CACHE
-	  ??? phi_unit_change(w,t,i);
+	  phi_unit_change(w,t,e1-1);
 #endif
           if ( laste1==0 ) {
             /*   we decremented  ddS.s_vte[w][t][0] */
