@@ -361,24 +361,34 @@ int d;
 static double merge_like_Twt(int k1, int k2, merge_beta_t *M) {
   int i, w;
   double likelihood = 0;
+#ifndef BWPAR0
   double lbw = log(ddP.bwpar);
+#endif
   double law = log(ddP.awpar);
   double TW_diff = 0;
+#ifdef BWPAR0
+	yap_quit("BWPAR0 unimpleented in merge\n");
+#endif
   for (i=0; i<ddN.W; i++) {
     likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
     likelihood -= S_S(ddC.SY,ddS.Nwt[i][k1],ddS.Twt[i][k2]);
     likelihood += S_S(ddC.SY,M->Nwt[i],M->Twt[i]);
   }
   if ( ddP.awpar==0 ) {
+#ifdef BWPAR0
+    likelihood += M->TWt-ddS.TWt[k1]*log(ddP_bwpar(k1))
+	-ddS.TWt[k2]*log(ddP_bwpar(k2));
+#else
     likelihood += (M->TWt-ddS.TWt[k1]-ddS.TWt[k2])*lbw;
+#endif
   } else {
     likelihood += (M->TWt-ddS.TWt[k1]-ddS.TWt[k2])*law 
       + gammadiff((int)M->TWt, ddP.bwpar/ddP.awpar, 0.0)
-      - gammadiff((int)ddS.TWt[k1], ddP.bwpar/ddP.awpar, 0.0)
-      - gammadiff((int)ddS.TWt[k2], ddP.bwpar/ddP.awpar, 0.0);
+      - gammadiff((int)ddS.TWt[k1], ddP_bwpar(k1)/ddP.awpar, 0.0)
+      - gammadiff((int)ddS.TWt[k2], ddP_bwpar(k2)/ddP.awpar, 0.0);
   }
-  likelihood += gammadiff((int)ddS.NWt[k1], ddP.bwpar, 0.0);
-  likelihood += gammadiff((int)ddS.NWt[k2], ddP.bwpar, 0.0);
+  likelihood += gammadiff((int)ddS.NWt[k1], ddP_bwpar(k1), 0.0);
+  likelihood += gammadiff((int)ddS.NWt[k2], ddP_bwpar(k2), 0.0);
   likelihood -= gammadiff((int)M->NWt, ddP.bwpar, 0.0);
   yap_infinite(likelihood);
   if ( ddP.PYbeta==H_PDP ) {

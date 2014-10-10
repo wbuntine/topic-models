@@ -214,7 +214,11 @@ double likelihood_PYbeta() {
   /*
    *    term for k-th node
    */
+#ifdef BWPAR0
+  for (t=1; t<ddN.T; t++) {
+#else
   for (t=0; t<ddN.T; t++) {
+#endif
     uint32_t Tw_ = 0;
     for (i=0; i<ddN.W; i++) {
       int tt = ddS.Twt[i][t];

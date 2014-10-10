@@ -317,7 +317,7 @@ static double awterms(double myaw, void *mydata) {
         val += S_S(ddC.SY,ddS.Nwt[i][t],ddS.Twt[i][t]);
       }
     }
-    val += Tw_*law + lgamma(ddP.bwpar/myaw+Tw_) - lgamma(ddP.bwpar/myaw);
+    val += Tw_*law + lgamma(ddP_bwpar(t)/myaw+Tw_) - lgamma(ddP_bwpar(t)/myaw);
   }
   myarms_evals++;
 #ifdef A_DEBUG

@@ -193,7 +193,11 @@ static double bwterms(double bw, void *mydata) {
   if ( ddP.awpar>0 )
     lgba = lgamma(bw/ddP.awpar);
 #endif
+#ifdef BWPAR0
+  for (t=1; t<ddN.T; t++) {
+#else
   for (t=0; t<ddN.T; t++) {
+#endif
 #ifdef SBW_USECACHE
     val += gcache_value(&lgba_t, (int)ddS.TWt[t])
       - gcache_value(&lgb_t, (int)ddS.NWt[t]);

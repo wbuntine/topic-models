@@ -163,7 +163,7 @@ void wordtableindicatorprob(int j, int t, double *uone, double *uzero) {
     else
       e0 = S_U(ddC.SY,nn,tt);
   }
-  *uone = e1 * (ddP.bwpar+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j) 
+  *uone = e1 * (ddP_bwpar(t)+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j) 
     * (tt+1)/(nn+1);
   *uzero = e0 * (nn-tt+1)/(nn+1);
 }
@@ -272,11 +272,11 @@ double wordprob(int j, int t) {
   if ( ddP.phi!=NULL )
     return ddP.phi[t][j];
   if ( ddP.PYbeta ) {
-    double pnew = ((double)ddP.bwpar+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j);
+    double pnew = ((double)ddP_bwpar(t)+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j);
     double pold = 0;
     if ( ddS.Nwt[j][t]>0 ) 
       pold = (double)ddS.Nwt[j][t]-ddS.Twt[j][t]*ddP.awpar;
-    return (pnew+pold)/((double)ddS.NWt[t]+ddP.bwpar);
+    return (pnew+pold)/((double)ddS.NWt[t]+ddP_bwpar(t));
   }
   return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.betatot);
 }
@@ -298,7 +298,7 @@ double wordfact(int j, int t, float *tip) {
 	assert(ddS.Nwt[j][t]==0);
       }
 #endif
-      p = ((double)ddP.bwpar+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j);
+      p = ((double)ddP_bwpar(t)+ddP.awpar*ddS.TWt[t]) * betabasewordprob(j);
       *tip = 1.0;
     } else {
       double uone, uzero;
@@ -306,7 +306,7 @@ double wordfact(int j, int t, float *tip) {
       p = uone + uzero;
       *tip = uone/(uone + uzero);
     }
-    return p/((double)ddS.NWt[t]+ddP.bwpar);
+    return p/((double)ddS.NWt[t]+ddP_bwpar(t));
   }
   return ((double)ddS.Nwt[j][t]+ddP.betapr[j]) / ((double)ddS.NWt[t]+ddP.betatot);
 }
