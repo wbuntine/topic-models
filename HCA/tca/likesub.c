@@ -252,13 +252,18 @@ static double phi_fact(int e, int v, int t, double *Y) {
  *  needs to be updated before every sampling
  *  whenever ddS.S_Vte is changed
  */
+//#define PHI_SUM_CACHE
 static double **phi_norm_cache = NULL;
 /*   cache is valid up to this e */
 static int phi_norm_cache_e;
 /*   cache needs changing back to this e */
 static int *phi_norm_cache_backe;
+#ifdef PHI_SUM_CACHE
+static double ***phi_sum_cache = NULL;
+#else
 static double ***phi_zero_cache = NULL;
 static double ***phi_one_cache = NULL;
+#endif
 /*   cache is valid up to this e */
 static int phi_cache_e;
 /*   cache needs changing back to this e */
@@ -274,6 +279,13 @@ void phi_cache_init() {
   for (i=1; i<ddN.W; i++)
     phi_cache_backe[i] = phi_cache_backe[i-1]+ddN.T;
   //  make this too
+#ifdef PHI_SUM_CACHE
+  phi_sum_cache = malloc(ddN.W*sizeof(phi_sum_cache[0]));
+  for (i=0; i<ddN.W; i++)
+    phi_sum_cache[i] = dmat(ddN.T,ddN.E);
+  if ( phi_sum_cache[i-1]==NULL )
+    yap_quit("Cannot allocate memory in phi_norm_init()\n");
+#else
   phi_zero_cache = malloc(ddN.W*sizeof(phi_zero_cache[0]));
   for (i=0; i<ddN.W; i++)
     phi_zero_cache[i] = dmat(ddN.T,ddN.E);
@@ -282,6 +294,7 @@ void phi_cache_init() {
     phi_one_cache[i] = dmat(ddN.T,ddN.E);
   if ( phi_one_cache[i-1]==NULL )
     yap_quit("Cannot allocate memory in phi_norm_init()\n");
+#endif
   phi_cache_reinit();
 }
 void phi_cache_reinit() {
@@ -302,6 +315,13 @@ void phi_cache_free() {
   free(phi_norm_cache[0]);
   free(phi_norm_cache);
   free(phi_norm_cache_backe); 
+#ifdef PHI_SUM_CACHE
+  for (i=0; i<ddN.W; i++) {
+    free(phi_sum_cache[i][0]);
+    free(phi_sum_cache[i]);
+  }
+  free(phi_sum_cache);
+#else
   for (i=0; i<ddN.W; i++) {
     free(phi_one_cache[i][0]);
     free(phi_one_cache[i]);
@@ -310,6 +330,7 @@ void phi_cache_free() {
   }
   free(phi_one_cache);
   free(phi_zero_cache);
+#endif
 }
 void phi_norm_change(int t, int backe) {
   if ( backe<0 )
@@ -399,10 +420,14 @@ void phi_unit_update(int w, int ce) {
   for (t=0; t<ddN.T; t++) {
     if ( phi_cache_backe[w][t]>ce )
       continue;
+#ifdef PHI_SUM_CACHE
+	????
+#else
     for (e=phi_cache_backe[w][t]; e<=ce; e++) {
       phi_zero_cache[w][t][e] = phi_zero_fact(e, w, t);
       phi_one_cache[w][t][e] = phi_one_fact(e, w, t);
      }
+#endif
     phi_cache_backe[w][t] = ce+1;
   }
   phi_cache_e = ce;
@@ -749,6 +774,11 @@ int word_side_ind ( int e, int v, int t) {
 }
 
 double word_side_fact ( int e, int v, int t) {
+  if ( ddP.phi )
+    return ddP.phi[e][v][t];
+#ifdef PHI_SUM_CACHE
+  return phi_sum_cache[v][t][e];
+#else
   double Z = 0;
   double Y = 1;
   int back = e-ddP.back;
@@ -756,9 +786,6 @@ double word_side_fact ( int e, int v, int t) {
   double *zerocache = phi_zero_cache[v][t];
   double *onecache = phi_one_cache[v][t];
 #endif
-
-  if ( ddP.phi )
-    return ddP.phi[e][v][t];
 
   for ( ; e>=0; e--) {
 #ifdef phifact
@@ -781,6 +808,7 @@ double word_side_fact ( int e, int v, int t) {
   }
   Z += Y * phi0_prob(v);
   return Z;
+#endif
 }
 
 #if 0
@@ -790,13 +818,21 @@ double word_side_fact ( int e, int v, int t) {
 double word_side_fact ( int e, int v, int t) {
   if ( ddP.phi ) return ddP.phi[e][v][t];
   if ( e==0 ) 
+#ifdef PHI_CACHE
+    return (phi_zero_cache[v][t][0] + phi_one_cache[v][t][0] * phi0_prob(v))
+#else
     return (phi_zero_fact(0, v, t) + phi_one_fact(0, v, t) * phi0_prob(v))
+#endif
 #ifdef PHI_NORM_CACHE
       / phi_norm_cache[t][0];
 #else
       /phi_norm_fact(0, t);
 #endif
+#ifdef PHI_CACHE
+  return (phi_zero_cache[v][t][e] + phi_one_cache[v][t][e] * word_side_fact(e-1,v,t)) 
+#else
   return (phi_zero_fact(e,v,t) + phi_one_fact(e,v,t) * word_side_fact(e-1,v,t)) 
+#endif
 #ifdef PHI_NORM_CACHE
       / phi_norm_cache[t][e];
 #else
@@ -804,10 +840,5 @@ double word_side_fact ( int e, int v, int t) {
 #endif
 }
 #endif
-
-
-
-
-
 
 

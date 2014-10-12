@@ -129,7 +129,7 @@ double doc_side_prob(int d, int t);
 /*
  *  cache on the phi_norm part matrix
  */
-// #define PHI_CACHE
+#define PHI_CACHE
 #ifdef PHI_CACHE
 #define PHI_NORM_CACHE
 void phi_cache_init();
