@@ -252,7 +252,7 @@ static double phi_fact(int e, int v, int t, double *Y) {
  *  needs to be updated before every sampling
  *  whenever ddS.S_Vte is changed
  */
-//#define PHI_SUM_CACHE
+#define PHI_SUM_CACHE
 static double **phi_norm_cache = NULL;
 /*   cache is valid up to this e */
 static int phi_norm_cache_e;
@@ -418,10 +418,29 @@ void phi_unit_update(int w, int ce) {
         phi_cache_backe[w][t] = phi_cache_e+1;
   }
   for (t=0; t<ddN.T; t++) {
-    if ( phi_cache_backe[w][t]>ce )
+    e = phi_cache_backe[w][t];
+    if ( e>ce )
       continue;
 #ifdef PHI_SUM_CACHE
-	????
+    if ( e==0 ) {
+      phi_sum_cache[w][t][0] = 
+	(phi_zero_fact(0, w, t) + phi_one_fact(0, w, t) * phi0_prob(w)) 
+#ifdef PHI_NORM_CACHE
+	/ phi_norm_cache[t][0];
+#else
+        / phi_norm_fact(0, t);
+#endif
+      e++;
+    }
+    for ( ; e<=ce; e++) {
+      phi_sum_cache[w][t][e] = 
+	(phi_zero_fact(e,w,t) + phi_one_fact(e,w,t) * phi_sum_cache[w][t][e-1])
+#ifdef PHI_NORM_CACHE
+	/ phi_norm_cache[t][e];
+#else
+        / phi_norm_fact(e, t);
+#endif
+    }
 #else
     for (e=phi_cache_backe[w][t]; e<=ce; e++) {
       phi_zero_cache[w][t][e] = phi_zero_fact(e, w, t);
@@ -732,7 +751,7 @@ int word_side_ind ( int e, int v, int t) {
   double Y = 1;
   double Ze[ddN.E];
   int i;
-#ifdef PHI_CACHE
+#if defined(PHI_CACHE) && !defined(PHI_SUM_CACHE)
   double *zerocache = phi_zero_cache[v][t];
   double *onecache = phi_one_cache[v][t];
 #endif
@@ -749,7 +768,7 @@ int word_side_ind ( int e, int v, int t) {
 #else
     Y /= phi_norm_fact(i, t);
 #endif
-#ifdef PHI_CACHE
+#if defined(PHI_CACHE) && !defined(PHI_SUM_CACHE)
     Z += Y * zerocache[i];
     Y *= onecache[i];
 #else
