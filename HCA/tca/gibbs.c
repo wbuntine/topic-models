@@ -505,6 +505,7 @@ double gibbs_lda(/*
       }
 #endif
       Z_sett(ddS.z[i],t);
+      phi_unit_change_i(wid,t,i);
 #ifdef TRACE_WT
       if ( wid==TR_W && t==TR_T )
         yap_message("update_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
