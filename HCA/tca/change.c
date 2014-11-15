@@ -182,7 +182,7 @@ void fix_tableidtopic(int d, int t, int ind) {
 #endif
 }
 
-void unfix_tableidword(int e, int w, int t, int ind) {
+int unfix_tableidword(int e, int w, int t, int ind) {
   int i;
   int lasti=-1;
   assert(e-ind+1>=0);
@@ -197,25 +197,13 @@ void unfix_tableidword(int e, int w, int t, int ind) {
       //WRAY   this tapped!!
       yap_message("Whoops atomic_decr(ddS.s_vte[w][t][i])>=UINT32_MAX-40\n");
       atomic_incr(ddS.s_vte[w][t][i]);
-#ifdef PHI_NORM_CACHE
-      phi_norm_change(t,i);
-#endif
-#ifdef PHI_CACHE
-      phi_unit_change(w,t,i);
-#endif
-      return;
+      return i;
     } 
     if ( atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.S_Vte[t][i])>=UINT32_MAX\n");
     lasti = i;
   }    
   assert(lasti>=0);
-#ifdef PHI_NORM_CACHE
-  phi_norm_change(t,lasti-1);
-#endif
-#ifdef PHI_CACHE
-  phi_unit_change(w,t,lasti-1);
-#endif
   if ( lasti==0 ) {
     int val;
 #ifndef H_THREADS
@@ -224,7 +212,7 @@ void unfix_tableidword(int e, int w, int t, int ind) {
     if ( (val=atomic_decr(ddS.S_0vT[w]))>=UINT32_MAX-40 ) {
       yap_message("Whoops atomic_decr(ddS.S_0vT[w])>=UINT32_MAX\n");
       atomic_incr(ddS.S_0vT[w]);
-      return;
+      return lasti-1;
     }
     if ( atomic_decr(ddS.S_0)>=UINT32_MAX-40 )
       yap_quit("Whoops atomic_decr(ddS.S_0)>=UINT32_MAX %u\n", ddS.S_0);
@@ -233,9 +221,10 @@ void unfix_tableidword(int e, int w, int t, int ind) {
 	yap_quit("Whoops atomic_decr(ddS.S_0_nz)>=UINT32_MAX %u\n", ddS.S_0_nz);
     }
   }
+  return lasti-1;
 }
 
-void fix_tableidword(int e, int w, int t, int ind) { 
+int fix_tableidword(int e, int w, int t, int ind) { 
   int i;
   int lasti = -1;
   for (i=e; i>e-ind; i--) {
@@ -243,12 +232,6 @@ void fix_tableidword(int e, int w, int t, int ind) {
     atomic_incr(ddS.s_vte[w][t][i]);
     lasti = i;
   } 
-#ifdef PHI_CACHE
-  phi_unit_change(w,t,lasti-1);
-#endif
-#ifdef PHI_NORM_CACHE
-  phi_norm_change(t,lasti-1);
-#endif
   if ( lasti==0 ) {
     int val;
     atomic_incr(ddS.S_0);
@@ -257,13 +240,14 @@ void fix_tableidword(int e, int w, int t, int ind) {
       atomic_incr(ddS.S_0_nz);    
     }
   }
+  return lasti-1;
 }
 
 /*
  *    add count to s_vte[][][] stats to make consistent
  *    rippling back if needed
  */
-static void add_tableidword(int e, int w, int t) { 
+static int add_tableidword(int e, int w, int t) { 
   int laste = -1;
 #ifndef H_THREADS
   assert(ddS.s_vte[w][t][e]==0);
@@ -277,12 +261,6 @@ static void add_tableidword(int e, int w, int t) {
     } else
       break;
   }
-#ifdef PHI_NORM_CACHE
-  phi_norm_change(t,laste-1);
-#endif
-#ifdef PHI_CACHE
-  phi_unit_change(w,t,laste-1);
-#endif
   if ( laste==0 ) {
     int val;
     /*   we incremented  ddS.s_vte[w][t][0] */
@@ -292,6 +270,7 @@ static void add_tableidword(int e, int w, int t) {
        atomic_incr(ddS.S_0_nz);    
     }
   }
+  return laste-1;
 }
 
 /*
@@ -378,11 +357,9 @@ int remove_doc(int d, enum GibbsType fix) {
             } else
               break;
           }
-#ifdef PHI_NORM_CACHE
-	  phi_norm_change(t,e1-1);
-#endif
 #ifdef PHI_CACHE
-	  phi_unit_change(w,t,e1-1);
+	  phi_norm_change(t,e1-1);
+	  phi_unit_change(w,t,e1-1,i);
 #endif
           if ( laste1==0 ) {
             /*   we decremented  ddS.s_vte[w][t][0] */
@@ -434,14 +411,18 @@ int add_doc(int d, enum GibbsType fix) {
         w = ddD.w[i];
         ddS.M_Vte[t][e]++;
         ddS.m_vte[w][t][e]++;
-        if ( !ddP.phi && ddS.s_vte[w][t][e]==0 ) 
-          add_tableidword(e,w,t);
-	else {
-#ifdef PHI_NORM_CACHE
-	  phi_norm_change(t,e);
-#endif
+        if ( !ddP.phi && ddS.s_vte[w][t][e]==0 ) {
 #ifdef PHI_CACHE
-	  phi_unit_change(w,t,e);
+          int laste = add_tableidword(e,w,t);
+          phi_norm_change(t,laste);
+	  phi_unit_change(w,t,laste,i);
+#else
+          add_tableidword(e,w,t);
+#endif
+	} else {
+#ifdef PHI_CACHE
+	  phi_norm_change(t,e);
+	  phi_unit_change(w,t,e,i);
 #endif
 	}
       }

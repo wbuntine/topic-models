@@ -265,16 +265,25 @@ static int *phi_norm_cache_backe;
  */
 static double ***phi_sum_cache = NULL;
 
-/*   last word index for (w,k)  */
+/*   last word index for -- (w,k)  */
 static int **phi_last_posn;
-/*   posn */
+/*   largest word index updated to epoch e -- (k,e) */
 static int **phi_posn_inv;
 
 /*
  *    compute epoch need to update from
  */
 int phi_cache_backe(int k, int l) {
-  ?????
+  int e;
+  int laste = 0;
+  return 0;
+  assert(l>=0);
+  assert(phi_norm_cache_e>=0);
+  for (e = phi_norm_cache_e; e>=0 && phi_posn_inv[k][e]>=l; e--) {
+    if ( phi_posn_inv[k][e]<ddN.N )
+      laste = e;
+  }
+  return laste;
 }
 
 void phi_cache_init() {
@@ -305,21 +314,21 @@ void phi_cache_reinit() {
   for (t=0; t<ddN.T; t++) {
     phi_norm_cache_backe[t] = 0;
     for (e=0; e<ddN.E; e++)
-      phi_posn_inv[t][e] = 0;
+      phi_posn_inv[t][e] = ddN.N;
   }
   for (w=0; w<ddN.W; w++) {
     for (t=0; t<ddN.T; t++) 
       phi_last_posn[w][t] = 0;
   }
-  phi_cache_e = -1;
   phi_norm_cache_e = -1;
 }
 
 void phi_cache_free() {
   int i;
   assert(phi_norm_cache);
-  free(phi_cache_backe[0]);
-  free(phi_cache_backe);
+  free(phi_norm_cache[0]);
+  free(phi_norm_cache);
+  free(phi_norm_cache_backe);
   free(phi_posn_inv[0]);
   free(phi_posn_inv);
   free(phi_last_posn[0]);
@@ -364,8 +373,13 @@ void phi_norm_update(int ce) {
   phi_norm_cache_e = ce;
 } 
 
-void phi_unit_change_i(int w, int t, int i) {
+void phi_unit_change(int w, int t, int e, int i) {
   phi_last_posn[w][t] = i;
+  if ( e<0 )
+    e = 0;
+  phi_posn_inv[t][e] = i;
+  for (e++; e<=phi_norm_cache_e; e++)
+    phi_posn_inv[t][e] = ddN.N+1;
 }
 
 /*
@@ -398,7 +412,6 @@ void phi_unit_update(int w, int ce) {
 #endif
     }
   }
-  phi_cache_e = ce;
 } 
 #endif
 double phi0_prob(int v) {

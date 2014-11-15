@@ -22,9 +22,9 @@
  *  changing latent stats
  */
 void fix_tableidtopic(int d, int t, int ind);
-void fix_tableidword(int e, int w, int t, int ind);
+int fix_tableidword(int e, int w, int t, int ind);
 void unfix_tableidtopic(int d, int t, int ind);
-void unfix_tableidword(int e, int w, int t, int ind);
+int unfix_tableidword(int e, int w, int t, int ind);
 
 /*
  *  computing stats

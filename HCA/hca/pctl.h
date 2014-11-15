@@ -127,7 +127,7 @@ typedef struct D_pars_s {
 
 #define PCTL_BURSTY()          (ddP.bdk!=NULL)
 
-//#define BWPAR0
+//  #define BWPAR0
 #ifdef BWPAR0
 #define ddP_bwpar(t)  (t==0?10000:ddP.bwpar)
 #else

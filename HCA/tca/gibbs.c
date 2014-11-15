@@ -220,9 +220,14 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       /*
        *    subtract affect of table indicator for word PYP
        */
-      unfix_tableidword(e,wid,t,rw);
 #ifdef PHI_CACHE
-      /*   changes to cache guaranteed to be flagged in unfix_tableidword() */
+      {
+        int elast = unfix_tableidword(e,wid,t,rw);
+        phi_norm_change(t,elast);
+        phi_unit_change(wid,t,elast,i);
+      }
+#else
+      unfix_tableidword(e,wid,t,rw);
 #endif
       if ( decr==0 ) {
         /*  not decremented to zero above */
@@ -237,11 +242,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       /*  safe because the count is uniquely associated with this word */
       atomic_decr(ddS.m_vte[wid][t][e]);
       atomic_decr(ddS.M_Vte[t][e]);
-#ifdef PHI_NORM_CACHE
-      phi_norm_change(t,e);
-#endif
 #ifdef PHI_CACHE
-      phi_unit_change(wid,t,e);
+      phi_norm_change(t,e);
+      phi_unit_change(wid,t,e,i);
 #endif
     }
   }
@@ -321,7 +324,15 @@ void update_topic(int i, int did, int wid, int t, int mi,
       /*
        *  we have a new table for the word matrix
        */
+#ifdef PHI_CACHE
+      {
+        int laste = fix_tableidword(e,wid,t,rw);
+        phi_unit_change(wid,t,laste,i);  
+        phi_norm_change(t,laste);
+      }
+#else
       fix_tableidword(e,wid,t,rw);
+#endif
       if ( !incr ) {
         atomic_incr(ddS.M_Vte[t][e]);
         atomic_incr(ddS.m_vte[wid][t][e]);
@@ -330,11 +341,9 @@ void update_topic(int i, int did, int wid, int t, int mi,
       /*  simple case, order doesn't matter  */
       atomic_incr(ddS.M_Vte[t][e]);
       atomic_incr(ddS.m_vte[wid][t][e]);
-#ifdef PHI_NORM_CACHE
-      phi_norm_change(t,e);
-#endif
 #ifdef PHI_CACHE
-      phi_unit_change(wid,t,e);
+      phi_norm_change(t,e);
+      phi_unit_change(wid,t,e,i);
 #endif
     }
   }
@@ -429,10 +438,8 @@ double gibbs_lda(/*
 #ifdef MU_CACHE
     mu_side_fact_update(e);
 #endif
-#ifdef PHI_NORM_CACHE
-    phi_norm_update(e);
-#endif
 #ifdef PHI_CACHE
+    phi_norm_update(e);
     phi_unit_update(wid,e);
 #endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
@@ -505,7 +512,6 @@ double gibbs_lda(/*
       }
 #endif
       Z_sett(ddS.z[i],t);
-      phi_unit_change_i(wid,t,i);
 #ifdef TRACE_WT
       if ( wid==TR_W && t==TR_T )
         yap_message("update_topic(w=%d,t=%d,d=%d,l=%d,z=%d,N=%d,T=%d)\n",
