@@ -358,8 +358,8 @@ int remove_doc(int d, enum GibbsType fix) {
               break;
           }
 #ifdef PHI_CACHE
-	  phi_norm_change(t,e1-1);
-	  phi_unit_change(t,e1-1,i);
+	  phi_norm_change(w,t,e1-1);
+	  phi_sum_change(t,e1-1,i);
 #endif
           if ( laste1==0 ) {
             /*   we decremented  ddS.s_vte[w][t][0] */
@@ -414,15 +414,15 @@ int add_doc(int d, enum GibbsType fix) {
         if ( !ddP.phi && ddS.s_vte[w][t][e]==0 ) {
 #ifdef PHI_CACHE
           int laste = add_tableidword(e,w,t);
-          phi_norm_change(t,laste);
-	  phi_unit_change(t,laste,i);
+          phi_norm_change(w,t,laste);
+	  phi_sum_change(t,laste,i);
 #else
           add_tableidword(e,w,t);
 #endif
 	} else {
 #ifdef PHI_CACHE
-	  phi_norm_change(t,e);
-	  phi_unit_change(t,e,i);
+	  phi_norm_change(w,t,e);
+	  phi_sum_change(t,e,i);
 #endif
 	}
       }

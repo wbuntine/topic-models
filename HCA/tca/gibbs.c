@@ -223,8 +223,8 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
 #ifdef PHI_CACHE
       {
         int elast = unfix_tableidword(e,wid,t,rw);
-        phi_norm_change(t,elast);
-        phi_unit_change(t,elast,i);
+        phi_norm_change(wid,t,elast);
+        phi_sum_change(t,elast,i);
       }
 #else
       unfix_tableidword(e,wid,t,rw);
@@ -243,8 +243,8 @@ int remove_topic(int i, int did, int wid, int t, int mi, D_MiSi_t *dD) {
       atomic_decr(ddS.m_vte[wid][t][e]);
       atomic_decr(ddS.M_Vte[t][e]);
 #ifdef PHI_CACHE
-      phi_norm_change(t,e);
-      phi_unit_change(t,e,i);
+      phi_norm_change(wid,t,e);
+      phi_sum_change(t,e,i);
 #endif
     }
   }
@@ -327,8 +327,8 @@ void update_topic(int i, int did, int wid, int t, int mi,
 #ifdef PHI_CACHE
       {
         int laste = fix_tableidword(e,wid,t,rw);
-        phi_unit_change(t,laste,i+1);  
-        phi_norm_change(t,laste);
+        phi_sum_change(t,laste,i+1);  
+        phi_norm_change(wid,t,laste);
       }
 #else
       fix_tableidword(e,wid,t,rw);
@@ -342,8 +342,8 @@ void update_topic(int i, int did, int wid, int t, int mi,
       atomic_incr(ddS.M_Vte[t][e]);
       atomic_incr(ddS.m_vte[wid][t][e]);
 #ifdef PHI_CACHE
-      phi_norm_change(t,e);
-      phi_unit_change(t,e,i+1);
+      phi_norm_change(wid,t,e);
+      phi_sum_change(t,e,i+1);
 #endif
     }
   }
@@ -439,8 +439,8 @@ double gibbs_lda(/*
     mu_side_fact_update(e);
 #endif
 #ifdef PHI_CACHE
-    phi_norm_update(e);
-    phi_unit_update(wid, e, i);
+    phi_norm_update(wid, e);
+    phi_sum_update(wid, e, i);
 #endif
     for (t=0, Z=0, tot=0; t<ddN.T; t++) {
 #ifdef MH_STEP

@@ -259,6 +259,7 @@ static double **phi_norm_cache = NULL;
 static int phi_norm_cache_e;
 /*   cache needs changing back to this e */
 static int *phi_norm_cache_backe;
+static int **phi_unit_cache_backe;
 
 /*
  *     final cached values
@@ -272,15 +273,17 @@ static int *phi_last_posn;
 /*   largest word index updated to epoch e -- (k,e) */
 static int **phi_posn_inv;
 
-static double mt3(int a, int b, int c) {
+static double ***mt3(int a, int b, int c) {
   double ***t3 = malloc(a*sizeof(t3[0]));
+  int i;
   for (i=0; i<a; i++)
-    t3[i] = dmat(c);
+    t3[i] = dmat(b,c);
   if ( t3[i-1]==NULL )
     yap_quit("Cannot allocate memory in phi_norm_init()\n");
   return t3;
 }
 static void ft3(double ***t3, int a) {
+  int i;
   for (i=0; i<a; i++) {
     free(t3[i][0]);
     free(t3[i]);
@@ -292,6 +295,11 @@ void phi_cache_init() {
   int i;
   phi_norm_cache = dmat(ddN.T,ddN.E);
   phi_norm_cache_backe = malloc(ddN.T*sizeof(phi_norm_cache_backe[0]));
+  //  make this 
+  phi_unit_cache_backe = malloc(ddN.W*sizeof(phi_unit_cache_backe[0]));
+  phi_unit_cache_backe[0] = malloc(ddN.T*ddN.W*sizeof(phi_unit_cache_backe[0][0]));
+  for (i=1; i<ddN.W; i++)
+    phi_unit_cache_backe[i] = phi_unit_cache_backe[i-1]+ddN.T;
   //  make this 
   phi_last_posn = malloc(ddN.W*sizeof(phi_last_posn[0]));
   //  make this 
@@ -315,16 +323,19 @@ void phi_cache_reinit() {
   }
   for (w=0; w<ddN.W; w++) {
     phi_last_posn[w] = 0;
+    for (t=0; t<ddN.T; t++) 
+      phi_unit_cache_backe[w][t] = 0;
   }
   phi_norm_cache_e = -1;
 }
 
 void phi_cache_free() {
-  int i;
   assert(phi_norm_cache);
   free(phi_norm_cache[0]);
   free(phi_norm_cache);
   free(phi_norm_cache_backe);
+  free(phi_unit_cache_backe[0]);
+  free(phi_unit_cache_backe);
   free(phi_posn_inv[0]);
   free(phi_posn_inv);
   free(phi_last_posn);
@@ -351,35 +362,46 @@ int phi_cache_backe(int k, int l) {
   return laste;
 }
 
-void phi_norm_change(int t, int backe) {
+void phi_norm_change(int w, int t, int backe) {
   if ( backe<0 )
     backe = 0;
   if ( backe< phi_norm_cache_backe[t] )
     phi_norm_cache_backe[t] = backe;
+  if ( backe< phi_unit_cache_backe[w][t] )
+    phi_unit_cache_backe[w][t] = backe;
 }
+
 
 /*
  *  may have just changed ddS.S_Vte 
  *  currently filled to e=phi_norm_cache_e
  *  want to fill to e=ce 
  */
-void phi_norm_update(int ce) {
+void phi_norm_update(int w, int ce) {
   int e, t;
   if ( phi_norm_cache_e<ce ) {
     /*
      *   moving to new epoch so set backe[]'s
      */
-    for (t=0; t<ddN.T; t++) 
+    for (t=0; t<ddN.T; t++) {
       if ( phi_norm_cache_backe[t]>phi_norm_cache_e )
         phi_norm_cache_backe[t] = phi_norm_cache_e+1;
+      if ( phi_unit_cache_backe[w][t]>phi_norm_cache_e )
+        phi_unit_cache_backe[w][t] = phi_norm_cache_e+1;
+    }
   }
   for (t=0; t<ddN.T; t++) {
-    if ( phi_norm_cache_backe[t]>ce )
-      continue;
     for (e=phi_norm_cache_backe[t]; e<=ce; e++) {
       phi_norm_cache[t][e] = phi_norm_fact(e, t);
     }
     phi_norm_cache_backe[t] = ce+1;
+    ???????
+      //  cache works if make this start at zero ...????
+    for (e=phi_unit_cache_backe[w][t]; e<=ce; e++) {
+      phi_one_cache[w][t][e] = phi_one_fact(e, w, t);
+      phi_zero_cache[w][t][e] = phi_zero_fact(e, w, t);
+    }
+    phi_unit_cache_backe[w][t] = ce+1;
   }
   phi_norm_cache_e = ce;
 } 
@@ -391,7 +413,7 @@ void phi_norm_update(int ce) {
  *      cache updated before posn l=phi_posn_inv[t][e]
  *      are invalid
  */
-void phi_unit_change(int t, int e, int i) {
+void phi_sum_change(int t, int e, int i) {
   if ( e<0 )
     e = 0;
   phi_posn_inv[t][e] = i;
@@ -403,7 +425,7 @@ void phi_unit_change(int t, int e, int i) {
  *  may have just changed ddS.S_Vte 
  *  want to fill to e=ce 
  */
-void phi_unit_update(int w, int ce, int i) {
+void phi_sum_update(int w, int ce, int i) {
   int e, t;
   // if ( ce>0 ) yap_message("w=%d,ce=%d: ", w, ce);
   for (t=0; t<ddN.T; t++) {
@@ -413,22 +435,15 @@ void phi_unit_update(int w, int ce, int i) {
       continue;
     if ( e==0 ) {
       phi_sum_cache[w][t][0] = 
-	(phi_zero_fact(0, w, t) + phi_one_fact(0, w, t) * phi0_prob(w)) 
-#ifdef PHI_CACHE
+	(phi_zero_cache[w][t][0] +  phi_one_cache[w][t][0] * phi0_prob(w)) 
 	/ phi_norm_cache[t][0];
-#else
-        / phi_norm_fact(0, t);
-#endif
       e++;
     }
     for ( ; e<=ce; e++) {
       phi_sum_cache[w][t][e] = 
-	(phi_zero_fact(e,w,t) + phi_one_fact(e,w,t) * phi_sum_cache[w][t][e-1])
-#ifdef PHI_CACHE
+	(phi_zero_cache[w][t][e] 
+         + phi_one_cache[w][t][e]*phi_sum_cache[w][t][e-1])
 	/ phi_norm_cache[t][e];
-#else
-        / phi_norm_fact(e, t);
-#endif
     }
   }
   phi_last_posn[w] = i;

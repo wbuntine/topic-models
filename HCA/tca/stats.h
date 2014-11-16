@@ -129,15 +129,15 @@ double doc_side_prob(int d, int t);
 /*
  *  cache on the phi_norm part matrix
  */
-//#define PHI_CACHE
+#define PHI_CACHE
 #ifdef PHI_CACHE
 void phi_cache_init();
 void phi_cache_reinit();
 void phi_cache_free();
-void phi_unit_update(int w, int ce, int i);
-void phi_norm_change(int t, int backe);
-void phi_norm_update(int ce);
-void phi_unit_change(int t, int e, int i);
+void phi_sum_update(int w, int ce, int i);
+void phi_norm_change(int w, int t, int backe);
+void phi_norm_update(int w, int ce);
+void phi_sum_change(int t, int e, int i);
 #endif
 /*
  *  cache on the mu matrix
