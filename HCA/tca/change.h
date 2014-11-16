@@ -22,8 +22,12 @@
  *  changing latent stats
  */
 void fix_tableidtopic(int d, int t, int ind);
-int fix_tableidword(int e, int w, int t, int ind);
 void unfix_tableidtopic(int d, int t, int ind);
+/*
+ *   these also return the smallest epoch e for which
+ *   the phi_sum_cache[*][t][e] is invalidated
+ */
+int fix_tableidword(int e, int w, int t, int ind);
 int unfix_tableidword(int e, int w, int t, int ind);
 
 /*

@@ -32,7 +32,7 @@ export CFLAGS
 export LDFLAGS
 export CPPFLAGS
 
-all:    util hca tca
+all:    util hca # tca
 
 yes:
 
