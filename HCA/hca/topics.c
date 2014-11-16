@@ -176,9 +176,13 @@ static float *docprop(int k) {
     for (i=0; i<ddN.DT; i++)
       vec[i] = ddP.theta[i][k];
   } else { 
-    for (i=0; i<ddN.DT; i++)
-      vec[i] = ddS.Ndt[i][k] / (float)ddS.NdT[i];
-   }
+    for (i=0; i<ddN.DT; i++) {
+      if ( ddS.NdT[i]>0 )
+        vec[i] = ddS.Ndt[i][k] / (float)ddS.NdT[i];
+      else 
+        vec[i] = 0;
+    }
+  }
   return vec;
 }
 /*************************************************

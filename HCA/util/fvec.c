@@ -27,22 +27,22 @@ void fv_copy(float *v1, float *v2, int N) {
 }
 /*
  *  Hellinger distance fr prob vecs
- *    \sum_i (sqrt(p[i])-sqrt(q[i]))^2 
- *     = 2 - 2\sum_i sqrt(p[i]q[i])
+ *    1/2 * \sum_i (sqrt(p[i])-sqrt(q[i]))^2 
+ *     = 1 - \sum_i sqrt(p[i]q[i])
  */
 double fv_helldistunif(float *vp, int N) {
   double dist = 0;
   int i;
   for (i=0; i<N; i++ ) 
     dist += sqrt(vp[i]/N);
-  return 2.0 * (1-dist);
+  return (1-dist);
 }
 double fv_helldist(float *vp, float *vp2, int N) {
   double dist = 0;
   int i;
   for (i=0; i<N; i++ ) 
     dist += sqrt(vp[i]*vp2[i]);
-  return 2.0 * (1-dist);
+  return (1-dist);
 }
 /*
  *   normalise too, just in case
@@ -53,11 +53,12 @@ double fv_entropy(float *vp, int N) {
   int i;
   if ( !vp ) 
     return HUGE_VAL;
-  for (i=0; i<N; i++ ) 
+  for (i=0; i<N; i++ ) {
     tot += vp[i];
+  }
   for (i=0; i<N; i++ ) {
     double p = vp[i]/tot;
-    if ( N*p>1e-5 ) {
+    if ( N*p>1e-7 ) {
       ent -= p * log(p);
     }
   }
