@@ -219,6 +219,7 @@ static double mu0_prob(int t) {
 
 //    Z += Y * phi_zero_fact(e, v, t);
 //    Y *= phi_one_fact(e, v, t);
+#define phi_one_fact_plus(e,t) (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e])
 static double phi_one_fact(int e, int v, int t) {
   int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
   double fact = 1;
@@ -231,7 +232,7 @@ static double phi_one_fact(int e, int v, int t) {
     else if (n==c+1)
       fact = n/(n-1.0);
   }
-  return fact * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e]);
+  return fact; //  * (ddP.b_phi[e][t] + ddP.a_phi1 * ddS.S_Vte[t][e]);
 }
 static double phi_zero_fact(int e, int v, int t) {
   int n = ddS.m_vte[v][t][e] + ((e<ddN.E-1)?ddS.s_vte[v][t][e+1]:0);
@@ -395,7 +396,6 @@ void phi_norm_update(int w, int ce) {
       phi_norm_cache[t][e] = phi_norm_fact(e, t);
     }
     phi_norm_cache_backe[t] = ce+1;
-    ???????
       //  cache works if make this start at zero ...????
     for (e=phi_unit_cache_backe[w][t]; e<=ce; e++) {
       phi_one_cache[w][t][e] = phi_one_fact(e, w, t);
@@ -429,21 +429,20 @@ void phi_sum_update(int w, int ce, int i) {
   int e, t;
   // if ( ce>0 ) yap_message("w=%d,ce=%d: ", w, ce);
   for (t=0; t<ddN.T; t++) {
+    double *norm = phi_norm_cache[t];
+    double *zero = phi_zero_cache[w][t];
+    double *one = phi_one_cache[w][t];
+    double *sum = phi_sum_cache[w][t];
     e = phi_cache_backe(t, phi_last_posn[w]);
     // if ( ce>0 ) yap_message("%d/%d ", phi_last_posn[w], e);
     if ( e>ce )
       continue;
     if ( e==0 ) {
-      phi_sum_cache[w][t][0] = 
-	(phi_zero_cache[w][t][0] +  phi_one_cache[w][t][0] * phi0_prob(w)) 
-	/ phi_norm_cache[t][0];
+      sum[0] = (zero[0] + one[0] * phi_one_fact_plus(0,t)* phi0_prob(w)) / norm[0];
       e++;
     }
     for ( ; e<=ce; e++) {
-      phi_sum_cache[w][t][e] = 
-	(phi_zero_cache[w][t][e] 
-         + phi_one_cache[w][t][e]*phi_sum_cache[w][t][e-1])
-	/ phi_norm_cache[t][e];
+      sum[e] = (zero[e] + one[e]*phi_one_fact_plus(e,t)*sum[e-1]) / norm[e];
     }
   }
   phi_last_posn[w] = i;
@@ -730,7 +729,7 @@ int word_side_ind ( int e, int v, int t) {
 #ifdef PHI_CACHE
     Y /= norm[i];
     Z += Y * zero[i];
-    Y *= one[i];
+    Y *= one[i]*phi_one_fact_plus(i,t);
 #else
     Y /= phi_norm_fact(i, t);
     Z += Y * phi_zero_fact(i, v, t);
@@ -771,7 +770,7 @@ double word_side_fact ( int e, int v, int t) {
 #ifdef PHI_CACHE
     Y /= norm[e];
     Z += Y * zero[e];
-    Y *= one[e];
+    Y *= one[e]*phi_one_fact_plus(i,t);
 #else
     Y /= phi_norm_fact(e, t);
     Z += Y * phi_zero_fact(e, v, t);
