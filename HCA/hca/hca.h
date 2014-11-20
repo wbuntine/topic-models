@@ -25,7 +25,6 @@
 
 #define HCA_VERSION "0.61"
 
-#define MAXM 1000
 /* 
  *   when defined, stops introducing new topics into a 
  *   document after the first ... ???
@@ -66,8 +65,9 @@ enum ScoreType { ST_count, ST_idf, ST_cost, ST_Q, ST_phi };
  *      - hierarchical DP
  *      - hierarchical PDD (GEM-like)
  *      - constant
+ *      - normalised Gamma, for A only
  */
-enum PDPType { H_None=0, H_HDP, H_HPDD, H_PDP };
+enum PDPType { H_None=0, H_HDP, H_HPDD, H_PDP, H_NG };
 
 double likelihood();
 

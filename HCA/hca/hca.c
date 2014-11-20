@@ -413,6 +413,8 @@ int main(int argc, char* argv[])
 	ddP.PYalpha = H_HDP;
       else if ( strncmp(optarg,"hpdd",4)==0 ) 
 	ddP.PYalpha = H_HPDD;
+      else if ( strncmp(optarg,"ng",2)==0 ) 
+	ddP.PYalpha = H_NG;
       else if ( strncmp(optarg,"pdp",3)==0 ) 
 	ddP.PYalpha = H_PDP;
       else if ( strncmp(optarg,"dir",3)==0 ) 
@@ -423,7 +425,7 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'A' argument\n");
       /*  save copy so later reload of par file wont loose it */
       PYalphain = ddP.PYalpha;
-      if ( ddP.PYalpha != H_HPDD ) {
+      if ( ddP.PYalpha != H_HPDD && ddP.PYalpha != H_NG ) {
 	/*  get file part */
 	char *farg = strchr(optarg,',');
 	if ( farg!=NULL )

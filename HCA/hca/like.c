@@ -56,6 +56,24 @@ double likelihood_bdk() {
   return dmi_likelihood(&ddM,pctl_gammaprior,ddP.ad, ddP.bdk,ddC.SD);
 }
 
+double likelihood_NGalpha() {
+  int i,t;
+  double likelihood = 0;
+  for (i=0; i<ddN.DT; i++) {
+    for (t=0; t<ddN.T; t++) {
+      int n=ddS.Ndt[i][t];
+      if ( n>0 ) 
+	likelihood += gammadiff(n, ddP.alphapr[t], 0.0);
+      likelihood += ddP.alphapr[t]*log(ddP.alphabeta[t])
+	- (n+ddP.alphapr[t])*log(ddP.alphabeta[t]+ddS.UN[i]);
+    }
+    likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
+  }
+  yap_infinite(likelihood);
+  
+  return likelihood;
+}
+
 double likelihood_DIRalpha() {
   /*
    *   Dirichlet for topics
@@ -331,7 +349,9 @@ double likelihood() {
   /*
    *  doc X topic part
    */
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
+    likelihood += likelihood_NGalpha();
+  } else if ( ddP.PYalpha ) {
     likelihood += likelihood_PYalpha();
     /*
      *  term for root node
