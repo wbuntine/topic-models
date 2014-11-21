@@ -48,6 +48,7 @@ typedef struct D_pars_s {
   double *alphapr;        // vector normalises to 1 when PYalpha!=H_None
   double alphac;          // individual constant, set from alphatot
   double alphatot;        // total of above or alphac*T
+  double *alphabeta;      // beta vector for H_NG
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
   double betac;           // individual constant, set from betatot
   double betatot;         // total of above or betac*W
@@ -138,7 +139,7 @@ typedef struct D_pars_s {
  */
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 
-               ParAD, ParBDK, 
+               ParAD, ParBDK, ParNGAlpha, ParNGBeta,
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {
   char *name;

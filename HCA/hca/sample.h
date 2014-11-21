@@ -18,6 +18,8 @@ void sample_ad(double *ad);
 void sample_adk(double *ad);
 void sample_bd(double *bd);
 void sample_bdk(double *bdk, int k);
+void sample_NGalpha(double *a, int k);
+void sample_NGbeta(double *b, int k);
 
 extern int verbose;
 double likelihood();

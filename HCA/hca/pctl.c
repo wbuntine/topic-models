@@ -81,6 +81,8 @@ void pctl_init() {
   ddT[ParBW].name = "bw";
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
+  ddT[ParNGAlpha].name = "NGalpha"; 
+  ddT[ParNGBeta].name = "NGbeta";  
   ddT[ParAlpha].name = "alphatot"; 
   ddT[ParBeta].name = "betatot";  
   ddT[ParA].ptr = &ddP.apar;
@@ -91,6 +93,8 @@ void pctl_init() {
   ddT[ParBW].ptr = &ddP.bwpar;
   ddT[ParB0].ptr = &ddP.b0;
   ddT[ParBW0].ptr = &ddP.bw0;
+  ddT[ParNGAlpha].ptr = ddP.alphapr;
+  ddT[ParNGBeta].ptr = ddP.alphabeta;
   ddT[ParAlpha].ptr = &ddP.alphatot;
   ddT[ParBeta].ptr = &ddP.betatot;
   ddT[ParAD].ptr = &ddP.ad;
@@ -105,6 +109,8 @@ void pctl_init() {
   ddT[ParBW0].sampler = &sample_bw0;
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
+  ddT[ParNGAlpha].sampler = &sample_NGalpha;
+  ddT[ParNGBeta].sampler = &sample_NGbeta;
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
 
@@ -129,6 +135,8 @@ void pctl_init() {
   ddP.kbatch = 0;
   ddT[ParAlpha].cycles = DIRCYCLES;
   ddT[ParBeta].cycles = DIRCYCLES;
+  ddT[ParNGAlpha].cycles = DIRCYCLES;
+  ddT[ParNGBeta].cycles = DIRCYCLES;
   ddT[ParB].cycles = BCYCLES;
   ddT[ParBDK].cycles = BCYCLES;
   ddT[ParB0].cycles = BCYCLES;
@@ -174,6 +182,7 @@ void pctl_init() {
   ddP.mergeinit = 0;
   ddP.mergemin = 0;
   ddP.mergebest = 1;
+  ddP.alphabeta = NULL;
 
   ddP.Tinc = 5;
   ddP.Tcycle = 20;
@@ -283,11 +292,15 @@ void pctl_read(char *resstem, char *buf) {
       ddP.a0 = readf("a0");
       ddP.b0 = readf("b0");
     }
-    if ( ddP.PYalpha!=H_HPDD )
+    if ( ddP.PYalpha!=H_HPDD && ddP.PYalpha!=H_NG )
       ddP.alphatot = 1.0;
     else
       ddP.alphatot = 0;
     ddP.alphac = 0.0;
+    if ( ddP.PYalpha==H_NG ) {
+      ddP.alphapr = readfv("NGalpha", ddN.T);
+      ddP.alphabeta = readfv("NGbeta", ddN.T);
+    }
   } else {
     ddP.alphatot = readf("alphatot");
   }
@@ -320,6 +333,19 @@ void pctl_read(char *resstem, char *buf) {
   }
 }
 
+static double pctl_alphacinit() {
+  return 0.05*ddN.NT/(ddN.DT*ddN.T);
+}
+static double pctl_alpharange(double alphac) {
+  if ( alphac< DIR_MIN ) 
+    alphac = DIR_MIN;
+  if ( alphac>DIR_MAX ) 
+    alphac = DIR_MAX;
+  if ( alphac>DIR_TOTAL_MAX/ddN.T )
+    alphac = DIR_TOTAL_MAX/ddN.T;
+  return alphac;
+}
+
 /*
  *    fix pars based on data dims ..
  *    called with pctl_fixbeta() at initialisation
@@ -344,17 +370,27 @@ void pctl_dims() {
     double alphain = ddP.alphatot/ddN.T;
     double alphac = alphain;
     if ( alphac==0 )
-      ddP.alphac = 0.05*ddN.NT/(ddN.DT*ddN.T);
-    if ( alphac< DIR_MIN ) 
-      alphac = DIR_MIN;
-    if ( alphac>DIR_MAX ) 
-      alphac = DIR_MAX;
-    if ( alphac>DIR_TOTAL_MAX/ddN.T )
-      alphac = DIR_TOTAL_MAX/ddN.T;
+      ddP.alphac = pctl_alphainit();
+    ddP.alphac = pctl_alpharange(ddP.alphac);
     if ( verbose>=1 && alphain!=alphac ) {
       yap_message("alpha changed from %lf to %lf due to Dirichlet constrains\n",
 		  alphain, alphac);
       ddP.alphatot = alphac*ddN.T;
+    }
+  } else {
+    if ( ddP.PYalpha==H_NG ) {
+      int t;
+      if ( !ddP.alphabeta ) {
+        ddP.alphabeta = malloc(ddN.T*sizeof(*ddP.alphabeta));
+        for (t=0; t<ddN.T; t++)
+          ddP.alphabeta[t] = 1.0/ddN.T;
+      }
+      if ( !ddP.alphapr ) {
+        double alphac = pctl_alpharange(pctl_alphainit());
+        ddP.alphapr = malloc(ddN.T*sizeof(*ddP.alphapr));
+        for (t=0; t<ddN.T; t++)
+          ddP.alphapr[t] = alphac;
+      }
     }
   }
   if ( ddP.PYbeta==H_None ) {
@@ -689,6 +725,17 @@ void pctl_report() {
       yap_message(" %5lf", ddP.bdk[t]);
     yap_message("\n");
   }
+  if ( ddP.PYalpha==H_NG ) {
+    int t;
+    yap_message("NGalpha =");
+    for (t=0; t<ddN.T; t++) 
+      yap_message(" %5lf", ddP.alphapr[t]);
+    yap_message("\n");
+    yap_message("NGbeta =");
+    for (t=0; t<ddN.T; t++) 
+      yap_message(" %5lf", ddP.alphabeta[t]);
+    yap_message("\n");
+  }
   if ( ddP.bdk!=NULL )
     yap_message("ad  = %lf\n", ddP.ad);
   if ( ddP.n_excludetopic ) {
@@ -900,10 +947,26 @@ void pctl_print(FILE *fp) {
     if ( ddP.PYalpha!=H_PDP ) {
       printpar(fp,ParA0); printpar(fp,ParB0);
     }
+  } else if ( ddP.NGalpha ) {
+    if ( !ddT[ParNGAlpha].fix ) 
+      fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
+	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
+    fprintf(fp, "NGAlpha =");
+    for (t=0; t<ddN.T; t++) 
+      fprintf(fp, " %5lf", ddT[ParNGAlpha].ptr[t]);
+    fprintf(fp, "\n");
+    if ( !ddT[ParNGBeta].fix ) 
+      fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
+	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
+    fprintf(fp, "NGBeta =");
+    for (t=0; t<ddN.T; t++) 
+      fprintf(fp, " %5lf", ddT[ParNGBeta].ptr[t]);
+    fprintf(fp, "\n");
   } else {
     fprintf(fp, "#  %s is the total over topics\n",ddT[ParAlpha].name);
     printpar(fp,ParAlpha);
   }
+  
   if ( ddP.bdk!=NULL ) {
     int t;
     if ( !ddT[ParBDK].fix ) 
@@ -928,6 +991,8 @@ void pctl_print(FILE *fp) {
 }
 
 void pctl_free() {
+  if ( ddP.alphabeta!=NULL )
+    free(ddP.alphabeta);
   if ( ddP.bdk!=NULL )
     free(ddP.bdk);
   if ( ddP.phi ) {

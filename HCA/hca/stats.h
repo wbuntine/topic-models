@@ -30,6 +30,10 @@ typedef struct D_stats_s {
   float **phi;
   float *alpha;
   /*
+   *    latent mass per doc for H_NG
+   */
+  double *UN;
+  /*
    *  Basic topic data for simplest LDA model
    *     we assume maximum number of words in single document
    *     fits in 15 bit, use top bit for indicator

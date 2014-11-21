@@ -111,6 +111,7 @@ void hca_alloc() {
   ddS.Twt = NULL;
   ddS.TwT = NULL;
   ddS.TWt = NULL;
+  ddS.UN = NULL;
   if ( ddP.PYbeta && ddP.phi==NULL ) {
     ddS.Twt = u16mat(ddN.W,ddN.T);
     ddS.TwT = u32vec(ddN.W);
@@ -120,6 +121,9 @@ void hca_alloc() {
     ddS.Tdt = u16mat(ddN.D,ddN.T);
     ddS.TDt = u32vec(ddN.T);
     ddS.Tlife = u32vec(ddN.T);
+  }
+  if ( ddP.PYalpha==H_NG ) {
+    ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
   }
   ddS.NdT = u16vec(ddN.D);
   ddS.Ndt = u16mat(ddN.D,ddN.T);
@@ -135,6 +139,7 @@ void hca_free() {
    */
   free(ddS.NWt);
   free(ddS.z);
+  if ( ddS.UN )  free(ddS.UN);
   if ( ddS.Nwt ) {
     free(ddS.Nwt[0]); free(ddS.Nwt);
   }

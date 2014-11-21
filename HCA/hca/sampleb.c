@@ -270,6 +270,26 @@ void sample_bdk(double *b, int k) {
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bdkterms, &ps, &b[k], label, 1);
 }
 
+void sample_NGalpha(double *a, int k) {
+  struct ngaterms_s ps;
+  char label[30];
+  sprintf(&label[0],"NGalpha[%d]", k);
+  ps.t = k;
+  assert(a);
+  ps.docstats = ddP.docstats;
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngaterms, &ps, &a[k], label, 1);
+}
+
+void sample_NGbeta(double *b, int k) {
+  struct ngbterms_s ps;
+  char label[30];
+  sprintf(&label[0],"NGbeta[%d]", k);
+  ps.t = k;
+  assert(b);
+  ps.docstats = ddP.docstats;
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngbterms, &ps, &b[k], label, 1);
+}
+
 /*
  *  this allows Dirichlet prior to be non-uniform,
  *  so optimisation done on total weight;

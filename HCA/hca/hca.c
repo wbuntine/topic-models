@@ -532,7 +532,7 @@ int main(int argc, char* argv[])
 	  if ( !optarg || sscanf(optarg,"%[^, ],%d", &var[0], &st)<1  )
             yap_quit("Need a valid 'g' argument\n");
           par = findpar(var);
-          if ( par==ParBDK )
+          if ( par==ParBDK || par==ParNGAlpha || par==ParNGBeta )
             ddP.kbatch = st;
           else
             yap_quit("Illegal var for -g\n");

@@ -60,6 +60,7 @@ double likelihood_NGalpha() {
   int i,t;
   double likelihood = 0;
   for (i=0; i<ddN.DT; i++) {
+    if ( ddS.NdT[i]==0 ) continue;
     for (t=0; t<ddN.T; t++) {
       int n=ddS.Ndt[i][t];
       if ( n>0 ) 
@@ -70,7 +71,10 @@ double likelihood_NGalpha() {
     likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
   }
   yap_infinite(likelihood);
-  
+  for (t=0; t<ddN.T; t++) {
+    likelihood += pctl_gammaprior(ddP.alphabeta[t]);
+    likelihood += pctl_gammaprior(ddP.alphapr[t]);
+  }
   return likelihood;
 }
 
