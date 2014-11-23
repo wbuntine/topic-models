@@ -146,6 +146,7 @@ static double betaterms(double mytbeta, void *mydata) {
   return val;
 }
 
+
 static double bw0terms_PDD(double bw, void *mydata) {
   double val = pctl_gammaprior(bw);
   if ( ddP.aw0==0 )
@@ -171,6 +172,36 @@ static double bw0terms_DP(double bw, void *mydata) {
   myarms_evals++;
 #ifdef B_DEBUG
   yap_message("Eval bterms(%lf) = %lf\n", bw, val);
+#endif
+  return val;
+}
+
+static double ngaterms(double ak, void *mydata) {
+  int j;
+  int k = *((int *)mydata);
+  double val = 0;
+  for (j=0; j<ddN.DT; j++) {
+    val += gammadiff((int)ddS.Ndt[j][k], ak, 0.0);
+    val += ak*log(ddP.NGbeta[k]/(ddS.UN[j]+ddP.NGbeta[k]));
+  }
+  myarms_evals++;
+#ifdef B_DEBUG
+  yap_message("Eval ngaterms(%lf) = %lf\n", ak, val);
+#endif
+  return val;
+}
+
+static double ngbterms(double bk, void *mydata) {
+  int j;
+  int k = *((int *)mydata);
+  double val = 0;
+  for (j=0; j<ddN.DT; j++) {
+    val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
+    val += ddP.NGalpha[k]*log(bk);
+  }
+  myarms_evals++;
+#ifdef B_DEBUG
+  yap_message("Eval ngbterms(%lf) = %lf\n", bk, val);
 #endif
   return val;
 }
@@ -271,23 +302,17 @@ void sample_bdk(double *b, int k) {
 }
 
 void sample_NGalpha(double *a, int k) {
-  struct ngaterms_s ps;
   char label[30];
   sprintf(&label[0],"NGalpha[%d]", k);
-  ps.t = k;
   assert(a);
-  ps.docstats = ddP.docstats;
-  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngaterms, &ps, &a[k], label, 1);
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngaterms, &k, &a[k], label, 1);
 }
 
 void sample_NGbeta(double *b, int k) {
-  struct ngbterms_s ps;
   char label[30];
   sprintf(&label[0],"NGbeta[%d]", k);
-  ps.t = k;
   assert(b);
-  ps.docstats = ddP.docstats;
-  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngbterms, &ps, &b[k], label, 1);
+  myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngbterms, &k, &b[k], label, 1);
 }
 
 /*

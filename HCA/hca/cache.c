@@ -178,7 +178,7 @@ void cache_update(char *par) {
       if ( ddC.SX->a != ddP.apar )
 	S_remake(ddC.SX,ddP.apar);
     } 
-  } else if ( !ddP.PYalpha && strcmp(par,"alpha")==0 ) { 
+  } else if ( !ddP.NGalpha && strcmp(par,"alpha")==0 ) { 
     pctl_fixalpha(NULL, NULL);
     if ( ddP.alphac>0 )
       gcache_init(&ddC.lgalphac, ddP.alphac);

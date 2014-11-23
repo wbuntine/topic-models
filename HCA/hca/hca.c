@@ -108,7 +108,7 @@ static const char *stype() {
 	  "H.Pitman-Yor sampler for topics"
 	  ", Dirichlet sampler for words"
 	  "\n";
-  } else if ( ddP.PYalpha ) {
+  } else if ( ddP.PYalpha==H_NG ) {
     if ( ddP.PYbeta )
       return 
 	"Normalised Gamma sampler for topics"
@@ -150,6 +150,7 @@ static void usage() {
           "   -A/B pdp[,file] #  for alpha/beta prior use mean 'file'\n"
 	  "      file = 'uniform' (default), 'data' or a filename\n"
           "   -A/B hpdd      #  for alpha/beta prior use truncated GEM\n"
+          "   -A   ng        #  for alpha prior use normalised Gamma\n"
           "   -S var=value   #  initialise var=a,b,a0,b0,aw,bw,aw0,bw0,\n"
 	  "                  #  ad,bdk,alpha,beta\n"
 	  "  sampling hyperparameters:\n"
@@ -857,7 +858,7 @@ int main(int argc, char* argv[])
       ddP.PYalpha = H_PDP;
     if ( PYbetain == H_PDP )
       ddP.PYbeta = H_PDP;
-     if ( ddP.training==0 ) {
+    if ( ddP.training==0 ) {
       char *pv = readpar(resstem,"TRAIN",buf,50);
       if ( pv ) 
 	 ddP.training = atoi(pv);
@@ -1003,7 +1004,7 @@ int main(int argc, char* argv[])
      } else {
        pctl_fixalpha("uniform", resstem);
      } 
-   } else {
+   } else if ( !ddP.NGalpha ) {
      pctl_fixalpha(alphafile, resstem);
    }
    if ( verbose && alphafile!=NULL && strcmp(alphafile,"uniform")!=0 ) {

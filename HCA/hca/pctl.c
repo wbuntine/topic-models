@@ -109,8 +109,8 @@ void pctl_init() {
   ddT[ParBW0].sampler = &sample_bw0;
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
-  ddT[ParNGAlpha].sampler = &sample_NGalpha;
-  ddT[ParNGBeta].sampler = &sample_NGbeta;
+  ddT[ParNGAlpha].samplerk = &sample_NGalpha;
+  ddT[ParNGBeta].samplerk = &sample_NGbeta;
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
 
@@ -370,7 +370,12 @@ static double pctl_alpharange(double alphac) {
 void pctl_dims() {
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
-    if ( ddT[ParBDK].fix==0 && ddP.kbatch==0 ) {
+  }
+  if ( ddT[ParBDK].fix==0 || ddT[ParNGAlpha].fix==0 || ddT[ParNGBeta].fix==0 ) { 
+    /*
+     *    set kbatch for sampling
+     */
+    if ( ddP.kbatch==0 ) {
       if ( ddN.T>=20 )
 	ddP.kbatch = ddN.T/5;
       else
@@ -390,7 +395,7 @@ void pctl_dims() {
         ddP.NGbeta[t] = 1.0/ddN.T;
     }
     if ( !ddP.NGalpha ) {
-      double alphac = pctl_alpharange(pctl_alphainit());
+      double alphac = pctl_alpharange(pctl_alphacinit());
       ddP.NGalpha = malloc(ddN.T*sizeof(*ddP.NGalpha));
       for (t=0; t<ddN.T; t++)
         ddP.NGalpha[t] = alphac;
@@ -405,7 +410,7 @@ void pctl_dims() {
     double alphain = ddP.alphatot/ddN.T;
     double alphac = alphain;
     if ( alphac==0 )
-      ddP.alphac = pctl_alphainit();
+      ddP.alphac = pctl_alphacinit();
     ddP.alphac = pctl_alpharange(ddP.alphac);
     if ( verbose>=1 && alphain!=alphac ) {
       yap_message("alpha changed from %lf to %lf due to Dirichlet constrains\n",
@@ -525,6 +530,7 @@ void pctl_fixbeta(char *file, char *resstem) {
  */
 void pctl_fixalpha(char *file, char *resstem) {
   int c;
+  assert(!ddP.NGalpha);
   if ( ddP.PYalpha!=H_HPDD && !ddP.alphapr ) 
     ddP.alphapr = dvec(ddN.T);
   if ( ddP.PYalpha==H_None && file==NULL && resstem )
@@ -791,9 +797,8 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
     if (  !ddT[p].fix && ddT[p].ptr
           && iter>ddT[p].start
 	  && iter%ddT[p].cycles==ddT[p].offset ) {
-      if ( p==ParBDK ) {
-?? batch for NGalpha ???
-        if ( index<ddP.kbatch ) {
+      if ( p==ParBDK || p==ParNGAlpha || p==ParNGBeta ) {
+        if ( index<ddP.kbatch) {
           *par = p;
           *k = (iter*ddP.kbatch+index)%ddN.T;
           return 1;
@@ -869,6 +874,7 @@ void pctl_sample(int iter, int procs) {
    *  first, create docstats if needed
    */
   ddP.docstats = NULL;
+  //   why 100000?
   for (index=0; index<100000; index++) {
     int k;
     enum ParType par;
@@ -975,6 +981,7 @@ void pctl_print(FILE *fp) {
       printpar(fp,ParA0); printpar(fp,ParB0);
     }
   } else if ( ddP.NGalpha ) {
+    int t;
     if ( !ddT[ParNGAlpha].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
 	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
