@@ -64,16 +64,16 @@ double likelihood_NGalpha() {
     for (t=0; t<ddN.T; t++) {
       int n=ddS.Ndt[i][t];
       if ( n>0 ) 
-	likelihood += gammadiff(n, ddP.alphapr[t], 0.0);
-      likelihood += ddP.alphapr[t]*log(ddP.alphabeta[t])
-	- (n+ddP.alphapr[t])*log(ddP.alphabeta[t]+ddS.UN[i]);
+	likelihood += gammadiff(n, ddP.NGalpha[t], 0.0);
+      likelihood += ddP.NGalpha[t]*log(ddP.NGbeta[t])
+	- (n+ddP.NGalpha[t])*log(ddP.NGbeta[t]+ddS.UN[i]);
     }
     likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
   }
   yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
-    likelihood += pctl_gammaprior(ddP.alphabeta[t]);
-    likelihood += pctl_gammaprior(ddP.alphapr[t]);
+    likelihood += pctl_gammaprior(ddP.NGbeta[t]);
+    likelihood += pctl_gammaprior(ddP.NGalpha[t]);
   }
   return likelihood;
 }
@@ -353,7 +353,7 @@ double likelihood() {
   /*
    *  doc X topic part
    */
-  if ( ddP.PYalpha==H_NG ) {
+  if ( ddP.NGalpha ) {
     likelihood += likelihood_NGalpha();
   } else if ( ddP.PYalpha ) {
     likelihood += likelihood_PYalpha();

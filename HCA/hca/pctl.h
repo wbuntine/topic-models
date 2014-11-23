@@ -48,7 +48,8 @@ typedef struct D_pars_s {
   double *alphapr;        // vector normalises to 1 when PYalpha!=H_None
   double alphac;          // individual constant, set from alphatot
   double alphatot;        // total of above or alphac*T
-  double *alphabeta;      // beta vector for H_NG
+  double *NGalpha;        // alpha vector for H_NG
+  double *NGbeta;         // beta vector for H_NG
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
   double betac;           // individual constant, set from betatot
   double betatot;         // total of above or betac*W
@@ -157,22 +158,29 @@ typedef struct D_pctl_s {
 extern D_pars_t ddP;
 extern D_pctl_t ddT[];
 enum ParType findpar(char *name);
-void pctl_init();
+/*
+ *   initialisation sequence ... a mess
+ */
+void pctl_init();   /*  create blank pctl */
 void pctl_read(char *resstem, char *buf);
 void pctl_fix(int ITER, int loadphi);
+void pctl_dims();
+void pctl_fixalpha(char *file, char *resstem);
+void pctl_fixbeta(char *file, char *resstem);
+
+/*
+ *   processing
+ */
 void pctl_report();
 void pctl_sample(int iter, int procs);
 void pctl_update(int iter);
 void pctl_print(FILE *fp);
 void pctl_samplereport();
 int pctl_Tmax(int Tmax, int iter);
-void pctl_dims();
 int pctl_hold(int i);
 int pctl_training(int D);
 void pctl_free();
 
-void pctl_fixbeta(char *file, char *resstem);
-void pctl_fixalpha(char *file, char *resstem);
 double pctl_gammaprior(double x);
 
 #endif

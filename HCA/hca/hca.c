@@ -94,9 +94,10 @@ D_DMi_t ddM;
 
 /*
  *    describes the sampling type
+ *    at this stage should not have set ddP.NGalpha
  */
 static const char *stype() {
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha && ddP.PYalpha!=H_NG ) {
     if ( ddP.PYbeta )
       return 
 	"H.Pitman-Yor sampler for topics"
@@ -107,6 +108,17 @@ static const char *stype() {
 	  "H.Pitman-Yor sampler for topics"
 	  ", Dirichlet sampler for words"
 	  "\n";
+  } else if ( ddP.PYalpha ) {
+    if ( ddP.PYbeta )
+      return 
+	"Normalised Gamma sampler for topics"
+	", H.Pitman-Yor sampler for words"
+	"\n";
+    else
+      return 
+	"Normalised Gamma sampler for topics"
+	", Dirichlet sampler for words"
+	"\n";
   } else {
     if ( ddP.PYbeta )
       return 
@@ -414,6 +426,7 @@ int main(int argc, char* argv[])
       else if ( strncmp(optarg,"hpdd",4)==0 ) 
 	ddP.PYalpha = H_HPDD;
       else if ( strncmp(optarg,"ng",2)==0 ) 
+	//   this is a temporary fudge for initialisation
 	ddP.PYalpha = H_NG;
       else if ( strncmp(optarg,"pdp",3)==0 ) 
 	ddP.PYalpha = H_PDP;
@@ -825,12 +838,18 @@ int main(int argc, char* argv[])
 
   if ( restart || loadphi ) {
     char buf[1000];
+    /*
+     *  first fill the buf[] from .par
+     */
     char *fname = yap_makename(resstem,".par");
     FILE *fp = fopen(fname,"r");
     if ( !fp ) 
       yap_quit("Parameter file '%s' doesn't exist\n", fname);
     fclose(fp);
     free(fname);
+    /*
+     * now read T, W and pctl
+     */
     ddN.T = atoi(readpar(resstem,"T",buf,50));
     pctl_read(resstem, buf);
     /*   if command line had set to PDP, then restore */
@@ -968,7 +987,7 @@ int main(int argc, char* argv[])
    }
 
    /*
-    *   if ddP.betatot or ddP.alphatot ==0 they'll be set to defaults
+    *   if ddP.betatot or ddP.alphatot==0 they'll be set to defaults
     *   when PY=H_None
     */
    pctl_dims();
