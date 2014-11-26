@@ -149,6 +149,7 @@ void pctl_init() {
   ddT[ParA0].cycles = ACYCLES;
   ddT[ParAW].cycles = ACYCLES;
   ddT[ParAW0].cycles = ACYCLES;
+  ddT[ParNGBeta].offset = 1;
   ddT[ParBeta].offset = 1;
   ddT[ParB0].offset = 1;
   ddT[ParBDK].offset = 0;
@@ -311,6 +312,8 @@ void pctl_read(char *resstem, char *buf) {
       if ( !ddP.NGbeta ) 
         yap_quit("Cannot read 'NGbeta' when 'NGalpha' exists in '%s.par'\n",
 		 resstem);
+      ddP.NGbetamin = dmin(ddN.T, ddP.NGbeta);
+      ddP.NGbetamax = dmax(ddN.T, ddP.NGbeta);
     } else {
       /*
        *  its a Dirichlet
@@ -371,7 +374,7 @@ void pctl_dims() {
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
   }
-  if ( ddT[ParBDK].fix==0 || ddT[ParNGAlpha].fix==0 || ddT[ParNGBeta].fix==0 ) { 
+ if ( ddT[ParBDK].fix==0 || ddT[ParNGAlpha].fix==0 || ddT[ParNGBeta].fix==0 ) { 
     /*
      *    set kbatch for sampling
      */
@@ -393,6 +396,8 @@ void pctl_dims() {
       ddP.NGbeta = malloc(ddN.T*sizeof(*ddP.NGbeta));
       for (t=0; t<ddN.T; t++)
         ddP.NGbeta[t] = 1.0/ddN.T;
+      ddP.NGbetamin = 1.0/ddN.T;
+      ddP.NGbetamax = 1.0/ddN.T;
     }
     if ( !ddP.NGalpha ) {
       double alphac = pctl_alpharange(pctl_alphacinit());
@@ -447,7 +452,13 @@ void pctl_dims() {
   }
   if ( ddP.Tinit==0 )
     ddP.Tinit = ddN.T;
-}
+  if ( ddP.NGalpha!=NULL) {
+    ddT[ParNGAlpha].ptr = ddP.NGalpha;
+  }
+  if ( ddP.NGbeta!=NULL) {
+    ddT[ParNGBeta].ptr = ddP.NGbeta;
+  }
+ }
 
 /*
  *   initialising or ddP.betatot is changed
@@ -598,7 +609,7 @@ void pctl_fix(int ITER, int loadphi) {
     ddT[ParAD].fix = 1;
   }
   if ( ddP.PYalpha==H_NG ||  ddP.NGalpha ) {
-    ;
+    ddT[ParAlpha].fix = 1;
   } else {
     ddT[ParNGAlpha].fix = 1;
     ddT[ParNGBeta].fix = 1;
@@ -785,9 +796,10 @@ double pctl_gammaprior(double x) {
 }
 
 /*
- *   generate parameter corresponding to index
+ *   generate parameter corresponding to index;
+ *   'iter' is cycle used to find which are active;
  *   and return in *par and *k 
- *        note bdk has K values bdk[k]
+ *        note bdk/NGalpha/NGbeta has ddP.kbatch values when used
  *        all other pars are single valued
  *   return 1 if found OK, else return 0 if no more
  */
@@ -800,7 +812,7 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
       if ( p==ParBDK || p==ParNGAlpha || p==ParNGBeta ) {
         if ( index<ddP.kbatch) {
           *par = p;
-          *k = (iter*ddP.kbatch+index)%ddN.T;
+          *k = (iter*ddP.kbatch/ddT[p].cycles+index)%ddN.T;
           return 1;
         }
         index -= ddP.kbatch;
@@ -878,10 +890,12 @@ void pctl_sample(int iter, int procs) {
   for (index=0; index<100000; index++) {
     int k;
     enum ParType par;
-    if ( pctl_par_iter(index, iter, &par, &k) && par==ParBDK ) {
+    int try = pctl_par_iter(index, iter, &par, &k);
+    if ( try && par==ParBDK ) {
       ddP.docstats = dmi_bstore(&ddM);
-      break;
     }
+    if ( !try )
+      break;
   }
   index = 0;
   pd.index = &index;
@@ -985,14 +999,14 @@ void pctl_print(FILE *fp) {
     if ( !ddT[ParNGAlpha].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
 	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
-    fprintf(fp, "NGAlpha =");
+    fprintf(fp, "NGalpha =");
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %5lf", ddT[ParNGAlpha].ptr[t]);
     fprintf(fp, "\n");
     if ( !ddT[ParNGBeta].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
 	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
-    fprintf(fp, "NGBeta =");
+    fprintf(fp, "NGbeta =");
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %5lf", ddT[ParNGBeta].ptr[t]);
     fprintf(fp, "\n");

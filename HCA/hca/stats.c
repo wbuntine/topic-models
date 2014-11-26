@@ -122,7 +122,7 @@ void hca_alloc() {
     ddS.TDt = u32vec(ddN.T);
     ddS.Tlife = u32vec(ddN.T);
   }
-  if ( ddP.PYalpha==H_NG ) {
+  if ( ddP.NGalpha ) {
     ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
   }
   ddS.NdT = u16vec(ddN.D);
@@ -379,6 +379,8 @@ void hca_reset_stats(char *resstem,
   for (i=0; i<ddN.D; i++)
     /*   ddS.Ndt not allocated monolithically  */
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
+  if ( ddS.UN )
+    memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -417,6 +419,19 @@ void hca_reset_stats(char *resstem,
       ddS.Ndt[usei][t]++;
       ddS.NdT[usei]++;
     }
+  }
+
+  if ( ddS.UN ) {
+    double aveB = 0;
+    double totA = 0;
+    assert(ddP.NGbeta);
+    for (t=0; t<ddN.T; t++) {
+      aveB += ddP.NGbeta[t];
+      totA += ddP.NGalpha[t];
+    }
+    aveB /= ddN.T;
+    for (i=firstdoc; i<lastdoc; i++) 
+      ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {

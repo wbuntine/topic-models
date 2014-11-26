@@ -179,7 +179,8 @@ static double bw0terms_DP(double bw, void *mydata) {
 static double ngaterms(double ak, void *mydata) {
   int j;
   int k = *((int *)mydata);
-  double val = 0;
+  /*   is this the right prior ??? */
+  double val = pctl_gammaprior(ak);
   for (j=0; j<ddN.DT; j++) {
     val += gammadiff((int)ddS.Ndt[j][k], ak, 0.0);
     val += ak*log(ddP.NGbeta[k]/(ddS.UN[j]+ddP.NGbeta[k]));
@@ -194,7 +195,7 @@ static double ngaterms(double ak, void *mydata) {
 static double ngbterms(double bk, void *mydata) {
   int j;
   int k = *((int *)mydata);
-  double val = 0;
+  double val = -1;
   for (j=0; j<ddN.DT; j++) {
     val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
     val += ddP.NGalpha[k]*log(bk);
@@ -313,6 +314,10 @@ void sample_NGbeta(double *b, int k) {
   sprintf(&label[0],"NGbeta[%d]", k);
   assert(b);
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngbterms, &k, &b[k], label, 1);
+  if ( b[k]<ddP.NGbetamin ) 
+    ddP.NGbetamin = b[k]; 
+  if ( b[k]>ddP.NGbetamax ) 
+    ddP.NGbetamax = b[k];
 }
 
 /*

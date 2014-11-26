@@ -348,4 +348,25 @@ void sample_aw(double *myaw) {
   cache_update("aw");
 }
 
+/*****************************************************/
+
+
+static double UNterms(double myUN, void *mydata) {
+  int d = *(int*)mydata;
+  int k;
+  double like = 0;
+  like = (ddS.NdT[d]-1) * log(myUN);
+  for (k=0; k<ddN.T; k++)
+    like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
+  return like;
+}
+
+void sample_UN(int d) {
+  /*
+   *   compute it in first pass,
+   *   then use it inside awterms() and awterms_da()
+   */
+  myarms(0, 0,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
+}
+
 

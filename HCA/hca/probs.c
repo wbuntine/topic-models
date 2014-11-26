@@ -66,6 +66,13 @@ int get_probs(double *vp) {
   int t;
   int empty = 0;
   double tot = 0;
+  if ( ddP.NGalpha ) {
+    for (t=0; t<ddN.T; t++) 
+      tot += vp[t] = ddP.NGalpha[t]/ddP.NGbeta[t];
+    for (t=0; t<ddN.T; t++) 
+      vp[t] /= tot;
+    return 0;
+  }
   if ( ddP.PYalpha==H_None ) {
     return get_probs_alpha(vp);
   } 

@@ -569,6 +569,21 @@ void chksum (int n, int T, double **x, double *sumx) //
   }
 }
 
+double  dmax(int n, double *x) //
+{
+  int i;
+  double xmax=x[0];
+  for (i = 0; i < n; i++) xmax = MAX(xmax,x[i]);
+  return xmax;
+}
+double  dmin(int n, double *x) //
+{
+  int i;
+  double xmax=x[0];
+  for (i = 0; i < n; i++) xmax = MIN(xmax,x[i]);
+  return xmax;
+}
+
 uint32_t u32max(int n, uint32_t *x) //
 {
   int i;

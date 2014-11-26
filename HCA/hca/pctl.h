@@ -48,8 +48,12 @@ typedef struct D_pars_s {
   double *alphapr;        // vector normalises to 1 when PYalpha!=H_None
   double alphac;          // individual constant, set from alphatot
   double alphatot;        // total of above or alphac*T
+
   double *NGalpha;        // alpha vector for H_NG
   double *NGbeta;         // beta vector for H_NG
+  double NGbetamin;
+  double NGbetamax;
+
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
   double betac;           // individual constant, set from betatot
   double betatot;         // total of above or betac*W

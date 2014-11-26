@@ -427,6 +427,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   float *gtvec = globalprop();
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
+  double *ngalpha = NULL;
   
   if ( pmicount>topword )
     pmicount = topword;
@@ -441,7 +442,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   } else if ( scoretype == ST_Q ) {
     tscore = Qscore;
     lowerQ = 1.0/ddN.T;
-  }    
+  }  
+
+  if ( ddP.NGalpha ) {
+    ngalpha = dvec(ddN.T);
+    get_probs(ngalpha);
+  }
 
   /*
    *  first collect counts of each word/term,
@@ -639,6 +645,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" pd=%.3lf", pd); 
       if ( PCTL_BURSTY() ) 
 	yap_message(" bd=%.3lf", ddP.bdk[kk]); 
+      if ( ddP.NGbeta )
+	yap_message(" ng=%.3lf,%.3lf", ngalpha[kk], ddP.NGbeta[kk]); 
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
       yap_message(" co=%.3lf%%", co);
@@ -834,6 +842,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   if ( top1cnt ) free(top1cnt);
   free(indk);
   free(psort);
+  if ( ngalpha )
+    free(ngalpha);
   if ( pmicount )
     free(tpmi);
   if ( NwK ) {

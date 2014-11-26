@@ -205,6 +205,14 @@ double gibbs_lda(/*
    */
   enum GibbsType fix_doc = fix;
 
+  if ( ddP.NGalpha && ddS.NdT[did]<=2 ) {
+    static int hh = 0;
+    hh++;
+    if ( hh==0 ) 
+      yap_message("Horrible hack, skipping short doc\n");
+    return 0;
+  }
+
   if ( PCTL_BURSTY() ) {
     mi = ddM.MI[did];
     assert(ddM.multiind[mi]<ddM.dim_Mi);
@@ -363,6 +371,15 @@ double gibbs_lda(/*
     if ( PCTL_BURSTY() && M_multi(i) ) {
       mi++;
     }
+  }
+  if ( ddS.UN ) {
+    double val = 0;
+    for (t=0; t<ddN.T; t++)
+      val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
+	/ (ddS.UN[did]+ddP.NGbeta[t]);
+    ddS.UN[did] = (ddS.NdT[did]-1.0)/val;
+    assert(ddS.UN[did]>0);
+    // sample_UN(did);
   }
   return logdoc;
 }

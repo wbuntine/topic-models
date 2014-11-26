@@ -64,6 +64,8 @@ void write_u32sparsetri(int ns, int nr, int nc, uint32_t ***x, char *fname,
 void read_u32sparsetri(int ns, int nr, int nc, uint32_t ***x, char *fname);
 void write_u16vec (int n, uint16_t *x, char *fname);
 uint32_t u32max(int n, uint32_t *x);
+double dmax(int n, double *x);
+double dmin(int n, double *x);
 /*
  *  pick up line from file "stem.par" starting with "par" and an "=",
  *  and return stuff after "=" but only first 49 chars
@@ -76,5 +78,6 @@ void vec_atod(double *vec, int N, char *vals);
 char **read_vocab(char *infile, int W, int len);
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
 
 #endif
