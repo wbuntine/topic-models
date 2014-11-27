@@ -967,6 +967,18 @@ void pctl_update(int iter) {
       start = 0;
     }
   }  
+  if ( ddP.NGbeta ) {
+    /*
+     *   give NGbeta an average of 1
+     */
+    int t;
+    double tot = 0;
+    for (t=0; t<ddN.T; t++)
+      tot += ddP.NGbeta[t];
+    tot /= ddN.T;
+    for (t=0; t<ddN.T; t++)
+      ddP.NGbeta[t] /= tot;
+  }
   yap_message("\n");
 }
 

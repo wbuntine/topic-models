@@ -645,8 +645,19 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_message(" pd=%.3lf", pd); 
       if ( PCTL_BURSTY() ) 
 	yap_message(" bd=%.3lf", ddP.bdk[kk]); 
-      if ( ddP.NGbeta )
-	yap_message(" ng=%.3lf,%.3lf", ngalpha[kk], ddP.NGbeta[kk]); 
+      if ( ddP.NGbeta ) {
+	/*
+	 *   approx. as sqrt(var(lambda_k)/lambda-normaliser
+	 */
+	double ngvar = sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk])
+	  * (ngalpha[kk]*ddP.NGbeta[kk]/ddP.NGalpha[kk]);
+	yap_message(" ng=%.4lf,%.4lf ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
+		    ngalpha[kk], ngvar,
+		    ddP.NGalpha[kk]/ddP.NGbeta[kk], 
+		    sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk]),
+		    ddP.NGalpha[kk], ddP.NGbeta[kk] 
+		    ); 
+      }
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
       yap_message(" co=%.3lf%%", co);
