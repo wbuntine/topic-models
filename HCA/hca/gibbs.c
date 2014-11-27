@@ -205,11 +205,11 @@ double gibbs_lda(/*
    */
   enum GibbsType fix_doc = fix;
 
-  if ( ddP.NGalpha && ddS.NdT[did]<=2 ) {
+  if ( ddS.NdT[did]<=5 ) {
     static int hh = 0;
-    hh++;
     if ( hh==0 ) 
       yap_message("Horrible hack, skipping short doc\n");
+    hh++;
     return 0;
   }
 

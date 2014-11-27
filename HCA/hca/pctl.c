@@ -305,6 +305,8 @@ void pctl_read(char *resstem, char *buf) {
   } else {
     ddP.NGalpha = readfv("NGalpha", ddN.T);
     if ( ddP.NGalpha ) {
+      int t;
+      double tot = 0;
       /*
        *  its a normalised gamma
        */
@@ -312,6 +314,9 @@ void pctl_read(char *resstem, char *buf) {
       if ( !ddP.NGbeta ) 
         yap_quit("Cannot read 'NGbeta' when 'NGalpha' exists in '%s.par'\n",
 		 resstem);
+      for (t=0; t<ddN.T; t++) tot += ddP.NGbeta[t];
+      tot /= ddN.T;
+      for (t=0; t<ddN.T; t++) ddP.NGbeta[t] /= tot;
       ddP.NGbetamin = dmin(ddN.T, ddP.NGbeta);
       ddP.NGbetamax = dmax(ddN.T, ddP.NGbeta);
     } else {

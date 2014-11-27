@@ -437,9 +437,9 @@ void phi_sum_update(int w, int ce, int i) {
     // if ( ce>0 ) yap_message("%d/%d ", phi_last_posn[w], e);
     if ( e>ce )
       continue;
-    if ( e==0 ) {
+    if ( e<=0 ) {
       sum[0] = (zero[0] + one[0] * phi_one_fact_plus(0,t)* phi0_prob(w)) / norm[0];
-      e++;
+      e = 1;
     }
     for ( ; e<=ce; e++) {
       sum[e] = (zero[e] + one[e]*phi_one_fact_plus(e,t)*sum[e-1]) / norm[e];
@@ -751,10 +751,41 @@ int word_side_ind ( int e, int v, int t) {
   return 0;
 }
 
+#ifndef NDEBUG
+double word_side_fact_nocache ( int e, int v, int t) {
+  double Z = 0;
+  double Y = 1;
+  int back = e-ddP.back;
+
+  for ( ; e>=0; e--) {
+    Y /= phi_norm_fact(e, t);
+    Z += Y * phi_zero_fact(e, v, t);
+    Y *= phi_one_fact(e, v, t);
+    if ( e>0 && e<=back && ddS.s_vte[v][t][e]>0 ) return Z;
+  }
+  Z += Y * phi0_prob(v);
+  return Z;
+}
+#endif
+
+#define TESTPHI
 double word_side_fact ( int e, int v, int t) {
+#if defined(TESTPHI) && !defined(NDEBUG)
+  int ein = e;
+#endif
   if ( ddP.phi )
     return ddP.phi[e][v][t];
 #ifdef PHI_CACHE
+#if defined(TESTPHI) && !defined(NDEBUG)
+  {
+    double phi = word_side_fact_nocache(ein,v,t);
+    double Z = phi_sum_cache[v][t][e];
+    if ( fabs((phi-Z)/phi)>0.001 ) {
+      yap_message("word_side_fact(%d,%d,%d)=%lf, actual=%lf\n",
+		  ein, v, t, Z, phi);
+    }
+  }
+#endif 
   return phi_sum_cache[v][t][e];
 #else
   double Z = 0;
@@ -779,6 +810,15 @@ double word_side_fact ( int e, int v, int t) {
     if ( e>0 && e<=back && ddS.s_vte[v][t][e]>0 ) return Z;
   }
   Z += Y * phi0_prob(v);
+#if defined(TESTPHI) && !defined(NDEBUG)
+  {
+    double phi = word_side_fact_nocache(ein,v,t);
+    if ( fabs((phi-Z)/phi)>0.00 ) {
+      yap_message("word_side_fact(%d,%d,%d)=%lf, actual=%lf\n",
+		  ein, v, t, Z, phi);
+    }
+  }
+#endif
   return Z;
 #endif
 }
