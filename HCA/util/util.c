@@ -645,15 +645,17 @@ static int mygetpar(char *buf, char *par, FILE *fp) {
 	int i=0;
 	while ( 1 ) {
 	  if ( mygetname(buf,par,fp) ) {
-	    // yap_message("Got '%s'\n", par);
+	    yap_message("Got '%s'\n", par);
 	    while ( (c=fgetc(fp))!=EOF ) {
 	      if ( i==0 && (c=='='||c==' ') )
 		continue;
 	      if ( c=='\n' || c=='\r' )
 		break;
 	      buf[i++] = c;
+	      yap_message(" %d", i);
 	    }
 	    buf[i] = 0;
+	    yap_message("\nBuf(%d) '%s'\n", i, buf);
 	    if ( i>0 ) return 1;
 	    return 0;
 	  } else {
@@ -677,14 +679,16 @@ static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
   if ( !fp ) 
     yap_sysquit("Cannot open parameter file '%s' ", file);
   buf[0] = 0;
-  if ( !mygetpar(buf,par, fp) )
+  yap_message("Getting '%s' %d\n", par, len);
+  if ( mygetpar(buf,par, fp)==0 )
     buf[0] = 0;
+  yap_message("Got '%s' = '%s'\n", par, buf);
   if ( ferror(fp) )
     yap_sysquit("Error on parameter file '%s' ", file);
   fclose(fp);
   free(file);
-  if ( buf[0] ) 
-    return &buf[0];
+  if ( buf[0]!=0 ) 
+    return buf;
   else
     return NULL;
 }
