@@ -645,10 +645,12 @@ static int mygetpar(char *buf, char *par, FILE *fp) {
 	int i=0;
 	while ( 1 ) {
 	  if ( mygetname(buf,par,fp) ) {
-	    // yap_message("Got '%s'\n", par);
+	    yap_message("Got '%s'\n", par);
 	    while ( (c=fgetc(fp))!=EOF ) {
 	      if ( i==0 && (c=='='||c==' ') )
 		continue;
+	      if ( c=='\n' || c=='\r' )
+		break;
 	      buf[i++] = c;
 	    }
 	    buf[i] = 0;
