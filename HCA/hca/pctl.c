@@ -225,6 +225,7 @@ static double *readfv(char *type, int dim) {
     double *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
     int t = 0;
+    yap_message("GOT PAR='%s'\n", par);
     par += strspn(par, " ,");
     if ( !vec )
       yap_quit("Out of memory reading vector parameter '%s'\n", type);
