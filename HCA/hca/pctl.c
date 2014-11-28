@@ -268,9 +268,11 @@ static int *readiv(char *type, int dim) {
 /*
  *  reads parameters, not dimensions
  */
-void pctl_read(char *resstem, char *buf) {
+void pctl_read(char *resstem) {
+  mybuf = malloc(ddN.T*20+100);
+  if ( !mybuf ) 
+    yap_quit("Out of memory reading in pctl_read()\n");
   mystem = resstem;
-  mybuf = buf;
   ddP.PYbeta = readi("PYbeta");
   if ( ddP.PYbeta ) {
     ddP.awpar = readf("aw");
@@ -327,16 +329,12 @@ void pctl_read(char *resstem, char *buf) {
       ddP.alphatot = readf("alphatot");
     }
   }
-  mybuf = malloc(ddN.T*20+100);
-  if ( !mybuf ) 
-    yap_quit("Out of memory reading 'bdk' in pctl_read()\n");
   ddP.bdk = readfv("bdk", ddN.T);
   if ( ddP.bdk!=NULL ) {
     ddP.ad = readf("ad");
   } else
     ddP.ad = 0;
   free(mybuf);
-  mybuf = buf;
   ddP.n_excludetopic = readi("Nexcludetopic");
   if ( ddP.n_excludetopic>0 ) {
     int t, n_t;
@@ -352,7 +350,6 @@ void pctl_read(char *resstem, char *buf) {
       ddP.bits_et[x/32U] |= (1U << (x%32U));
     }
     free(mybuf);
-    mybuf = buf;
   }
 }
 
