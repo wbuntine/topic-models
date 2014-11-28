@@ -470,27 +470,47 @@ int main(int argc, char* argv[])
 #endif
 
   if ( restart || restart_hca ) {
-    char buf[1000];
     char *fname = yap_makename(resstem,".par");
     FILE *fp = fopen(fname,"r");
+    char *buf;
     if ( !fp ) 
       yap_quit("Parameter file '%s' doesn't exist\n", fname);
     fclose(fp);
     free(fname);
-    ddN.T = atoi(readpar(resstem,"T",buf,50));
+    buf = readpar(resstem,"T",50);
+    if ( !buf ) 
+      yap_quit("Parameter file '%s' has no T\n", fname);
+    ddN.T = atoi(buf);
+    free(buf);
     if ( restart ) {
-      ddN.E = atoi(readpar(resstem,"E",buf,50));
-      pctl_read(resstem, buf);
+      buf = readpar(resstem,"E",50);
+      if ( !buf ) 
+	yap_quit("Parameter file '%s' has no E\n", fname);
+      ddN.E = atoi(buf);
+      free(buf);
+      pctl_read(resstem);
     }
-    if ( maxW==0 )
-      maxW = atoi(readpar(resstem,"W",buf,50));
+    if ( maxW==0 ) {
+      buf = readpar(resstem,"W",50);
+      if ( buf ) {
+	maxW = atoi(buf);
+	free(buf);
+      }
+    }
     if ( ddP.training==0 ) {
-      char *pv = readpar(resstem,"TRAIN",buf,50);
-      if ( pv ) 
-	ddP.training = atoi(pv);
-    } 
-    if ( ddN.TEST==0 )
-      ddN.TEST = atoi(readpar(resstem,"TEST",buf,50));
+      buf = readpar(resstem,"TRAIN",50);
+      if ( buf ) {
+	ddP.training = atoi(buf);
+	free(buf);
+      } 
+    }
+    if ( ddN.TEST==0 ) {
+      buf = readpar(resstem,"TEST",50);
+      if ( buf ) {
+	ddN.TEST = atoi(buf);
+	free(buf);
+      }
+    }
   } 
 
   assert(ddN.T>0);

@@ -68,10 +68,10 @@ double dmax(int n, double *x);
 double dmin(int n, double *x);
 /*
  *  pick up line from file "stem.par" starting with "par" and an "=",
- *  and return stuff after "=" but only first 49 chars
+ *  and return stuff after "=" of max length len
  */
-char *readpar(char *stem, char *par, char *buf, int len);
-char *readsrcpar(char *stem, char *par, char *buf, int len);
+char *readpar(char *stem, char *par, int len);
+char *readsrcpar(char *stem, char *par, int len);
 
 void vec_atod(double *vec, int N, char *vals);
 

@@ -172,19 +172,21 @@ void pctl_init() {
 }
 
 static char *mystem;
-static char *mybuf;
 
 static double readf(char *type) {
-  char *par = readpar(mystem,type,mybuf,50);
-  if ( par )
+  char *par = readpar(mystem,type,50);
+  if ( par ) {
     return atof(par);
+    free(par);
+  }
   return 0.0;
 }
 static double *readfv(char *type, int dim) {
-  char *par = readpar(mystem,type,mybuf,dim*15+strlen(type)+3);
-  if ( par ) {
+  char *gotpar = readpar(mystem,type,dim*15+strlen(type)+3);
+  if ( gotpar ) {
     double *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
+    char *par = gotpar;
     int t = 0;
     par += strspn(par, " ,");
     if ( !vec )
@@ -196,17 +198,15 @@ static double *readfv(char *type, int dim) {
     if ( t<dim )
       yap_quit("Reading vector parameter '%s' only got %d/%d elements\n", 
 	       type, t, dim);
+    free(gotpar);
     return vec;
   }
   return NULL;
 }
 
 
-void pctl_read(char *resstem, char *buf) {
+void pctl_read(char *resstem) {
   int i;
-  mybuf = malloc(ddN.T*15+10);
-  if ( !mybuf )
-    yap_quit("Out of memory in pctl_read()\n");
   mystem = resstem;
   ddP.a_mu = readf("am");
   ddP.a_theta = readf("at");
@@ -236,7 +236,6 @@ void pctl_read(char *resstem, char *buf) {
     for (i=2; i<ddN.E; i++)
       ddP.b_phi[i] = ddP.b_phi[1];
   }
-  free(mybuf);
 }
 
 void pctl_loadphi(char *resstem) {

@@ -205,27 +205,32 @@ void pctl_init() {
 }
 
 static char *mystem;
-static char *mybuf;
 
 static double readf(char *type) {
-  char *par = readpar(mystem,type,mybuf,50);
-  if ( par )
-    return atof(par);
+  char *par = readpar(mystem,type,50);
+  if ( par ) {
+    double val = atof(par);
+    free(par);
+    return val;
+  }
   return 0.0;
 }
 static int readi(char *type) {
-  char *par = readpar(mystem,type,mybuf,50);
-  if ( par )
-    return atoi(par);
+  char *par = readpar(mystem,type,50);
+  if ( par ) {
+    int val = atoi(par);
+    free(par);
+    return val;
+  }
   return 0;
 }
 static double *readfv(char *type, int dim) {
-  char *par = readpar(mystem,type,mybuf,dim*20+50);
-  if ( par ) {
+  char *gotpar = readpar(mystem,type,dim*20+50);
+  if ( gotpar ) {
     double *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
     int t = 0;
-    yap_message("GOT PAR='%s'\n", par);
+    char *par = gotpar;
     par += strspn(par, " ,");
     if ( !vec )
       yap_quit("Out of memory reading vector parameter '%s'\n", type);
@@ -238,15 +243,17 @@ static double *readfv(char *type, int dim) {
     if ( t<dim )
       yap_quit("Reading vector parameter '%s' only got %d/%d elements\n", 
 	       type, t, dim);
+    free(gotpar);
     return vec;
   }
   return NULL;
 }
 static int *readiv(char *type, int dim) {
-  char *par = readpar(mystem,type,mybuf,dim*20+50);
-  if ( par ) {
+  char *gotpar = readpar(mystem,type,dim*20+50);
+  if ( gotpar ) {
     int *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
+    char *par = gotpar;
     int t = 0;
     par += strspn(par, " ,");
     if ( !vec )
@@ -260,6 +267,7 @@ static int *readiv(char *type, int dim) {
     if ( t<dim )
       yap_quit("Reading vector parameter '%s' only got %d/%d elements\n", 
 	       type, t, dim);
+    free(gotpar);
     return vec;
   }
   return NULL;
@@ -269,9 +277,6 @@ static int *readiv(char *type, int dim) {
  *  reads parameters, not dimensions
  */
 void pctl_read(char *resstem) {
-  mybuf = malloc(ddN.T*20+100);
-  if ( !mybuf ) 
-    yap_quit("Out of memory reading in pctl_read()\n");
   mystem = resstem;
   ddP.PYbeta = readi("PYbeta");
   if ( ddP.PYbeta ) {
@@ -335,10 +340,8 @@ void pctl_read(char *resstem) {
   } else
     ddP.ad = 0;
   ddP.n_excludetopic = readi("Nexcludetopic");
-  free(mybuf);
   if ( ddP.n_excludetopic>0 ) {
     int t, n_t;
-    mybuf = malloc(ddP.n_excludetopic*10+100);
     ddP.excludetopic = readiv("excludetopic", ddP.n_excludetopic);
     /*  set the bit vector */
     n_t = ((ddN.T-1U)/32U+1U);
@@ -349,7 +352,6 @@ void pctl_read(char *resstem) {
       uint32_t x = ddP.excludetopic[t];
       ddP.bits_et[x/32U] |= (1U << (x%32U));
     }
-    free(mybuf);
   }
 }
 

@@ -606,6 +606,7 @@ void vec_atod(double *vec, int N, char *vals) {
  * read from current place in file to pick up par-name
  * return 1 if found, 0 if not
  */
+static int thelen;
 static int mygetname(char *buf, char *par, FILE *fp) {
   int c;
   int i=0;
@@ -625,6 +626,7 @@ static int mygetname(char *buf, char *par, FILE *fp) {
       return 0;
     }
     buf[i++] = c;
+    assert(i<20);
   }
   return 0;
 }
@@ -632,57 +634,57 @@ static int mygetname(char *buf, char *par, FILE *fp) {
  *   skip past new line 
  */
 static void myskip(FILE *fp) {
-	int c;
-	while ( 1 ) {
-		c = fgetc(fp);
-               	if ( c==EOF ||  c=='\n' || c=='\r' ) 
-			return;
-	}
-	return;
+  int c;
+  while ( 1 ) {
+    c = fgetc(fp);
+    if ( c==EOF ||  c=='\n' || c=='\r' ) 
+      return;
+  }
+  return;
 }
 static int mygetpar(char *buf, char *par, FILE *fp) {
-	int c;
-	int i=0;
-	while ( 1 ) {
-	  if ( mygetname(buf,par,fp) ) {
-	    yap_message("Got '%s'\n", par);
-	    while ( (c=fgetc(fp))!=EOF ) {
-	      if ( i==0 && (c=='='||c==' ') )
-		continue;
-	      if ( c=='\n' || c=='\r' )
-		break;
-	      buf[i++] = c;
-	      yap_message(" %d", i);
-	    }
-	    buf[i] = 0;
-	    yap_message("\nBuf(%d) '%s'\n", i, buf);
-	    if ( i>0 ) return 1;
-	    return 0;
-	  } else {
-	    if ( feof(fp) || ferror(fp) ) 
-	      return 0;
-	    else 
-	      myskip(fp);
-	    // yap_message("Skipping '%s' for '%s'\n", buf, par);
-	  }
-	}
+  int c;
+  int i;
+  while ( 1 ) {
+    i = 0;
+    if ( mygetname(buf,par,fp) ) {
+      while ( (c=fgetc(fp))!=EOF ) {
+	if ( i==0 && (c=='='||c==' ') )
+	  continue;
+	if ( c=='\n' || c=='\r' )
+	  break;
+	buf[i++] = c;
+      }
+      buf[i] = 0;
+      assert(i<thelen);
+      if ( i>0 ) return 1;
+      return 0;
+    } else {
+      if ( feof(fp) || ferror(fp) ) {
+	buf[0] = 0;
 	return 0;
+      } else 
+	myskip(fp);
+    }
+  }
+  buf[0] = 0;
+  return 0;
 }
 
 /*
  *  pick up line from file "stem.ext" starting with "par" and an "=",
  *  and return stuff after "=" but only first len chars
  */
-static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
+static char *readextpar(char *stem, char *ext, char *par, int len) {
   char *file = yap_makename(stem,ext);
   FILE *fp = fopen(file,"r");
+  char *buf = malloc(len);
+  if ( !buf )
+    yap_quit("Cannot allocate memory in readpar('%s')\n", par);
+  thelen = len;
   if ( !fp ) 
     yap_sysquit("Cannot open parameter file '%s' ", file);
-  buf[0] = 0;
-  yap_message("Getting '%s' %d\n", par, len);
-  if ( mygetpar(buf,par, fp)==0 )
-    buf[0] = 0;
-  yap_message("Got '%s' = '%s'\n", par, buf);
+  mygetpar(buf, par, fp);
   if ( ferror(fp) )
     yap_sysquit("Error on parameter file '%s' ", file);
   fclose(fp);
@@ -692,9 +694,9 @@ static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
   else
     return NULL;
 }
-char *readpar(char *stem, char *par, char *buf, int len) {
-  return readextpar(stem,".par",par,buf,len);
+char *readpar(char *stem, char *par, int len) {
+  return readextpar(stem,".par",par,len);
 }
-char *readsrcpar(char *stem, char *par, char *buf, int len) {
-  return readextpar(stem,".srcpar",par,buf,len);
+char *readsrcpar(char *stem, char *par, int len) {
+  return readextpar(stem,".srcpar",par, len);
 }

@@ -838,10 +838,10 @@ int main(int argc, char* argv[])
   yap_message(stype());
 
   if ( restart || loadphi ) {
-    char buf[1000];
     /*
      *  first fill the buf[] from .par
      */
+    char *buf;
     char *fname = yap_makename(resstem,".par");
     FILE *fp = fopen(fname,"r");
     if ( !fp ) 
@@ -851,7 +851,11 @@ int main(int argc, char* argv[])
     /*
      * now read T, W and pctl
      */
-    ddN.T = atoi(readpar(resstem,"T",buf,50));
+    buf = readpar(resstem,"T",50);
+    if ( !buf ) 
+      yap_quit("Parameter file '%s' has no T\n", fname);
+    ddN.T = atoi(buf);
+    free(buf);
     pctl_read(resstem);
     /*   if command line had set to PDP, then restore */
     if ( PYalphain == H_PDP )
@@ -859,12 +863,18 @@ int main(int argc, char* argv[])
     if ( PYbetain == H_PDP )
       ddP.PYbeta = H_PDP;
     if ( ddP.training==0 ) {
-      char *pv = readpar(resstem,"TRAIN",buf,50);
-      if ( pv ) 
-	 ddP.training = atoi(pv);
+      buf = readpar(resstem,"TRAIN",50);
+      if ( buf ) {
+	ddP.training = atoi(buf);
+	free(buf);
+      }
     } 
     if ( restart || maxW==0 ) {
-      maxW = atoi(readpar(resstem,"W",buf,50));
+      buf = readpar(resstem,"W",50);
+      if ( buf ) {
+	maxW = atoi(buf);
+	free(buf);
+      }
     }
     if ( doexclude==0 ) {
       if ( ddP.n_excludetopic ) {

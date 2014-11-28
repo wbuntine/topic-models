@@ -82,10 +82,11 @@ int data_df(char *stem, uint32_t *dfvec) {
   free(wname);
   /*  read dfdocs */
   {
-    char *p = readsrcpar(stem,"dfdocs",buf,50);
-    if ( p )
+    char *p = readsrcpar(stem,"dfdocs",50);
+    if ( p ) {
       n_df = atoi(p);
-    else
+      free(p);
+    } else
       n_df = ddN.D;
   }
   /*  read dfs */
