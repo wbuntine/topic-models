@@ -652,6 +652,7 @@ static int mygetpar(char *buf, char *par, FILE *fp) {
 	      if ( c=='\n' || c=='\r' )
 		break;
 	      buf[i++] = c;
+	      buf[i] = 0; yap_message("BUF: '%s'\n", buf);
 	    }
 	    buf[i] = 0;
 	    if ( i>0 ) return 1;
