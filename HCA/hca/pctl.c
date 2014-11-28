@@ -334,8 +334,8 @@ void pctl_read(char *resstem) {
     ddP.ad = readf("ad");
   } else
     ddP.ad = 0;
-  free(mybuf);
   ddP.n_excludetopic = readi("Nexcludetopic");
+  free(mybuf);
   if ( ddP.n_excludetopic>0 ) {
     int t, n_t;
     mybuf = malloc(ddP.n_excludetopic*10+100);

@@ -852,7 +852,7 @@ int main(int argc, char* argv[])
      * now read T, W and pctl
      */
     ddN.T = atoi(readpar(resstem,"T",buf,50));
-    pctl_read(resstem, buf);
+    pctl_read(resstem);
     /*   if command line had set to PDP, then restore */
     if ( PYalphain == H_PDP )
       ddP.PYalpha = H_PDP;

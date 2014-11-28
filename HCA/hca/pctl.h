@@ -167,7 +167,7 @@ enum ParType findpar(char *name);
  */
 /*  create blank pctl */
 void pctl_init();  
-void pctl_read(char *resstem, char *buf);
+void pctl_read(char *resstem);
 /*  adjust pctl after restart/commandline  */
 void pctl_fix(int ITER, int loadphi);
 /*   have data+topic dims so adjust vectors */
