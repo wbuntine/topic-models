@@ -603,6 +603,101 @@ void vec_atod(double *vec, int N, char *vals) {
 }
 
 /*
+ * read from current place in file to pick up par-name
+ * return 1 if found, 0 if not
+ */
+static int mygetname(char *buf, char *par, FILE *fp) {
+	int c;
+	int i=0;
+	int starting = 1;
+	while ( 1 ) {
+		c = fgetc(fp);
+		if ( starting && (c=='\n' || c=='\r') )
+			continue;
+		starting = 0;
+		if ( c==EOF ) 
+			return 0;
+		if ( c=='=' || c==' ' ) {
+			if ( strcmp(buf,par) ) {
+				return 1;
+			}
+			return 0;
+		}
+		buf[i++] = c;
+	}
+	return 0;
+}
+/*  
+ *   skip past new line 
+ */
+static void myskip(FILE *fp) {
+	int c;
+	while ( 1 ) {
+		c = fgetc(fp);
+               	if ( c==EOF ||  c=='\n' || c=='\r' ) 
+			return;
+	}
+	return;
+}
+static int mygetpar(char *buf, char *par, FILE *fp) {
+	int c;
+	int i=0;
+	while ( 1 ) {
+		if ( mygetname(buf,par,fp) ) {
+			while ( (c=fgetc(fp))!=EOF ) {
+				if ( i==0 && (c=='='||c==' ') )
+					continue;
+				buf[i++] = c;
+			}
+			buf[i] = 0;
+			if ( i>0 ) return 1;
+			return 0;
+		} else {
+		    if ( feof(fp) || ferror(fp) )
+			return 0;
+		    } else 
+			myskip(fp);
+		}
+	}
+	return 0;
+}
+
+/*
+ *  pick up line from file "stem.ext" starting with "par" and an "=",
+ *  and return stuff after "=" but only first len chars
+ */
+static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
+  char *file = yap_makename(stem,ext);
+  FILE *fp = fopen(file,"r");
+  if ( !fp ) 
+    yap_sysquit("Cannot open parameter file '%s' ", file);
+  buf[0] = 0;
+  mygetpar(buf,par, fp);
+  if ( ferror(fp) )
+    yap_sysquit("Error on parameter file '%s' ", file);
+  fclose(fp);
+  free(file);
+  if ( buf[0] ) 
+    return &buf[0];
+  else
+    return NULL;
+}
+static int mygetpar(char *buf, char *par, FILE *fp) {
+	int c;
+	int i=0;
+	while ( 1 ) {
+		c = fgetc(fp);
+		if ( c==EOF ) {
+			buf[i] = 0;
+			if ( i>0 ) return 1;
+			return 0;
+		}
+		if ( 
+		buf[i++] = c;
+	}
+	return 0;
+}
+/*
  *  pick up line from file "stem.ext" starting with "par" and an "=",
  *  and return stuff after "=" but only first len chars
  */
@@ -610,7 +705,7 @@ static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
   char *file = yap_makename(stem,ext);
   FILE *fp = fopen(file,"r");
   int parlen = strlen(par);
-  int buflen = len+parlen+50;
+  int buflen = len+parlen+100;
   char *linebuf = malloc(buflen+2);
   if ( !fp ) 
     yap_sysquit("Cannot open parameter file '%s' ", file);
@@ -618,16 +713,16 @@ static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
     yap_quit("Out of memory in readpar(%s)\n", par);
   buf[0] = 0;
   linebuf[0] = 0;
-  while ( fgets(&linebuf[0],buflen,fp) ) {
-    if ( strstr(&linebuf[0],par)==&linebuf[0] && 
-	 (linebuf[parlen]==' ' || linebuf[parlen]=='=') ) {
+   yap_message("Par=%s, len=%d, parlen=%d, buflen=%d\n", par, len, parlen, buflen);
+  if ( mygetpar(linebuf,par, fp) ) {
       char *ret = strstr(&linebuf[0],"=");
+      yap_message("ret = '%20s'\n", ret);
        if ( !ret ) {
 	yap_quit("Badly formatted parameter file '%s': %s\n",
 		 file, &linebuf[0]);
       }
       ret++;
-      // yap_message("ret = '%s', length %d\n", ret, strlen(ret));
+      yap_message("ret = '%s', length %d\n", ret, strlen(ret));
       {
         int i;
         i = strlen(ret);
@@ -643,7 +738,6 @@ static char *readextpar(char *stem, char *ext, char *par, char *buf, int len) {
       }
       strncpy(buf, ret, len);
       break;
-    }
   }
   if ( ferror(fp) )
     yap_sysquit("Error on parameter file '%s' ", file);

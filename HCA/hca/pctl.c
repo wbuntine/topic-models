@@ -220,7 +220,7 @@ static int readi(char *type) {
   return 0;
 }
 static double *readfv(char *type, int dim) {
-  char *par = readpar(mystem,type,mybuf,dim*15+50);
+  char *par = readpar(mystem,type,mybuf,dim*20+50);
   if ( par ) {
     double *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
@@ -242,7 +242,7 @@ static double *readfv(char *type, int dim) {
   return NULL;
 }
 static int *readiv(char *type, int dim) {
-  char *par = readpar(mystem,type,mybuf,dim*15+50);
+  char *par = readpar(mystem,type,mybuf,dim*20+50);
   if ( par ) {
     int *vec = malloc(sizeof(vec[0])*dim);
     char *ptr;
@@ -326,7 +326,7 @@ void pctl_read(char *resstem, char *buf) {
       ddP.alphatot = readf("alphatot");
     }
   }
-  mybuf = malloc(ddN.T*15+100);
+  mybuf = malloc(ddN.T*20+100);
   if ( !mybuf ) 
     yap_quit("Out of memory reading 'bdk' in pctl_read()\n");
   ddP.bdk = readfv("bdk", ddN.T);
