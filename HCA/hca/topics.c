@@ -651,7 +651,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	 */
 	double ngvar = sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk])
 	  * (ngalpha[kk]*ddP.NGbeta[kk]/ddP.NGalpha[kk]);
-	yap_message(" ng=%.4lf,%.4lf ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
+	yap_message(" ng=%.4lf,%.4lf", 
 		    ngalpha[kk], ngvar/ngalpha[kk]);
 	if ( verbose>2 )
 	    yap_message(" ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
