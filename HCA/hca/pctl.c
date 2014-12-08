@@ -890,14 +890,16 @@ void pctl_sample(int iter, int procs) {
   /*
    *  first, create docstats if needed
    */
+  assert(ddP.docstats==NULL);
   ddP.docstats = NULL;
   //   why 100000?
   for (index=0; index<100000; index++) {
     int k;
     enum ParType par;
     int try = pctl_par_iter(index, iter, &par, &k);
-    if ( try && par==ParBDK ) {
+    if ( try && par==ParBDK && ddP.docstats==NULL ) {
       ddP.docstats = dmi_bstore(&ddM);
+      assert( ddP.docstats);
     }
     if ( !try )
       break;
