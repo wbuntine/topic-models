@@ -156,7 +156,12 @@ void pctl_init() {
   ddT[ParBW0].offset = 1;
   ddT[ParA0].offset = 1;
   ddT[ParAW0].offset = 1;
-  ddT[ParAD].offset = 2%BCYCLES;
+  /*
+   *     WARNING:  ad and bdk cannot resample at the
+   *               same time as ad will re-construct stable;
+   *               tis offset seems to do it!
+   */
+  ddT[ParAD].offset = 0;
 
   ddP.progiter = 5;
   ddP.progburn = 0;
@@ -886,6 +891,7 @@ void pctl_sample(int iter, int procs) {
   int p;
   pthread_t thread[procs];
 #endif
+  int sample_ad = 0;
   
   /*
    *  first, create docstats if needed
@@ -897,9 +903,13 @@ void pctl_sample(int iter, int procs) {
     int k;
     enum ParType par;
     int try = pctl_par_iter(index, iter, &par, &k);
+    if ( procs>1 && par==ParAD )
+      sample_ad = 1;
     if ( try && par==ParBDK && ddP.docstats==NULL ) {
       ddP.docstats = dmi_bstore(&ddM);
       assert( ddP.docstats);
+      if ( procs>1 && sample_ad )
+	yap_quit("Sampling offsets/cycles set badly for AD and BDK\n");
     }
     if ( !try )
       break;
