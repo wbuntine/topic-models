@@ -41,10 +41,9 @@
 #define atomic_add(inttype,val) (inttype += val)
 #define atomic_sub(inttype,val) (inttype -= val)
 #else
-#if (__GNUC__==4 && __GNUC_MINOR__==8 && \
-     ( __GNUC_PATCHLEVEL__<=2 && __GNUC_PATCHLEVEL__>=0) )
+#if (__GNUC__==4 && __GNUC_MINOR__>=8 )
 /* 
- *    Test for GCC == 4.8.? 
+ *    Test for GCC == 4.8.? 4.9.?
  */
 #define atomic_decr_val(inttype,val)  __atomic_compare_exchange_n(&(inttype),&val,(val-1),0,__ATOMIC_RELAXED,__ATOMIC_RELAXED)
 #define atomic_incr_val(inttype,val)  __atomic_compare_exchange_n(&(inttype),&val,(val+1),0,__ATOMIC_RELAXED,__ATOMIC_RELAXED)

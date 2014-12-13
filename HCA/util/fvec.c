@@ -47,6 +47,27 @@ double fv_helldist(float *vp, float *vp2, int N) {
 /*
  *   normalise too, just in case
  */
+double fv_expprob(float *vp, int N) {
+  double ep = 0;
+  double tot = 0;
+  int i;
+  if ( !vp ) 
+    return 1.0/N;
+  for (i=0; i<N; i++ ) {
+    tot += vp[i];
+  }
+  for (i=0; i<N; i++ ) {
+    double p = vp[i]/tot;
+    ep += p * p;
+  }
+  if ( tot<=0 )
+    return 1.0/N;
+  return ep;
+}
+
+/*
+ *   normalise too, just in case
+ */
 double fv_entropy(float *vp, int N) {
   double ent = 0;
   double tot = 0;

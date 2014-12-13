@@ -769,16 +769,21 @@ Some basic details for the topics are given too.
 These are listed in terms of decreasing proportion.
 Details are as follows:
 \begin{description}
-\item[p:] proportion of tokens tagged with this topic;
-\item[ws:] word sparsity, proportion of words occurring zero times with this topic;
-\item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
-\item[ew:] effective number of words, expenential of the entropy of the word distribution;
-\item[ew:] effective number of documents, expenential of the entropy of the document distribution (given topic);
+\item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.
 \item[da:] documents with proportion for topic greater than 1/sqrt($T$).
+\item[ds:] document sparsity, proportion of documents having zero occurrences of this topic;
+\item[ed:] effective number of documents, expenential of the entropy of the document distribution (the document by topic matrix normally
+normalised over topics; renormalise by documents for a given topic);
+\item[ew:] effective number of words, exponential of the entropy of the word distribution for topic;
+\item[ewp:] effective number of words, inverse of the expected word probability, Mallet's alternative to \texttt{ew};
+\item[ng:] with the \OptArg{A}{ng} option, gives the expected topic probability computed by normalising the means of the topic gammas,
+and a measure of overdispersion given by
+the standard-deviation divided by the mean.
+\item[p:] proportion of tokens tagged with this topic;
+\item[pd:] Hellinger distance to the (training) population word distribution;
 \item[t1:] documents with this topic as most common.
 \item[ud:] Hellinger distance to the uniform distribution.
-\item[pd:] Hellinger distance to the (training) population word distribution;
-\item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.
+\item[ws:] word sparsity, proportion of words occurring zero times with this topic;
 \end{description}
 So the first topic has 6/0 given.  This means it was index 6 in the
 run but is rank 0 in terms of proportion.  In the saved data file

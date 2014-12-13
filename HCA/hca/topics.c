@@ -628,6 +628,10 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double sl = fv_avestrlen(pvec,ddN.tokens,ddN.W);
       double co = coherence(dfmtx, cnt);
       double ed = dprop?exp(fv_entropy(dprop,ddN.DT)):ddN.DT;
+#define MALLET_EW
+#ifdef MALLET_EW
+      double ewp = dprop?(1.0/fv_expprob(pvec,ddN.W)):ddN.W;
+#endif
       double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
       yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
@@ -638,6 +642,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       } 
       yap_message(" ds=%.1lf%%", 100*(1-spd) );
       yap_message(" ew=%.0lf", ew); 
+#ifdef MALLET_EW
+      yap_message(" ewp=%.1lf", ewp); 
+#endif
       yap_message(" ed=%.1lf", ed); 
       yap_message(" da=%.0lf", da+0.1); 
       yap_message(" t1=%u", top1cnt[kk]); 
@@ -649,8 +656,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	/*
 	 *   approx. as sqrt(var(lambda_k)/lambda-normaliser
 	 */
-	double ngvar = sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk])
-	  * (ngalpha[kk]*ddP.NGbeta[kk]/ddP.NGalpha[kk]);
+	double ngvar = sqrt(ddP.NGalpha[kk])
+	  * (ngalpha[kk]/ddP.NGalpha[kk]);
 	yap_message(" ng=%.4lf,%.4lf", 
 		    ngalpha[kk], ngvar/ngalpha[kk]);
 	if ( verbose>2 )
@@ -674,6 +681,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	}
 	fprintf(rp," %.6lf", (1-spd) );
 	fprintf(rp," %.2lf", ew); 
+#ifdef MALLET_EW
+	fprintf(rp," %.2lf", ewp); 
+#endif
 	fprintf(rp," %.2lf", ed); 
 	fprintf(rp," %.0lf", da+0.1); 
 	fprintf(rp," %u", top1cnt[kk]); 

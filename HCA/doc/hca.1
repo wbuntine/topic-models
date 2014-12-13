@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Tue Sep 16 08:37:45 EST 2014
+.\" Manual page created with latex2man on Sun Dec 14 10:01:51 AEDT 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -1151,23 +1151,36 @@ Some basic details for the topics are given too.
 These are listed in terms of decreasing proportion. 
 Details are as follows: 
 .TP
-p: 
-proportion of tokens tagged with this topic; 
+co: 
+coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011. 
 .TP
-ws: 
-word sparsity, proportion of words occurring zero times with this topic; 
+da: 
+documents with proportion for topic greater than 1/sqrt(T). 
 .TP
 ds: 
 document sparsity, proportion of documents having zero occurrences of this topic; 
 .TP
-ew: 
-effective number of words, expenential of the entropy of the word distribution; 
+ed: 
+effective number of documents, expenential of the entropy of the document distribution (the document by topic matrix normally 
+normalised over topics; renormalise by documents for a given topic); 
 .TP
 ew: 
-effective number of documents, expenential of the entropy of the document distribution (given topic); 
+effective number of words, exponential of the entropy of the word distribution for topic; 
 .TP
-da: 
-documents with proportion for topic greater than 1/sqrt(T). 
+ewp: 
+effective number of words, inverse of the expected word probability, Mallet\&'s alternative to ew;
+.TP
+ng: 
+with the \fBA\fP\fIng\fP
+option, gives the expected topic probability computed by normalising the means of the topic gammas, 
+and a measure of overdispersion given by 
+the standard\-deviation divided by the mean. 
+.TP
+p: 
+proportion of tokens tagged with this topic; 
+.TP
+pd: 
+Hellinger distance to the (training) population word distribution; 
 .TP
 t1: 
 documents with this topic as most common. 
@@ -1175,11 +1188,8 @@ documents with this topic as most common.
 ud: 
 Hellinger distance to the uniform distribution. 
 .TP
-pd: 
-Hellinger distance to the (training) population word distribution; 
-.TP
-co: 
-coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011. 
+ws: 
+word sparsity, proportion of words occurring zero times with this topic; 
 .PP
 So the first topic has 6/0 given. This means it was index 6 in the 
 run but is rank 0 in terms of proportion. In the saved data file 
