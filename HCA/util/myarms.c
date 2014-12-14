@@ -91,11 +91,19 @@ int myarmsMH(double xl, double xr,
    */
   if ( errcode && errcode!=1007 && errcode!=1003
        && (errcode!=2000 || startval!=result  ) ) {
-    yap_quit("   myarmsMH(%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n", 
-	     label, errcode,
+    yap_quit("   myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n", 
+	     startval, label, errcode,
 	     myarms_last, result, (!ISFINITE(result))?"(inf)":"",
 	     *xval, myarms_evals);
   }
+  if ( errcode==1007 || errcode==1003 ) {
+	  yap_message("   error myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n",
+             startval, label, errcode,
+             myarms_last, result, (!ISFINITE(result))?"(inf)":"",
+             *xval, myarms_evals);
+          /*  hit bounds, for safety use start val */
+	  result = startval;
+   }
   /*
    *    note, sometimes the value is returned
    *    unchanged .... seems to be when the 
