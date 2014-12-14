@@ -86,7 +86,11 @@ int myarmsMH(double xl, double xr,
     free(resvec);
   } else 
     errcode = myarms_simple(6, &xl, &xr, myfunc, mydata, 0, xval, &result, 1);
-  if ( errcode && (errcode!=2000 || startval!=result  ) ) {
+  /*
+   *  1007, 1003 is out of bounds
+   */
+  if ( errcode && errcode!=1007 && errcode!=1003
+       && (errcode!=2000 || startval!=result  ) ) {
     yap_quit("   myarmsMH(%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n", 
 	     label, errcode,
 	     myarms_last, result, (!ISFINITE(result))?"(inf)":"",
