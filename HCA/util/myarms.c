@@ -43,15 +43,18 @@ static int myarms_simple(int ninit, double *xl, double *xr,
     xinit[i] = *xl + (i + 0.1) * (*xr - *xl)/(ninit - 1.0 + 0.2);
   }
   /*  now insert *xprev */
-  for(i=0; i<ninit && xinit[i]<*xprev; i++) ;
-  if ( i>=ninit )
-    xinit[ninit] = *xprev;
-  else {
-    int savei = i;
-    for(i=ninit; i>savei; i--) {
-      xinit[i] = xinit[i-1];
+  if ( *xprev>*xl && *xprev<*xr ) {
+    /*  now insert *xprev */
+    for(i=0; i<ninit && xinit[i]<*xprev; i++) ;
+    if ( i>=ninit )
+      xinit[ninit] = *xprev;
+    else {
+      int savei = i;
+      for(i=ninit; i>savei; i--) {
+	xinit[i] = xinit[i-1];
+      }
+      xinit[savei] = *xprev;
     }
-    xinit[savei] = *xprev;
   }
   err = arms(xinit,ninit,xl,xr,myfunc,mydata,&convex,npoint,
 	     dometrop,xprev,xsamp,
