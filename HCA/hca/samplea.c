@@ -366,7 +366,7 @@ void sample_UN(int d) {
    *   compute it in first pass,
    *   then use it inside awterms() and awterms_da()
    */
-  myarms(0, 0,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
+  myarms(0.00001, ddN.NT,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
 }
 
 
