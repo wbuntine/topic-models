@@ -111,7 +111,7 @@ using adaptive rejection sampling.
 
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
 \item[{-A}{value[,file]}]  Use a symmetric Dirichlet prior on theta
-using this \texttt{value} for each dimension.  The value must be a positive float.  With the optional \texttt{file} argument, the file
+using this \texttt{value} (a float/real) for each dimension.  The value must be a positive float.  With the optional \texttt{file} argument, the file
 specifies the probability vector to use as the mean vector of the
 Dirichlet. The file is in text format representing  \texttt{T} 
 (the number of topics) floats.
@@ -151,6 +151,13 @@ and the alpha vector is uniform.
 This is not hierarchical because alpha is constant.
 If the \texttt{file} optional argument is used
 then it specifies \texttt{alpha}.
+\item[{-A}{ng}]  Each topic now has its own independent gamma distribution,
+\texttt{Gamma(NGalpha,NGbeta)},
+and these are normalised to get the topic probabilities.  There are 2*\texttt{T}
+parameters now, the vector of alpha parameters for each topic and the
+vector of beta parameters for each topic.
+By default these are sampled in batches 
+during standard hyper-parameter sampling.
 \end{Description}
 \item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
@@ -234,6 +241,11 @@ Start sampling \texttt{beta} of the symmetric Dirichlet for beta after
 Fix the variable \texttt{var} where
 it takes the value \textbf{alpha}, \textbf{beta} or one of the
 arguments to the \Opt{-S} option.
+\item[\OptArg{-g}{var,batch}]
+The vector hyperparameters \texttt{bdk}, \texttt{NGalpha}
+and \texttt{NGbeta} are sampled in batches using a heuristic
+batch size.   Set the batch size with
+\OptArg{-g}{bdk,10} or similar, though note they all share the same batchsize.
 \item[\OptArg{-G}{var,cycles,start}]
 Sample the variable \texttt{var} where
 it takes the value \textbf{alpha}, \textbf{beta} or one of the

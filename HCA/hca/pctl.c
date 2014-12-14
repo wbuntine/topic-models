@@ -970,6 +970,16 @@ void pctl_samplereport() {
       yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
   }
   yap_message("\n");
+  if ( !ddT[ParBDK].fix || !ddT[ParNGBeta].fix  || !ddT[ParNGAlpha].fix ) {
+    yap_message("Sampling in batches of %d: ", ddP.kbatch);
+    if (  !ddT[ParBDK].fix )
+      yap_message(" %s,", ddT[ParBDK].name);
+    if (  !ddT[ParNGBeta].fix )
+      yap_message(" %s,", ddT[ParNGBeta].name);
+    if (  !ddT[ParNGAlpha].fix )
+      yap_message(" %s,", ddT[ParNGAlpha].name);
+    yap_message("\n");
+  } 
 }
 
 void pctl_update(int iter) {

@@ -744,7 +744,7 @@ int main(int argc, char* argv[])
 			       &var[0], &vin)<2  )
 	  yap_quit("Need a valid 'S' argument\n");
 	par = findpar(var);
-	if ( par==ParNone )
+	if ( par==ParNone || par==ParNGAlpha || par==ParNGBeta )
 	  yap_quit("Illegal var for -S\n");
 	else if ( par==ParBDK ) {
 	  BDKval = vin;
@@ -895,7 +895,6 @@ int main(int argc, char* argv[])
       ddP.bdk[t]  = BDKval;
   }
   pctl_fix(ITER, loadphi);
-  pctl_samplereport();
 #ifdef EXPERIMENTAL2
   Tmax = ddP.Tinit;
 #else
@@ -1002,6 +1001,7 @@ int main(int argc, char* argv[])
     *   when PY=H_None
     */
    pctl_dims();
+   pctl_samplereport();
    if ( alphafile==NULL && (ddP.PYalpha==H_HDP||ddP.PYalpha==H_PDP) ) {
      if ( restart ) {
        /*

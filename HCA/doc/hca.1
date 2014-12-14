@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sun Dec 14 10:01:51 AEDT 2014
+.\" Manual page created with latex2man on Sun Dec 14 11:29:22 AEDT 2014
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -137,7 +137,7 @@ using adaptive rejection sampling.
 {\-A}{value[,file 
 }] Use a symmetric Dirichlet prior on theta 
 using this value
-for each dimension. The value must be a positive float. With the optional file
+(a float/real) for each dimension. The value must be a positive float. With the optional file
 argument, the file 
 specifies the probability vector to use as the mean vector of the 
 Dirichlet. The file is in text format representing T
@@ -204,6 +204,15 @@ This is not hierarchical because alpha is constant.
 If the file
 optional argument is used 
 then it specifies alpha\&.
+.TP
+{\-A}{ng} 
+Each topic now has its own independent gamma distribution, 
+Gamma(NGalpha,NGbeta),
+and these are normalised to get the topic probabilities. There are 2*T
+parameters now, the vector of alpha parameters for each topic and the 
+vector of beta parameters for each topic. 
+By default these are sampled in batches 
+during standard hyper\-parameter sampling. 
 .RE
 .RS
 .PP
@@ -362,6 +371,15 @@ it takes the value \fBalpha\fP,
 or one of the 
 arguments to the \fB\-S\fP
 option. 
+.TP
+\fB\-g\fP\fIvar,batch\fP
+ The vector hyperparameters bdk,
+NGalpha
+and NGbeta
+are sampled in batches using a heuristic 
+batch size. Set the batch size with 
+\fB\-g\fP\fIbdk,10\fP
+or similar, though note they all share the same batchsize. 
 .TP
 \fB\-G\fP\fIvar,cycles,start\fP
  Sample the variable var
