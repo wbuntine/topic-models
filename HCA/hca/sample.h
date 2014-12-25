@@ -21,6 +21,7 @@ void sample_bdk(double *bdk, int k);
 void sample_NGalpha(double *a, int k);
 void sample_NGbeta(double *b, int k);
 void sample_UN(int d);
+void opt_UN(int did);
 
 extern int verbose;
 double likelihood();

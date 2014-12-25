@@ -30,6 +30,7 @@
 #include "check.h"
 #include "diag.h"
 #include "atomic.h"
+#include "sample.h"
 
 /*
  *   remove topic, so update all statistics;
@@ -365,21 +366,13 @@ double gibbs_lda(/*
 		    wid,t,did,i,ddS.z[i],
 		    (int)ddS.Nwt[wid][t],(int)ddS.Twt[wid][t]);
 #endif
+      if ( ddS.UN ) opt_UN(did);
     }
 
     endword:
     if ( PCTL_BURSTY() && M_multi(i) ) {
       mi++;
     }
-  }
-  if ( ddS.UN ) {
-    double val = 0;
-    for (t=0; t<ddN.T; t++)
-      val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
-	/ (ddS.UN[did]+ddP.NGbeta[t]);
-    ddS.UN[did] = (ddS.NdT[did]-1.0)/val;
-    assert(ddS.UN[did]>0);
-    // sample_UN(did);
   }
   return logdoc;
 }

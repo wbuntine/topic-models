@@ -369,4 +369,12 @@ void sample_UN(int d) {
   myarms(0.00001, ddN.NT,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
 }
 
-
+void opt_UN(int did) {
+    double val = 0;
+    int t;
+    for (t=0; t<ddN.T; t++)
+      val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
+        / (ddS.UN[did]+ddP.NGbeta[t]);
+    ddS.UN[did] = (ddS.NdT[did]-1.0)/val;
+    assert(ddS.UN[did]>0);
+}
