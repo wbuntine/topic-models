@@ -206,7 +206,7 @@ double gibbs_lda(/*
    */
   enum GibbsType fix_doc = fix;
 
-  if ( ddS.NdT[did]<=5 ) {
+  if ( ddD.NdT[did]<ddP.mindocsize ) {
     static int hh = 0;
     if ( hh==0 ) 
       yap_message("Horrible hack, skipping short doc\n");

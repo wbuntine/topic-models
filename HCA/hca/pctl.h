@@ -66,6 +66,10 @@ typedef struct D_pars_s {
   double ad;              // PDP params for doc
   double *bdk;            // version with seperate bd for each topic
   /*
+   *   min. size of allowed doc
+   */
+  int mindocsize;
+  /*
    *  test and report controls
    */
   int prditer, prdburn;     //  burnin and iterations for prediction tests

@@ -691,8 +691,8 @@ static char *readextpar(char *stem, char *ext, char *par, int len) {
   free(file);
   if ( buf[0]!=0 ) 
     return buf;
-  else
-    return NULL;
+  free(buf);
+  return NULL;
 }
 char *readpar(char *stem, char *par, int len) {
   return readextpar(stem,".par",par,len);

@@ -53,6 +53,7 @@ int pctl_training(int D) {
 void pctl_init() {
   enum ParType par;
 
+  ddP.mindocsize = 1;
   ddP.n_excludetopic = 0;
   ddP.excludetopic = NULL;
   ddP.bits_et = NULL;

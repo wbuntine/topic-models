@@ -72,7 +72,7 @@ double lp_test_LRS() {
     int lp;   /*  character position in doc for left-to-right sweep */
     int t;
     int mi = 0;
-    if ( ddD.NdT[d]<=0 ) 
+    if ( ddN.NdT[d]<ddP.docminsize ) 
       continue;
     
     /*
@@ -194,7 +194,11 @@ static void lp_test_ML_one(double *lik, int *totw,
    */
   for(i=StartTestDoc; i<EndTestDoc; i+=procs) {
     double hmean = -1e30;
-    int  thisw =  add_doc(i, fix);
+    int  thisw;
+    if ( ddD.NdT[i]<ddP.mindocsize ) {
+      continue;
+    }
+    thisw =  add_doc(i, fix);
     if ( ddP.hold_all==0 && 
 	 (thisw<=1 || (fix==GibbsHold && thisw>=ddD.NdT[i]-1) ) ) {
 #ifdef TRACE_WT
@@ -206,7 +210,7 @@ static void lp_test_ML_one(double *lik, int *totw,
       yap_message("after remove_doc(d=%d,N=%d,T=%d)\n",
 		  i, (int)ddS.Nwt[TR_W][TR_T],(int)ddS.Twt[TR_W][TR_T]);
 #endif
-    continue;
+      continue;
     }
     if ( ddP.bdk!=NULL ) misi_build(&dD,i,0);
     for (r=0; r<ddP.mltburn; r++) 

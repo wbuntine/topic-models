@@ -186,6 +186,7 @@ static void usage() {
           "                  #    from 'mode-word-assignments.dat' file\n"
 #endif
           "   -s seed        #  random number seed, default is a time value\n"
+	  "   -U mindocsize  #  minimum allowed, default is 1\n"
 	  "   -v             #  up the verbosity by one\n"
 #ifdef EXPERIMENTAL
 	  "   -w size,incr,start  #  use a data window this big, \n"
@@ -417,7 +418,7 @@ int main(int argc, char* argv[])
   pctl_init();
   diag_alloc();
 
-  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:J:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:vVw:W:xX"))>=0 ) {
+  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:J:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:U:vVw:W:xX"))>=0 ) {
     switch ( c ) {
     case 'A':
       if ( !optarg )
@@ -777,6 +778,10 @@ int main(int argc, char* argv[])
 	} else if ( sscanf(optarg,"%d",&ddN.TEST)!=1 )
 	  yap_quit("Need a valid 'T' argument\n");
       }
+      break;
+    case 'U':
+      if ( !optarg || sscanf(optarg,"%d",&ddP.mindocsize)!=1 )
+	yap_quit("Need a valid 'U' argument\n");
       break;
     case 'v':
       verbose++;
