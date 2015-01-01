@@ -788,8 +788,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  yap_message("%s", ddN.tokens[indk[w]]);
 	else
 	  yap_message("%d", indk[w]);
-	if ( verbose>2 )
-	  yap_message("(%6lf)", tscore(indk[w]));
+	if ( verbose>2 ) {
+	  if ( scoretype == ST_count )
+	    yap_message("(%d)", (int)(tscore(indk[w])+0.2));
+	  else
+	    yap_message("(%6lf)", tscore(indk[w]));
+	}
 	if ( fullreport ) {
 	  fprintf(rp, "word %d %d %d", kk, indk[w], w);
 	  if ( ddS.Nwt )
@@ -811,8 +815,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	    yap_message("%s", termstats->tokens[termindk[w]]);
 	  else
 	    yap_message("%d", termstats->Kmin+termindk[w]);
-	  if ( verbose>2 )
-	    yap_message("(%6lf)", termtscore(termindk[w]));
+	  if ( verbose>2 ) {
+	    if ( scoretype == ST_count )
+	      yap_message("(%d)", (int)(termtscore(termindk[w])+0.2));
+	    else
+	      yap_message("(%6lf)", termtscore(termindk[w]));
+	  }
 	  if ( fullreport ) {
 	    fprintf(rp, "term %d %d %d", kk, termindk[w], w);
 	    fprintf(rp, " %d", termstats->Nkt[termindk[w]][kk]);
