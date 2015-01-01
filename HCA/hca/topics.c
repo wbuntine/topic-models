@@ -31,6 +31,7 @@
 #include "probs.h" 
 #include "pmi.h" 
 #include "fvec.h" 
+#include "termstats.h" 
 
 /*************************************************
  *  return sort order for topics by size
@@ -209,6 +210,9 @@ static void topk(int K, int N, uint32_t *ind, double (*foo)(int)) {
  */
 static uint32_t NWK = 0;
 static uint32_t *NwK = NULL;
+static uint32_t termNWK = 0;
+static uint32_t *termNwK = NULL;
+static uint32_t **termNwk = NULL;
 
 static void build_NwK() {
   int w, k;
@@ -239,6 +243,25 @@ static void build_NwK() {
   if ( NWK==0 )
     yap_quit("empty NWK in build_NwK()\n");
 }
+static void build_termNwK(T_stats_t *ptr) {
+  int w, k;
+  termNwK = u32vec(ptr->K);
+  if ( !termNwK )
+    yap_quit("Out of memory in hca_displaytopics()\n");
+  for (w=0; w<ptr->K; w++) {
+    termNwK[w] = 0;
+  }
+  termNWK = 0;
+  for (w=0; w<ptr->K; w++) {
+    for (k=0; k<ddN.T; k++) {
+      termNwK[w] += ptr->Nkt[w][k]; 
+    }
+    termNWK += termNwK[w];
+  }
+  if ( termNWK==0 )
+    yap_quit("empty termNWK in build_termNwK()\n");
+  termNwk = ptr->Nkt;
+}
 
 /***************************************************
  *
@@ -256,11 +279,17 @@ static unsigned getn(int w) {
   else
     return ddS.Nwt[w][tscorek];
 }
+static unsigned termgetn(int w) {
+  return termNwk[w][tscorek];
+}
 
 static double idfscore(int w) {
   if ( tscorek>=0 && ddP.phi ) 
     return ddP.phi[tscorek][w]/NwK[w];
   return (getn(w)+0.2)/(NwK[w]+0.2*ddN.T);
+}
+static double termidfscore(int w) {
+  return (getn(w)+0.2)/(termNwK[w]+0.2*ddN.T);
 }
 
 static double phiscore(int w) {
@@ -293,6 +322,9 @@ static double costscore(int w) {
 
 static double countscore(int w) {
   return getn(w);
+}
+static double termcountscore(int w) {
+  return termgetn(w);
 }
 
 /******************************************************
@@ -354,6 +386,13 @@ static int buildindk(int k, uint32_t *indk) {
   } 
   return cnt;
 }
+static int buildtermindk(int t, uint32_t *indk, T_stats_t *ts) {
+  int w;
+  int cnt=0;
+  for (w=0; w<ts->K; w++) 
+    if ( ts->Nkt[w][t]>0 ) indk[cnt++] = w;
+  return cnt;
+}
 
 uint32_t **classbytopic(char *resstem) {
   int i;
@@ -411,8 +450,10 @@ void hca_displayclass(char *resstem) {
 void hca_displaytopics(char *stem, char *resstem, int topword, 
                        enum ScoreType scoretype, int pmicount, int fullreport) {
   int w,k;
+  uint32_t *termindk = NULL;
   uint32_t *indk = NULL;
   int Nk_tot = 0;
+  double (*termtscore)(int) = NULL;
   double (*tscore)(int) = NULL;
   double sparsityword = 0;
   double sparsitydoc = 0;
@@ -428,6 +469,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
   double *ngalpha = NULL;
+  T_stats_t *termstats;
   
   if ( pmicount>topword )
     pmicount = topword;
@@ -450,10 +492,24 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   }
 
   /*
+   *  returns null if no relevant data file
+   */
+  termstats = tstats_init(ddS.z, ddD.NdTcum, ddN.T, ddN.DT, stem);
+  if ( termstats ) {
+    if ( scoretype == ST_idf ) {
+      termtscore = termidfscore;
+    } else 
+      termtscore = termcountscore;
+  }  
+
+  
+  /*
    *  first collect counts of each word/term,
    *  and build gpvec (mean word probs)
    */
   build_NwK();
+  if ( termstats )
+    build_termNwK(termstats);
   {
     /*
      *  gpvec[] is normalised NwK[]
@@ -476,7 +532,6 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   if ( !top1cnt )
     yap_quit("Cannot allocate top1cnt in hca_displaytopics()\n");
 
-
   if ( pmicount ) {
     tpmi = malloc(sizeof(*tpmi)*(ddN.T+1));
     if ( !tpmi )
@@ -485,7 +540,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   indk = malloc(sizeof(*indk)*ddN.W);
   if ( !indk )
     yap_quit("Cannot allocate indk in hca_displaytopics()\n");
-
+  if ( termstats ) {
+    termindk = malloc(sizeof(*indk)*termstats->K);
+    if ( !termindk )
+      yap_quit("Cannot allocate termindk in hca_displaytopics()\n");
+  }
+  
   /*
    *   two passes through, 
    *           first to build the top words and dump to file
@@ -497,7 +557,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     yap_sysquit("Cannot open file '%s' for write\n", topfile);
   yap_message("\n");
   for (k=0; k<ddN.T; k++) {
-    int cnt;
+    int cnt, termcnt;
     tscorek = k;
     /*
      *    build sorted word list
@@ -506,12 +566,21 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     topk(topword, cnt, indk, tscore);
     if ( cnt==0 )
       continue;
+    if ( termstats ) {
+      termcnt = buildtermindk(k, termindk, termstats);
+      topk(topword, termcnt, termindk, termtscore);
+    }
     /*
      *   dump words to file
      */
     fprintf(fp,"%d: ", k);
     for (w=0; w<topword && w<cnt; w++) {
       fprintf(fp," %d", (int)indk[w]);
+    }
+    if ( termstats ) {
+      for (w=0; w<topword && w<termcnt; w++) {
+	fprintf(fp," %d", (int)termstats->Kmin+termindk[w]);
+      }
     }
     fprintf(fp, "\n");
   }
@@ -574,7 +643,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     
   }
   for (k=0; k<ddN.T; k++) {
-    int cnt;
+    int cnt, termcnt;
     int kk = psort[k];
     uint32_t **dfmtx;
 
@@ -601,6 +670,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     if ( topword<cnt )
       cnt = topword;
     assert(cnt>0);
+    if ( termstats ) {
+      termcnt = buildtermindk(kk, termindk, termstats);
+      topk(topword, termcnt, termindk, termtscore);
+      if ( topword<termcnt )
+	termcnt = topword;
+    }
     /*
      *     df stats for topic returned as matrix
      */
@@ -726,6 +801,24 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  if ( ddN.tokens ) 
 	    fprintf(rp, " %s", ddN.tokens[indk[w]]);
 	  fprintf(rp, "\n");
+	}
+      }
+      if ( termstats ) {
+	yap_message(" terms=");
+	for (w=0; w<termcnt; w++) {
+	  if ( w>0 ) yap_message(",");
+	  if ( ddN.tokens ) 
+	    yap_message("%s", termstats->tokens[termindk[w]]);
+	  else
+	    yap_message("%d", termstats->Kmin+termindk[w]);
+	  if ( verbose>2 )
+	    yap_message("(%6lf)", termtscore(termindk[w]));
+	  if ( fullreport ) {
+	    fprintf(rp, "term %d %d %d", kk, termindk[w], w);
+	    fprintf(rp, " %d", termstats->Nkt[termindk[w]][kk]);
+	    fprintf(rp, " %s", termstats->tokens[termindk[w]]);
+	    fprintf(rp, "\n");
+	  }
 	}
       }
     }
@@ -875,4 +968,5 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   free(pvec); 
   free(gtvec);
   free(gpvec);
+  tstats_free(termstats);
 }

@@ -44,7 +44,7 @@ double coherency_check(char *cofile,   /* name of COOC file */
   uint16_t *Nwt_id=u16vec(W);
   uint32_t x;
   uint16_t id;
-  char **ctmp = read_vocab(vocfile,W,50);
+  char **ctmp = read_vocab(vocfile,0,W,50);
 
   FILE *fr;
   fr = fopen(cofile,"w");

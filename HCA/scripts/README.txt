@@ -44,6 +44,10 @@ a train-test split and create the matching ".epoch" file.
 Works with ldac or txtbag data only.
    berand.pl
 
+Routine used to strip first K words from a vocab.  Modifies following files:
+  .words, .tokens, .txtbag, .colls
+Note only works with sequential version of .txtbag.
+Be warned ...
 
 Others
 --------

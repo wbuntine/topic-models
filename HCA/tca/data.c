@@ -28,10 +28,6 @@
 #include "stats.h"
 #include "probs.h"
 
-char **read_vocab(char *infile, int W, int len);
-void free_vocab(char **ctmp);
-
-
 /*
  *  allocation of various data statistics, matrices, vectors
  */
@@ -60,7 +56,7 @@ void data_alloc() {
 
 void data_vocab(char *stem) {
     char *wname = yap_makename(stem, ".tokens");
-    ddN.tokens = read_vocab(wname,ddN.W,50);
+    ddN.tokens = read_vocab(wname,0,ddN.W,50);
     free(wname);
 }
 

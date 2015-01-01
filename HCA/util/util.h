@@ -75,7 +75,15 @@ char *readsrcpar(char *stem, char *par, int len);
 
 void vec_atod(double *vec, int N, char *vals);
 
-char **read_vocab(char *infile, int W, int len);
+/*
+ *    len is just a hint, it will resize if more needed;
+ *    read tokens in range W0:WE-1
+ *    place in vector offset by W0
+ *    allocate all string memory
+ */
+char **read_vocab(char *infile, int W0, int WE, int len);
+void free_vocab(char **ctmp);
+
 
 #define MAX(a,b) ((a) > (b) ? (a) : (b))
 #define MIN(a,b) ((a) < (b) ? (a) : (b))

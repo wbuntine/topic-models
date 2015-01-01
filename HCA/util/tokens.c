@@ -27,22 +27,24 @@
 
 /*
  *    len is just a hint, it will resize if more needed;
- *    to free result:
- *          free(ctmp[0]); free(ctmp);
+ *    read tokens in range W0:WE-1
+ *    place in vector offset by W0
+ *    allocate all string memory
  */
-char **read_vocab(char *infile, int W, int len) {
+#define MAXSTRING 1000
+char **read_vocab(char *infile, int W0, int WE, int len) {
   /*
    *   set up token names in vector
    */
+  int W = WE-W0;
   char *vocfile = malloc(strlen(infile)+10);
   int i;
-  char *cmem = (char *)malloc(len*W);
+  char *cmem = (char *)malloc(len*W+MAXSTRING);
   int memused = 0;
   int memallocd = len*W;
   int *cvec = (int *)malloc(W*sizeof(int));
   char **ctmp = (char **)malloc(W*sizeof(char *));
   FILE *fr;
-  char wordbuf[1000];
   if ( !ctmp || !cmem ) 
     yap_quit("Cannot allocate name space in read_vocab()\n");
   /*
@@ -61,9 +63,14 @@ char **read_vocab(char *infile, int W, int len) {
    *  read terms
    */  
   cvec[0] = 0;
+  for (i=0;i<W0;i++) {
+    int sl;
+    if ( fgets(&cmem[cvec[0]],MAXSTRING-1,fr)==NULL )
+      yap_sysquit("Cannot read line %d/%d from '%s'\n", i+1, W, vocfile);
+  }
   for (i=0;i<W;i++) {
     int sl;
-    if ( fgets(&cmem[cvec[i]],sizeof(wordbuf)-1,fr)==NULL )
+    if ( fgets(&cmem[cvec[i]],MAXSTRING-1,fr)==NULL )
       yap_sysquit("Cannot read line %d/%d from '%s'\n", i+1, W, vocfile);
     sl = strlen(&cmem[cvec[i]]);
     if ( ! iscntrl(cmem[cvec[i]+sl-1]) ) {
@@ -82,11 +89,11 @@ char **read_vocab(char *infile, int W, int len) {
     memused += sl+1;
     if ( i<W-1 ) {
       cvec[i+1] = cvec[i]+sl+1;
-      if ( memused+sizeof(wordbuf)>=memallocd ) {
+      if ( memused+MAXSTRING>=memallocd ) {
 	int reall=(W-i)*len;
 	assert(memused<memallocd);
-	if ( memused+sizeof(wordbuf)>=reall+memallocd )
-	  reall = sizeof(wordbuf);
+	if ( memused+MAXSTRING>=reall+memallocd )
+	  reall = MAXSTRING;
 	memallocd += reall;
 	cmem = realloc(cmem, memallocd);
 	if ( !cmem )     

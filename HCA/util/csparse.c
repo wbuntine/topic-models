@@ -39,7 +39,7 @@ void read_c_sparse(char *cfile, double threshold, int maxdim,
   double *sum_vec=dvec(W);
   uint16_t *nnz_vec=u16vec(W);
 #ifdef DEBUG_READC
-  char **ctmp = (char **)read_vocab(cfile,W,50);
+  char **ctmp = (char **)read_vocab(cfile,0,W,50);
   FILE *vr;
   char *vrname = yap_makename(cfile,".out");
   vr = fopen(vrname,"w");
