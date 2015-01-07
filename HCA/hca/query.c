@@ -277,6 +277,9 @@ static void query_docprob(int did, int *mimap, float *p, D_MiSi_t *dD,
   free(tp);
 }
 
+/*
+ *  build query map for document d
+ */
 static void map_query(int d, int *map, int *found) {
   int mi;
   int j, l;

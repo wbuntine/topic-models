@@ -692,7 +692,7 @@ void pctl_fix(int ITER, int loadphi) {
   }
 
   if ( ddP.query!=NULL && ddP.queryiter==0 )
-    ddP.queryiter = 10;
+    ddP.queryiter = 20;
 
   if ( ddP.lrsiter>0 ) {
     if ( ddP.lrsburn>=ddP.lrsiter )

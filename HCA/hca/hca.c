@@ -57,7 +57,7 @@ void hca_displayclass(char *resstem);
 rngp_t rngp = NULL;
 int verbose = 0;
 
-// #define QUERY
+#define QUERY
 
 /*
  *    Dimensions

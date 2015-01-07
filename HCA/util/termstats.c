@@ -16,6 +16,7 @@
 #include <stdint.h>
 #include <assert.h>
 
+#include "gibbs.h"
 #include "util.h"
 #include "yap.h"
 #include "termstats.h"
@@ -92,9 +93,9 @@ static void readstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum, uint16_
       k -= ptr->Kmin;
       assert(k>=0 && k<ptr->K);
       pp = p+NdTcum[d];
-      t = z[pp];
+      t = Z_t(z[pp]);
       for (l=1; l<len; l++) {
-	if ( z[pp+l]!=t ) {
+	if ( Z_t(z[pp+l])!=t ) {
 	  t = -1;
 	  break;
 	}
