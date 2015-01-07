@@ -289,7 +289,7 @@ static double idfscore(int w) {
   return (getn(w)+0.2)/(NwK[w]+0.2*ddN.T);
 }
 static double termidfscore(int w) {
-  return (getn(w)+0.2)/(termNwK[w]+0.2*ddN.T);
+  return (termgetn(w)+0.2)/(termNwK[w]+0.2*ddN.T);
 }
 
 static double phiscore(int w) {

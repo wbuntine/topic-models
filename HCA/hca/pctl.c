@@ -783,11 +783,11 @@ void pctl_report() {
     int t;
     yap_message("NGalpha =");
     for (t=0; t<ddN.T; t++) 
-      yap_message(" %5lf", ddP.NGalpha[t]);
+      yap_message(" %6lf", ddP.NGalpha[t]);
     yap_message("\n");
     yap_message("NGbeta =");
     for (t=0; t<ddN.T; t++) 
-      yap_message(" %5lg", ddP.NGbeta[t]);
+      yap_message(" %6lg", ddP.NGbeta[t]);
     yap_message("\n");
   }
   if ( ddP.bdk!=NULL )
@@ -1041,14 +1041,14 @@ void pctl_print(FILE *fp) {
 	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
     fprintf(fp, "NGalpha =");
     for (t=0; t<ddN.T; t++) 
-      fprintf(fp, " %5lf", ddT[ParNGAlpha].ptr[t]);
+      fprintf(fp, " %6lf", ddT[ParNGAlpha].ptr[t]);
     fprintf(fp, "\n");
     if ( !ddT[ParNGBeta].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
 	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
     fprintf(fp, "NGbeta =");
     for (t=0; t<ddN.T; t++) 
-      fprintf(fp, " %5lg", ddT[ParNGBeta].ptr[t]);
+      fprintf(fp, " %6lg", ddT[ParNGBeta].ptr[t]);
     fprintf(fp, "\n");
   } else {
     fprintf(fp, "#  %s is the total over topics\n",ddT[ParAlpha].name);

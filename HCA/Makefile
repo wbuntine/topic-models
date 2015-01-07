@@ -6,7 +6,7 @@
 ###########################################
 #     installed location of where to find libstb
 #       i.e.,   libstb.a is in $(STB)/lib/
-STB_HOME := /home/wbuntine/
+STB_HOME := /cs/fs/home/buntine
 export STB_HOME
 
 #######################################

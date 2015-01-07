@@ -197,8 +197,10 @@ static double ngbterms(double bk, void *mydata) {
   int k = *((int *)mydata);
   double val = -1;
   for (j=0; j<ddN.DT; j++) {
-    val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
-    val += ddP.NGalpha[k]*log(bk);
+    if ( ddS.UN[j]>0 ) {
+      val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
+      val += ddP.NGalpha[k]*log(bk);
+    }
   }
   myarms_evals++;
 #ifdef B_DEBUG
@@ -307,6 +309,10 @@ void sample_NGalpha(double *a, int k) {
   sprintf(&label[0],"NGalpha[%d]", k);
   assert(a);
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngaterms, &k, &a[k], label, 1);
+  if ( a[k]<PYP_CONC_MIN )
+    a[k] = PYP_CONC_MIN;
+  if ( a[k]>PYP_CONC_MAX )
+    a[k] = PYP_CONC_MAX;
 }
 
 void sample_NGbeta(double *b, int k) {
@@ -314,6 +320,10 @@ void sample_NGbeta(double *b, int k) {
   sprintf(&label[0],"NGbeta[%d]", k);
   assert(b);
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &ngbterms, &k, &b[k], label, 1);
+  if ( b[k]<PYP_CONC_MIN )
+    b[k] = PYP_CONC_MIN;
+  if ( b[k]>PYP_CONC_MAX )
+    b[k] = PYP_CONC_MAX;
   if ( b[k]<ddP.NGbetamin ) 
     ddP.NGbetamin = b[k]; 
   if ( b[k]>ddP.NGbetamax ) 

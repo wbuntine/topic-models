@@ -211,6 +211,8 @@ double gibbs_lda(/*
     if ( hh==0 ) 
       yap_message("Horrible hack, skipping short doc\n");
     hh++;
+    if ( ddS.UN ) 
+      ddS.UN[did] = 0;
     return 0;
   }
 

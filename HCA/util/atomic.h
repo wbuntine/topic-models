@@ -41,9 +41,9 @@
 #define atomic_add(inttype,val) (inttype += val)
 #define atomic_sub(inttype,val) (inttype -= val)
 #else
-#if (__GNUC__==4 && __GNUC_MINOR__>=8 )
+#if (__GNUC__==4 && __GNUC_MINOR__>=7 )
 /* 
- *    Test for GCC == 4.8.? 4.9.?
+ *    Test for GCC == 4.[789].? 
  */
 #define atomic_decr_val(inttype,val)  __atomic_compare_exchange_n(&(inttype),&val,(val-1),0,__ATOMIC_RELAXED,__ATOMIC_RELAXED)
 #define atomic_incr_val(inttype,val)  __atomic_compare_exchange_n(&(inttype),&val,(val+1),0,__ATOMIC_RELAXED,__ATOMIC_RELAXED)
@@ -52,7 +52,7 @@
 #define atomic_add(inttype,val) __atomic_add_fetch(&(inttype),val, __ATOMIC_RELAXED)
 #define atomic_sub(inttype,val) __atomic_sub_fetch(&(inttype),val, __ATOMIC_RELAXED)
 #else
-#if (__GNUC__==4 && (( __GNUC_MINOR__==1 &&__GNUC_PATCHLEVEL__==2) || __GNUC_MINOR__==4)  )
+#if (__GNUC__==4 && (( __GNUC_MINOR__==1 &&__GNUC_PATCHLEVEL__==2) || ( __GNUC_MINOR__>=4 && __GNUC_MINOR__<=6 ) )  )
 /* 
  *    Test for GCC == 4.1.2 or  GCC == 4.4.?
  */
