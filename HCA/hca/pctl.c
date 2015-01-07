@@ -787,7 +787,7 @@ void pctl_report() {
     yap_message("\n");
     yap_message("NGbeta =");
     for (t=0; t<ddN.T; t++) 
-      yap_message(" %5lf", ddP.NGbeta[t]);
+      yap_message(" %5lg", ddP.NGbeta[t]);
     yap_message("\n");
   }
   if ( ddP.bdk!=NULL )
@@ -1048,7 +1048,7 @@ void pctl_print(FILE *fp) {
 	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
     fprintf(fp, "NGbeta =");
     for (t=0; t<ddN.T; t++) 
-      fprintf(fp, " %5lf", ddT[ParNGBeta].ptr[t]);
+      fprintf(fp, " %5lg", ddT[ParNGBeta].ptr[t]);
     fprintf(fp, "\n");
   } else {
     fprintf(fp, "#  %s is the total over topics\n",ddT[ParAlpha].name);
