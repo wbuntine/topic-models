@@ -120,7 +120,7 @@ static int bubble(int K, int *topind, float *score, float newscore) {
   int newind;
   if ( K>1 ) {
     int scale;
-#if 1
+#if 0
     k = K-1;
     if ( !finite(score[topind[k]]) )
       k--;
@@ -182,7 +182,7 @@ static int bubble(int K, int *topind, float *score, float newscore) {
     k = 0;
   }
   topind[k] = newind;
-#if 1
+#if 0
   score[newind] = newscore;
     yap_message("bubble-out:");
   for (k=K-1; k>0; k--) {
@@ -439,7 +439,7 @@ static void QT_init(QT_t *buf, int topQ) {
   int i;
   buf->wordunused = malloc(sizeof(buf->wordunused[0])*ddP.n_words);
   buf->cnt = malloc(sizeof(buf->cnt[0])*topQ*ddP.n_words);
-  buf->wordscore = malloc(sizeof(buf->wordscore[0])*ddP.n_words);
+  buf->wordscore = malloc(sizeof(buf->wordscore[0])*topQ*ddP.n_words);
   buf->score = malloc(sizeof(buf->score[0])*topQ*ddP.n_query);
   buf->saved = malloc(sizeof(buf->saved[0])*ddP.n_query);
   buf->ind = malloc(sizeof(buf->ind[0])*topQ*ddP.n_query);
@@ -474,7 +474,7 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
   int j;
   /*
    *   enter into the arrays
-   */
+   */D
   for (j=0; j<ddP.n_query; j++) {
     if ( top->saved[j]<topQ || 
 	 doc->logprob[j] < top->score[j*topQ+top->ind[j*topQ+topQ-1]] ) {
@@ -486,6 +486,7 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
 		      &top->ind[j*topQ], &top->score[j*topQ], doc->logprob[j]);
       /*
        *   save the current details
+       *     (all specific to query j)
        */
       top->score[j*topQ+newind] = doc->logprob[j];
       top->k[j*topQ+newind] = i;
