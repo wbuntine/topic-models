@@ -1010,7 +1010,8 @@ int main(int argc, char* argv[])
    if ( loadtheta ) {
      ddP.theta = fmat(ddN.D,ddN.T);
      prob_load(resstem,".theta",ddP.theta);
-     prob_load(resstem,".testprob",&ddP.theta[ddN.DT]);
+     if ( ddN.TEST>0 )
+       prob_load(resstem,".testprob",&ddP.theta[ddN.DT]);
    }
    data_alloc();
    if ( ddP.phiiter>0 )
@@ -1188,11 +1189,10 @@ int main(int argc, char* argv[])
       thisNd +=  parg[pro].thisNd;
       tot_time += parg[pro].tot_time;
     }
-#if 0 || defined(NONATOMIC)
+#if defined(H_THREADS)
     if ( procs>1 )
       hca_correct_twt();
 #endif
-
 
     if ( ddG.docode ) {
       ddG.didcode++;

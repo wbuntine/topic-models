@@ -29,8 +29,6 @@
 #include "stats.h"
 #include "cache.h"
 
-#define yap_infinite(dbl)  yap_message("Var '%s'=%lf at %s:%d\n",__STRING(dbl),dbl,__FILE__, __LINE__);
-
 /*
  *     this is the central likelihood function;
  *
