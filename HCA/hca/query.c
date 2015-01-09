@@ -474,7 +474,7 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
   int j;
   /*
    *   enter into the arrays
-   */D
+   */
   for (j=0; j<ddP.n_query; j++) {
     if ( top->saved[j]<topQ || 
 	 doc->logprob[j] < top->score[j*topQ+top->ind[j*topQ+topQ-1]] ) {

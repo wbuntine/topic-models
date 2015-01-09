@@ -31,5 +31,6 @@ typedef struct D_pargs_s {
   int processid;
   int procs;  
   double tot_time;
+  int *doc;
 } D_pargs_p;
 #endif

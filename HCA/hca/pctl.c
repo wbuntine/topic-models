@@ -859,8 +859,9 @@ static void *pctl_sample_thread(void *pin) {
           yap_message("sample_%s", ddT[par].name);
         else
           yap_message("sample_%s[%d]", ddT[par].name, k);
-        yap_message(" (pre): %s=%lf, lp=%lf\n",
-                    ddT[par].name, ddT[par].ptr[k<0?0:k], startlike);
+        yap_message(" (pre): %s=%lf, ",
+                    ddT[par].name, ddT[par].ptr[k<0?0:k]);
+        yap_message("lp=%lf\n", startlike);
       }
       if ( k<0 )
         (*ddT[par].sampler)(ddT[par].ptr);
@@ -872,7 +873,7 @@ static void *pctl_sample_thread(void *pin) {
           yap_message("sample_%s", ddT[par].name);
         else
           yap_message("sample_%s[%d]", ddT[par].name, k);
-        yap_message(" (pre): %s=%lf, lp=%lf\n",
+        yap_message(" (post): %s=%lf, lp=%lf\n",
                     ddT[par].name, ddT[par].ptr[k<0?0:k], endlike);
         if ( pd->iter>50 && (endlike-startlike)/ddN.NT>1 ) {
           yap_quit("Sampler failed iter=%d due to huge decrease of %lf!\n",

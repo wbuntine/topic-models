@@ -29,6 +29,8 @@
 #include "stats.h"
 #include "cache.h"
 
+#define yap_infinite(dbl)  yap_message("Var '%s'=%lf at %s:%d\n",__STRING(dbl),dbl,__FILE__, __LINE__);
+
 /*
  *     this is the central likelihood function;
  *
@@ -70,7 +72,7 @@ double likelihood_NGalpha() {
     }
     likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
   }
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
     likelihood += pctl_gammaprior(ddP.NGalpha[t]);
@@ -101,7 +103,7 @@ double likelihood_DIRalpha() {
     likelihood -= gammadiff((int)ddS.NdT[i], ddP.alphatot, 0.0);
 #endif
   }
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -121,14 +123,13 @@ double likelihood_PYalpha() {
 	}
       }
     }
-    yap_infinite(likelihood);
     if ( ddP.apar==0 ) {
       likelihood += Td_*lb;
     } else {
       likelihood += Td_*la + gcache_value(&ddC.lgba, (int)Td_);
     }
     likelihood -= gcache_value(&ddC.lgb, (int)ddS.NdT[i]);
-    yap_infinite(likelihood);
+    //yap_infinite(likelihood);
   }  
   return likelihood;
 }
@@ -146,7 +147,7 @@ double likelihood_PYalpha_HDP() {
     }
   }      
   likelihood -= lgamma(ddP.b0+ddS.TDT) - lgamma(ddP.b0);
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -162,7 +163,7 @@ double likelihood_PYalpha_PDP() {
       likelihood += ddS.TDt[t]*log(ddP.alphapr[t]);
     }
   }      
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -183,7 +184,7 @@ double likelihood_PYalpha_HPDD() {
   else
     likelihood += ddS.TDTnz*log(ddP.a0) + lgamma(ddP.b0/ddP.a0+ddS.TDTnz)
       - lgamma(ddP.b0/ddP.a0);
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) { 
     /*  note the root node is a PDD so all t's = 1 */
     if ( ddS.TDt[t]>1 ) {
@@ -196,7 +197,7 @@ double likelihood_PYalpha_HPDD() {
     }
   }
   likelihood -= lgamma(ddP.b0+ddS.TDT) - lgamma(ddP.b0);
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -223,7 +224,7 @@ double likelihood_DIRbeta() {
 #endif
   }
   likelihood += val;
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -248,13 +249,15 @@ double likelihood_PYbeta() {
       if ( nn>0 ) {
         Tw_ += tt;
 	likelihood += S_S(ddC.SY,nn,tt);
-#if 0
-	if ( !finite(likelihood) ) 
-	  yap_quit("Inf:  Nwt[%d][%d]=%d  Twt[i][t]=%d S.M=%d S.N=%d\n",
+#if 1
+	if ( !finite(likelihood) || isinf(likelihood) || isnan(likelihood)  ) 
+	  yap_quit("Like=%lf:  Nwt[%d][%d]=%d  Twt[i][t]=%d S.M=%d S.N=%d\n",
+		   likelihood,
 		   i, t, (int)ddS.Nwt[i][t],(int)ddS.Twt[i][t],ddC.SY->usedM, ddC.SY->usedN);
 #endif
       }
     }
+    yap_infinite(likelihood);   
     if ( ddP.awpar==0 ) {
       likelihood += Tw_*lbw;
     } else {
@@ -269,6 +272,7 @@ double likelihood_PYbeta() {
 #else
     likelihood -= gammadiff((int)ddS.NWt[t], ddP.bwpar, 0.0);
 #endif
+    yap_infinite(likelihood);   
   }  
   yap_infinite(likelihood);   
   return likelihood;
@@ -285,7 +289,7 @@ double likelihood_PYbeta_PDP() {
       likelihood += ddS.TwT[j]*log(ddP.betapr[j]);
     }
   }      
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -305,7 +309,7 @@ double likelihood_PYbeta_HDP() {
   }      
   likelihood += pctl_gammaprior(ddP.bw0);
   likelihood -= lgamma(ddP.bw0+ddS.TWT) - lgamma(ddP.bw0);
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -323,7 +327,7 @@ double likelihood_PYbeta_HPDD() {
   else
     likelihood += ddS.TWTnz*log(ddP.aw0) + lgamma(ddP.bw0/ddP.aw0+ddS.TWTnz)
       - lgamma(ddP.bw0/ddP.aw0);
-  yap_infinite(likelihood);      
+  //yap_infinite(likelihood);      
   for (j=0; j<ddN.W; j++) { 
     /*  note the root node is a PDD so all t's = 1 */
     if ( ddS.TwT[j]>1 ) {
@@ -337,7 +341,7 @@ double likelihood_PYbeta_HPDD() {
   }
   likelihood += pctl_gammaprior(ddP.bw0);
   likelihood -= lgamma(ddP.bw0+ddS.TWT) - lgamma(ddP.bw0);
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
@@ -369,6 +373,7 @@ double likelihood() {
   } else 
     likelihood += likelihood_DIRalpha();
   
+  //yap_infinite(likelihood);
   /*
    *  word X topic part
    */
@@ -396,7 +401,7 @@ double likelihood() {
   } else 
     likelihood += likelihood_DIRbeta();
  
-  yap_infinite(likelihood);
+  //yap_infinite(likelihood);
   return likelihood;
 }
 
