@@ -272,8 +272,6 @@ double gibbs_lda(/*
 	  if ( ddG.doprob ) {
 	    /*    this is indexed by document so is thread safe */
 	    double bdterm = 1;
-	    if ( 0 && PCTL_BURSTY() )
-	      bdterm = (ddP.bdk[t]+ddP.ad*dD->Si[t])/(ddP.bdk[t]+dD->Mi[t]);
 	    if ( did<ddN.DT )
 	      ddG.prob[did][t] += bdterm;
 	    else

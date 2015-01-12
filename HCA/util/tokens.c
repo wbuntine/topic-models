@@ -64,7 +64,6 @@ char **read_vocab(char *infile, int W0, int WE, int len) {
    */  
   cvec[0] = 0;
   for (i=0;i<W0;i++) {
-    int sl;
     if ( fgets(&cmem[cvec[0]],MAXSTRING-1,fr)==NULL )
       yap_sysquit("Cannot read line %d/%d from '%s'\n", i+1, W, vocfile);
   }

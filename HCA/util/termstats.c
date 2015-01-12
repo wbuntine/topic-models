@@ -25,8 +25,13 @@
 void tstats_free(T_stats_t *ptr) {
   if ( !ptr )
     return;
-  free(ptr->Nkt[0]);
-  free(ptr->Nkt);
+  if ( ptr->Nkt ) {
+    free(ptr->Nkt[0]);
+    free(ptr->Nkt);
+  }
+  if ( ptr->Nt ) {
+    free(ptr->Nt);
+  }
   free(ptr->tokens[0]);
   free(ptr->tokens);
   free(ptr);

@@ -18,6 +18,9 @@
 #include <string.h>
 #include <math.h>
 #include <assert.h>
+#ifdef H_THREADS
+#include <pthread.h>
+#endif
 
 #include "yap.h"
 #include "util.h"
@@ -25,6 +28,7 @@
 #include "data.h"
 #include "pctl.h"
 #include "probs.h"
+#include "termstats.h"
 #ifdef H_THREADS
 #include <pthread.h>
 #endif
@@ -605,66 +609,109 @@ static void QT_write(char *qname, int topQ, QT_t *top) {
   free(ws);
 }
 
-#if 0
+#if 1
 /*
- *  write term report
+ *  write term report;
+ *  rather inefficient use of memory
  */
-static void QT_terms(char *qname, int topQ, QT_t *top) {
+static void QT_terms(char *stem, char *qname, int topQ, QT_t *top) {
   FILE *fp = fopen(qname,"w");
   int i, q;
-  double *score, totscore = 0, minscore;
-  score = malloc(sizeof(score[0])*DT);
-  if ( !score )
-    yap_quit("Out of memory in twstats_init()\n");
+  double *dprob, totscore = 0, minscore, entropy;
+  double *wprob, *tprob;
   if ( !fp )
     yap_sysquit("Cannot write query term data to '%s'\n", qname);
+
+  wprob = malloc(sizeof(wprob[0])*ddN.W);
+  dprob = malloc(sizeof(dprob[0])*ddN.DT);
+  tprob = malloc(sizeof(tprob[0])*ddN.T);
+  if ( !dprob || !wprob || !tprob )
+    yap_quit("Out of memory in QT_terms()\n");
+
   for (q=0; q<ddP.n_query; q++) {
-    int *docs;
-    
+    int *docs = &top->k[q*topQ];
+    float *score = &top->score[q*topQ];
+    T_stats_t *tstats;
     /*
-     *  build set of doc probabilities in score
+     *  build set of doc probabilities in dprob
      */
-    for (i=0; i<DT; i++) 
-      score[i] = 0;
+    for (i=0; i<ddN.DT; i++) 
+      dprob[i] = 0;
     minscore = score[0];
-    for (i=0; i<top->saved[q]; i++) 
-      if ( minscore>score[i] )
+    for (i=0; i<topQ; i++) 
+      if ( docs[i]>=0 && minscore>score[i] )
 	minscore = score[i];
-    for (i=0; i<top->saved[q]; i++) {
-      assert(docs[i]<DT);
-      totscore += score[docs[i]] = exp(-(score[i]-minscore));
+    for (i=0; i<topQ; i++) {
+      if ( docs[i]<0 )
+	continue;
+      assert(docs[i]<ddN.DT);
+      totscore += dprob[docs[i]] = exp(-(score[i]-minscore));
     }
     if ( totscore==0 )
       yap_quit("No results for documents\n");
-    for (i=0; i<top->saved[q]; i++) {
-      score[docs[i]] /= totscore;
+    entropy = 0;
+    for (i=0; i<topQ; i++) {
+      double p = dprob[docs[i]] /= totscore;
+      entropy += p*log(1.0/p);
     }
-    
-????
-    int nw = ddP.qposn[q+1]-ddP.qposn[q];
-    for (i=0; i< && top->k[top->ind[q*topQ+i]]>=0; i++) {
-      int l, ind = top->ind[q*topQ+i];
-      double tfidf;
-      tfidf = bm25(top->k[q*topQ+ind],
-		   &top->found[ind*ddP.n_words+ddP.qposn[q]],
-		   &ddP.qword[ddP.qposn[q]], nw, ws);
-      assert(ind>=0 && ind<topQ);
-      fprintf(fp, "%d %d ", q, top->k[q*topQ+ind]);
-      fprintf(fp, "%.4f %.4lf ", top->score[q*topQ+ind]/nw, tfidf);
-      if ( verbose>1 ) {
-	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
-	  fprintf(fp, "%d ", top->found[ind*ddP.n_words+l]);
-	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
-	  fprintf(fp, "%f ", top->cnt[ind*ddP.n_words+l]);
-	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
-	  fprintf(fp, "%f ", top->wordscore[ind*ddP.n_words+l]);
-	for (l=0; l<nw; l++)
-	  fprintf(fp, "%lf ", ws[l]);
+    yap_message("Entropy for query %d = %lf\n", q+1, entropy);
+    /*
+     *  build word probs
+     */
+    for (i=0; i<ddN.W; i++) 
+      wprob[i] = 0;
+    for (i=0; i<ddN.DT; i++) {
+      int l;
+      if ( dprob[i]==0 )
+	continue;
+      for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) {
+	wprob[ddD.w[l]] += dprob[i];
       }
-      fprintf(fp, "\n");
     }
+    for (i=0; i<ddN.W; i++) 
+      if ( wprob[i]>0 ) {
+	double wp = wprob[i]/top->saved[q];
+	fprintf(fp, "W %d %d %lf", q, i, wp);
+	if ( ddN.tokens )
+	  fprintf(fp, " %s", ddN.tokens[i]);
+	fprintf(fp, "\n");
+      }
+    /*
+     *  build term probs
+     */
+    tstats = twstats_init(dprob, ddD.NdTcum, ddN.T, ddN.DT, stem);
+    for (i=0; i<tstats->K; i++) 
+      if ( tstats->Nt[i]>0 ) {
+	double wp = tstats->Nt[i]/top->saved[q];
+	fprintf(fp, "K %d %d %lf", q, i, wp);
+	fprintf(fp, " %s", tstats->tokens[i]);
+	fprintf(fp, "\n");
+      }
+    tstats_free(tstats);
+    /*
+     *  build topic probs
+     */
+    for (i=0; i<ddN.T; i++) 
+      tprob[i] = 0;
+    for (i=0; i<ddN.DT; i++) {
+      int Nt = ddD.NdT[i];
+      int l;
+      if ( dprob[i]==0 )
+	continue;
+      for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) {
+	tprob[Z_t(ddS.z[l])] += dprob[i]/Nt;
+      }
+    }
+    for (i=0; i<ddN.T; i++) 
+      if ( tprob[i]>0 ) {
+	double wp = tprob[i]/top->saved[q];
+	fprintf(fp, "T %d %d %lf\n", q, i, wp);
+      }
   }
   fclose(fp);
+  free(wprob);
+  free(dprob);
+  free(tprob);
 }
 #endif 
 
@@ -784,8 +831,8 @@ void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs) {
   n_df = data_df(stem, df);
   
   QT_write(qdname, topQ, &Qtop);
-#if 0
-  QT_terms(qtname, topQ, &Qtop);
+#if 1
+  QT_terms(stem, qtname, topQ, &Qtop);
 #endif
 
   /*

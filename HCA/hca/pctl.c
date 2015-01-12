@@ -903,7 +903,7 @@ void pctl_sample(int iter, int procs) {
   //   why 100000?
   for (index=0; index<100000; index++) {
     int k;
-    enum ParType par;
+    enum ParType par = ParNone;
     int try = pctl_par_iter(index, iter, &par, &k);
     if ( procs>1 && par==ParAD )
       sample_ad = 1;
