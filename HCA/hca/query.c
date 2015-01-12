@@ -605,6 +605,69 @@ static void QT_write(char *qname, int topQ, QT_t *top) {
   free(ws);
 }
 
+#if 0
+/*
+ *  write term report
+ */
+static void QT_terms(char *qname, int topQ, QT_t *top) {
+  FILE *fp = fopen(qname,"w");
+  int i, q;
+  double *score, totscore = 0, minscore;
+  score = malloc(sizeof(score[0])*DT);
+  if ( !score )
+    yap_quit("Out of memory in twstats_init()\n");
+  if ( !fp )
+    yap_sysquit("Cannot write query term data to '%s'\n", qname);
+  for (q=0; q<ddP.n_query; q++) {
+    int *docs;
+    
+    /*
+     *  build set of doc probabilities in score
+     */
+    for (i=0; i<DT; i++) 
+      score[i] = 0;
+    minscore = score[0];
+    for (i=0; i<top->saved[q]; i++) 
+      if ( minscore>score[i] )
+	minscore = score[i];
+    for (i=0; i<top->saved[q]; i++) {
+      assert(docs[i]<DT);
+      totscore += score[docs[i]] = exp(-(score[i]-minscore));
+    }
+    if ( totscore==0 )
+      yap_quit("No results for documents\n");
+    for (i=0; i<top->saved[q]; i++) {
+      score[docs[i]] /= totscore;
+    }
+    
+????
+    int nw = ddP.qposn[q+1]-ddP.qposn[q];
+    for (i=0; i< && top->k[top->ind[q*topQ+i]]>=0; i++) {
+      int l, ind = top->ind[q*topQ+i];
+      double tfidf;
+      tfidf = bm25(top->k[q*topQ+ind],
+		   &top->found[ind*ddP.n_words+ddP.qposn[q]],
+		   &ddP.qword[ddP.qposn[q]], nw, ws);
+      assert(ind>=0 && ind<topQ);
+      fprintf(fp, "%d %d ", q, top->k[q*topQ+ind]);
+      fprintf(fp, "%.4f %.4lf ", top->score[q*topQ+ind]/nw, tfidf);
+      if ( verbose>1 ) {
+	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
+	  fprintf(fp, "%d ", top->found[ind*ddP.n_words+l]);
+	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
+	  fprintf(fp, "%f ", top->cnt[ind*ddP.n_words+l]);
+	for (l=ddP.qposn[q]; l<ddP.qposn[q+1]; l++)
+	  fprintf(fp, "%f ", top->wordscore[ind*ddP.n_words+l]);
+	for (l=0; l<nw; l++)
+	  fprintf(fp, "%lf ", ws[l]);
+      }
+      fprintf(fp, "\n");
+    }
+  }
+  fclose(fp);
+}
+#endif 
+
 /*
  *   arguments for parallel call to Gibbs querying sampler
  */
@@ -645,7 +708,7 @@ void *querying_p(void *qargs) {
  *
  *    topQ = number of top results to retain
  */
-void gibbs_query(char *stem, int topQ, char *qname, int dots, int procs) {
+void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs) {
   /*  top results so far */
   QT_t Qtop;
 #ifdef H_THREADS
@@ -654,6 +717,8 @@ void gibbs_query(char *stem, int topQ, char *qname, int dots, int procs) {
   D_qargs_p parg[procs];
   int doc;
   int pro;
+  char *qdname = yap_makename(queryfile,".docs");
+  char *qtname = yap_makename(queryfile,".terms");
 
   QT_init(&Qtop, topQ, procs);
   
@@ -716,14 +781,19 @@ void gibbs_query(char *stem, int topQ, char *qname, int dots, int procs) {
   df = calloc(ddN.W,sizeof(df[0]));
   if ( !df ) 
     yap_quit("Cannot allocate memory in gibbs_query()\n");
-  n_df = data_df(stem,df);
+  n_df = data_df(stem, df);
   
-  QT_write(qname, topQ, &Qtop);
+  QT_write(qdname, topQ, &Qtop);
+#if 0
+  QT_terms(qtname, topQ, &Qtop);
+#endif
 
   /*
    *  clean up
    */
   free(df);
+  free(qdname);
+  free(qtname);
   QT_free(&Qtop);
 }
 

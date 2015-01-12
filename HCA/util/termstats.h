@@ -22,6 +22,10 @@
  */
 typedef struct T_stats_s {
   /*
+   *  indexed by w-Kmin
+   */
+  char **tokens;
+  /*
    *  basic dims and data stored/saved from elsewhere
    */
   int T;
@@ -32,8 +36,11 @@ typedef struct T_stats_s {
    */
   int K;  
   int Kmin;
+  /*
+   *  only one of these in use
+   */
   uint32_t **Nkt;
-  char **tokens;
+  double *Nt;
 } T_stats_t;
 
 
@@ -42,9 +49,22 @@ void tstats_free(T_stats_t *ptr);
  *      returns structure or NULL if none
  *
  *      all arguments come from the standard data structures
+ *
+ *      computes terms per topic in Nkt[][]
  */
 T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
 		       int T, int DT,  // dims
 		       char *stem);
 
+/*
+ *      returns structure or NULL if none
+ *
+ *      all arguments come from the standard data structures
+ *
+ *      computes terms mean df in Nt[]
+ */
+T_stats_t *twstats_init(double *score,
+			uint32_t *NdTcum, //  cumsum(NdT)
+			int T, int DT,  // dims
+			char *stem);
 #endif

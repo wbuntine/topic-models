@@ -1093,9 +1093,7 @@ int main(int argc, char* argv[])
   
 #ifdef QUERY
   if ( queryfile ) {
-    char *qname = yap_makename(queryfile,".out");
-    gibbs_query(stem, querycnt,qname,dots,procs);
-    free(qname);
+    gibbs_query(stem, querycnt, queryfile, dots, procs);
     restart_offset = ddN.DT;
     cal_perp = 0;
     checkpoint = 0;

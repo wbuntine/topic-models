@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <assert.h>
+#include <math.h>
 
 #include "gibbs.h"
 #include "util.h"
@@ -66,12 +67,18 @@ static int tokenrange(char *collsfile, int DT, int *kmin, int *kmax) {
   return 0;
 }
 
-static void readstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum, uint16_t *z) {
+static void readstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum, 
+		      uint16_t *z) {
   FILE *fp;
   int d, i;
   fp = fopen(collsfile,"r");
   if ( !fp ) 
     yap_sysquit("collsfile '%s' not opened\n", collsfile);
+  ptr->Nkt = u32mat(ptr->K,ptr->T);
+  ptr->Nt = NULL;
+  if ( !ptr->Nkt )
+    yap_quit("Cannot allocate Nkt[%d,%d] in tstats_init()\n",
+	     ptr->K,ptr->T);
   for (i=0; i<ptr->K; i++) {
     int t;
     for (t=0; t<ptr->T; t++)
@@ -109,26 +116,57 @@ static void readstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum, uint16_
   fclose(fp);
 }
 
+static void readwstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum, 
+		       double *score) {
+  FILE *fp;
+  int d, i;
+  fp = fopen(collsfile,"r");
+  if ( !fp ) 
+    yap_sysquit("collsfile '%s' not opened\n", collsfile);
+  /*
+   *    locate stats
+   */
+  ptr->Nt = dvec(ptr->K);
+  ptr->Nkt = NULL;
+  if ( !ptr->Nt )
+    yap_quit("Cannot allocate Nt[%d] in twstats_init()\n", ptr->K);  
+  for (i=0; i<ptr->K; i++) {
+    ptr->Nt[i] = 0;
+  }
+  for (d=0; d<ptr->DT; d++) {
+    int nk;
+    int k, p, len;
+    if ( fscanf(fp," %u", &nk) != 1 ) {
+      if ( feof(fp) )
+	break;
+      yap_sysquit("Cannot read %d-th data line from '%s'\n", d, collsfile);
+    }
+    for (i=0; i<nk; i++) {
+      if ( fscanf(fp," %d %d %d", &p, &len, &k) != 3 )
+	yap_sysquit("Cannot read %d-th line %d-th token from '%s'\n", 
+		    d, i, collsfile);
+      if ( score[d]<=0 )
+	continue;
+      k -= ptr->Kmin;
+      ptr->Nt[k] += score[d];
+    }
+  }
+  fclose(fp);
+}
 
 /*
- *      (*ptr) is preallocated memory where the data structure
- *             is built
- *
- *      all other arguments come from the standard data structures
+ *      all arguments come from the standard data structures
  */
-T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
-		       int T, int DT,  // dims
-		       char *stem) {
-  char *collsname;
+T_stats_t *tstats_setup(char *collsname,
+			int T, int DT,  // dims
+			char *stem) {
   int kmin, kmax;
   T_stats_t *ptr;
   /*
    *   get valid range for terms in data
    */
-  collsname = yap_makename(stem,".colls");
   if ( tokenrange(collsname, DT, &kmin, &kmax) ) {
     /*  no .colls file, so quit */
-    free(collsname);
     return NULL;
   }
   ptr = malloc(sizeof(*ptr));
@@ -147,17 +185,52 @@ T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
    *    load up tokens
    */
   ptr->tokens = read_vocab(stem, kmin, kmax, 50);
-  /*
-   *    loocate stats
-   */
-  ptr->Nkt = u32mat(ptr->K,T);
-  if ( !ptr->Nkt )
-    yap_quit("Cannot allocate Nkt[%d,%d] in tstats_init()\n",
-	     ptr->K,T);
+  return ptr;
+}
+
+/*
+ *      all arguments come from the standard data structures
+ */
+T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
+		       int T, int DT,  // dims
+		       char *stem) {
+  char *collsname;
+  T_stats_t *ptr;
+  collsname = yap_makename(stem,".colls");
+  ptr = tstats_setup(collsname, T, DT, stem);
+  if ( !ptr ) {
+    free(collsname);
+    return NULL;
+  }
   /*
    *    read stats
    */
   readstats(collsname, ptr, NdTcum, z);
+  free(collsname);
+  return ptr;
+}
+
+/*
+ *      docprob[] is for the DT docs;
+ *      all other arguments come from the standard data structures
+ */
+T_stats_t *twstats_init(double *docprob,
+			uint32_t *NdTcum, //  cumsum(NdT)
+			int T, int DT,  // dims
+			char *stem) {
+  char *collsname;
+  T_stats_t *ptr;
+  
+  collsname = yap_makename(stem,".colls");
+  ptr = tstats_setup(collsname, T, DT, stem);
+  if ( !ptr ) {
+    free(collsname);
+    return NULL;
+  }
+  /*
+   *    read stats
+   */
+  readwstats(collsname, ptr, NdTcum, docprob);
   free(collsname);
   return ptr;
 }

@@ -557,7 +557,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     yap_sysquit("Cannot open file '%s' for write\n", topfile);
   yap_message("\n");
   for (k=0; k<ddN.T; k++) {
-    int cnt, termcnt;
+    int cnt, termcnt = 0;
     tscorek = k;
     /*
      *    build sorted word list
@@ -643,7 +643,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     
   }
   for (k=0; k<ddN.T; k++) {
-    int cnt, termcnt;
+    int cnt, termcnt = 0;
     int kk = psort[k];
     uint32_t **dfmtx;
 
