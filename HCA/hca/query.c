@@ -25,6 +25,10 @@
 #include "data.h"
 #include "pctl.h"
 #include "probs.h"
+#ifdef H_THREADS
+#include <pthread.h>
+#endif
+#include "atomic.h"
 
 /*
  *   a query is a mapping from the word indices to
@@ -301,7 +305,7 @@ static void query_docprob(int did, int *mimap, float *p, D_MiSi_t *dD,
  *  build query map for document d
  */
 static void map_query(int d, int *map, int *found) {
-  int mi;
+  int mi = 0;
   int j, l;
   /*  by default the query has no words in doc d */
   for (j=0; j<ddP.n_words; j++) {
@@ -343,8 +347,20 @@ typedef struct QD_s {
   float   *topcnt;
   float   *topwordscore;
   double  *logprob;
+  /*
+   *    mapping from query word posn. to its mi in current doc
+   *       >ddN.N  = not in current doc
+   *       -ve  = has no mi since occurs just once, found at
+   *              posn  (-map[]-1)
+   *       non -ve = mi value
+   */
+  int     *map;
 } QD_t;
 static void QD_init(QD_t *buf) {
+  if ( ddP.bdk!=NULL ) 
+    buf->map = malloc(sizeof(buf->map[0])*ddP.n_words);
+  else
+    buf->map = NULL;
   buf->topcnt = malloc(sizeof(buf->topcnt[0])*ddP.n_words);
   buf->topwordscore = malloc(sizeof(buf->topwordscore[0])*ddP.n_words);
   buf->found = malloc(sizeof(buf->found)*ddP.n_words);
@@ -357,12 +373,13 @@ static void QD_free(QD_t *buf) {
   free(buf->topwordscore);
   free(buf->topcnt);
   free(buf->logprob);
+  if ( buf->map ) free(buf->map);
 }
 
 /*
  *  single document query processing
  */
-static void query_run(int i, QD_t *buf, int *mimap, D_MiSi_t *dD, char *wordunused) {
+static void query_run(int i, QD_t *buf, D_MiSi_t *dD, char *wordunused) {
   int  thisw =  add_doc(i, GibbsNone);
   int  r, j;
   float *fact = fvec(ddN.T*4);
@@ -373,7 +390,7 @@ static void query_run(int i, QD_t *buf, int *mimap, D_MiSi_t *dD, char *wordunus
   }
   if ( ddP.bdk!=NULL ) 
     misi_build(dD, i, 0);
-  map_query(i, mimap, buf->found);
+  map_query(i, buf->map, buf->found);
   for (j=0; j<ddP.n_words; j++) {
     buf->topcnt[j] = 0;
     buf->topwordscore[j] = 0;
@@ -381,7 +398,7 @@ static void query_run(int i, QD_t *buf, int *mimap, D_MiSi_t *dD, char *wordunus
     
   for (r=0; r<ddP.queryiter; r++) {
     gibbs_lda(GibbsNone, ddN.T, i, ddD.NdT[i], fact, dD, 0, 0);
-    query_docprob(i, mimap, fact, dD, buf->topcnt, buf->topwordscore);
+    query_docprob(i, buf->map, fact, dD, buf->topcnt, buf->topwordscore);
   }  
   /*
    *  now adjust stats
@@ -434,8 +451,15 @@ typedef struct QT_s {
   float   *wordscore;
   /*      flags if word is irrelevant, thus not scored  */
   char    *wordunused;
+  /*
+   *      locks to add values;
+   */
+#ifdef H_THREADS
+  pthread_mutex_t *mutex;
+#endif
+
 } QT_t;
-static void QT_init(QT_t *buf, int topQ) {
+static void QT_init(QT_t *buf, int topQ, int procs) {
   int i;
   buf->wordunused = malloc(sizeof(buf->wordunused[0])*ddP.n_words);
   buf->cnt = malloc(sizeof(buf->cnt[0])*topQ*ddP.n_words);
@@ -459,6 +483,17 @@ static void QT_init(QT_t *buf, int topQ) {
     buf->k[i] = -1;
     buf->score[i] = HUGE_VAL;
   }
+#ifdef H_THREADS
+  if ( procs>1 ) {
+    buf->mutex = malloc(sizeof(buf->mutex[0])*ddP.n_query);
+    if ( !buf->mutex )
+      yap_quit("Cannot allocate memory in gibbs_query()\n");
+    for (i=0; i<ddP.n_query; i++) {
+      pthread_mutex_init(&buf->mutex[i], NULL);
+    }
+  } else
+    buf->mutex = NULL;
+#endif
 }
 static void QT_free(QT_t *buf) {
   free(buf->wordscore);
@@ -469,6 +504,15 @@ static void QT_free(QT_t *buf) {
   free(buf->k);
   free(buf->found);
   free(buf->wordunused);
+#ifdef H_THREADS
+  if ( buf->mutex ) {
+    int i;
+    for (i=0; i<ddP.n_query; i++) {
+      pthread_mutex_destroy(&buf->mutex[i]);
+    }
+    free(buf->mutex);
+  }
+#endif
 }
 static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
   int j;
@@ -476,9 +520,27 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
    *   enter into the arrays
    */
   for (j=0; j<ddP.n_query; j++) {
+    /*
+     *   top->saved[j] is non-decreasing and
+     *   top->score[j*topQ+top->ind[j*topQ+topQ-1]] is non-increasing
+     *   so we test once outside of lock, and retest inside lock
+     */   
     if ( top->saved[j]<topQ || 
 	 doc->logprob[j] < top->score[j*topQ+top->ind[j*topQ+topQ-1]] ) {
       int newind, l;
+#ifdef H_THREADS
+      if ( top->mutex ) {
+	pthread_mutex_lock(&top->mutex[j]);
+	if ( top->saved[j]>=topQ &&
+	     doc->logprob[j]>=top->score[j*topQ+top->ind[j*topQ+topQ-1]] ) {
+	  /*
+	   *  so above test result changed in new lock state, so quit early
+	   */
+	  pthread_mutex_unlock(&top->mutex[j]);
+	  continue;
+	}
+      }
+#endif
       /*
        *   must insert
        */
@@ -498,6 +560,11 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
       }
       if ( top->saved[j]<topQ )
 	top->saved[j]++;
+#ifdef H_THREADS
+      if ( top->mutex ) {
+	pthread_mutex_unlock(&top->mutex[j]);
+      }
+#endif
     }
   }
 }
@@ -539,49 +606,62 @@ static void QT_write(char *qname, int topQ, QT_t *top) {
 }
 
 /*
+ *   arguments for parallel call to Gibbs querying sampler
+ */
+typedef struct D_qargs_s {
+  int dots;
+  int processid;
+  int procs;
+  int *doc;
+  QT_t *top;  /*  top results so far */
+  int topQ;
+} D_qargs_p;
+
+void *querying_p(void *qargs) {
+  int i;
+  D_MiSi_t dD;  
+  D_qargs_p *par =(D_qargs_p *) qargs;
+  /*  results from single query */
+  QD_t QDbuf;
+
+  if ( ddP.bdk!=NULL ) misi_init(&ddM,&dD);
+  QD_init(&QDbuf);
+
+  while ( (i=atomic_add(*par->doc,1))<ddN.DT ) {   
+    query_run(i, &QDbuf, &dD, par->top->wordunused);
+    if ( par->dots>0 && i>0 && (i%par->dots==0) ) 
+      yap_message(".");
+    QT_save(i, par->topQ, par->top, &QDbuf);
+  }
+
+  QD_free(&QDbuf);
+  if ( ddP.bdk!=NULL ) misi_free(&dD);
+  return NULL;
+}
+
+/*
  *    run regular gibbs cycles on the data with phi used;
  *    the evaluation on each doc, and sample word probs
  *
- *    if qparts>0, split collection into parts and only search this
- *
  *    topQ = number of top results to retain
  */
-void gibbs_query(char *stem, int topQ, char *qname, int dots, int this_qpart, int qparts) {
-  /*
-   *    mapping from query word posn. to its mi in current doc
-   *       >ddN.N  = not in current doc
-   *       -ve  = has no mi since occurs just once, found at
-   *              posn  (-map[]-1)
-   *       non -ve = mi value
-   */
-  int     *mimap = NULL;
-  /*
-   *     usual stuff for Gibbs loop over docs
-   */
-  int i;
-  D_MiSi_t dD;
-
-  /*  results from single query */
-  QD_t QDbuf;
+void gibbs_query(char *stem, int topQ, char *qname, int dots, int procs) {
   /*  top results so far */
   QT_t Qtop;
+#ifdef H_THREADS
+  pthread_t thread[procs];
+#endif
+  D_qargs_p parg[procs];
+  int doc;
+  int pro;
 
-  /*
-   *   search here
-   */
-  int startdoc = 0;
-  int enddoc = ddN.DT;
-
-  QD_init(&QDbuf);
-  QT_init(&Qtop, topQ);
-
-  if ( ddP.bdk!=NULL ) 
-    mimap = malloc(sizeof(mimap[0])*ddP.n_words);
+  QT_init(&Qtop, topQ, procs);
   
   /*
    *  check words to exclude using topics
    */
   if ( ddP.n_excludetopic>0 ) {
+    int i;
     double *tprob = malloc(sizeof(tprob[0])*ddN.T);
     assert(ddS.Ndt);
     get_probs(tprob);
@@ -601,18 +681,33 @@ void gibbs_query(char *stem, int topQ, char *qname, int dots, int this_qpart, in
     free(tprob);
   }
   
-  if ( ddP.bdk!=NULL ) misi_init(&ddM,&dD);
+  doc = -1;
+  for (pro = 0 ; pro < procs ; pro++){
+    parg[pro].dots=dots;
+    parg[pro].processid=pro;
+    parg[pro].procs=procs;
+    parg[pro].doc = &doc;
+    parg[pro].top = &Qtop;
+    parg[pro].topQ = topQ;
+#ifndef H_THREADS
+    querying_p(&parg[pro]);
+#else
+    if ( procs==1 )
+      querying_p(&parg[pro]);
+    else if ( pthread_create(&thread[pro],NULL,querying_p,(void*) &parg[pro]) != 0){
+      yap_message("thread failed %d\n",pro+1 );
+    }
+#endif
+  }
+#ifdef H_THREADS
+  if ( procs>1 ) {
+    //waiting for threads to finish
+    for (pro = 0; pro < procs; pro++){
+      pthread_join(thread[pro], NULL);
+    }
+  }
+#endif
 
-  if ( qparts>0 ) {
-    startdoc = ((double)this_qpart)/qparts * ddN.DT;
-    enddoc = ((double)this_qpart+1.0)/qparts * ddN.DT;
-  }
-  for (i=startdoc; i<enddoc; i++) {
-    query_run(i, &QDbuf, mimap, &dD, Qtop.wordunused);
-    if ( dots>0 && i>0 && (i%dots==0) ) 
-      yap_message(".");
-    QT_save(i, topQ, &Qtop, &QDbuf);
-  }
   if ( dots>0 ) yap_message("\n");
   
   /*
@@ -629,10 +724,7 @@ void gibbs_query(char *stem, int topQ, char *qname, int dots, int this_qpart, in
    *  clean up
    */
   free(df);
-  if ( ddP.bdk!=NULL ) misi_free(&dD);
-  if ( mimap ) free(mimap);
   QT_free(&Qtop);
-  QD_free(&QDbuf);
 }
 
 

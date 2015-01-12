@@ -331,9 +331,6 @@ int main(int argc, char* argv[])
 
   enum GibbsType fix_hold = GibbsNone;
   char *stem;
-#ifdef QUERY
-  int qparts=0, this_qpart=0;
-#endif
   char *resstem;
   int displaycount = 10;
   int pmicount = 10;
@@ -675,8 +672,8 @@ int main(int argc, char* argv[])
     case 'Q':
       {
 	queryfile = malloc(strlen(optarg));
-	if( !optarg || (sscanf(optarg, "%d,%[^,],%d/%d", 
-			       &querycnt, queryfile, &this_qpart, &qparts) < 2) )
+	if( !optarg || (sscanf(optarg, "%d,%[^,]", 
+			       &querycnt, queryfile) < 2) )
 	  yap_quit("Need a valid 'Q' argument\n"); 
 	nosample = 1;
       }
@@ -1097,7 +1094,7 @@ int main(int argc, char* argv[])
 #ifdef QUERY
   if ( queryfile ) {
     char *qname = yap_makename(queryfile,".out");
-    gibbs_query(stem, querycnt,qname,dots,this_qpart,qparts);
+    gibbs_query(stem, querycnt,qname,dots,procs);
     free(qname);
     restart_offset = ddN.DT;
     cal_perp = 0;

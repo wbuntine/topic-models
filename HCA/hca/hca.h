@@ -81,7 +81,7 @@ float **hca_topmtx();
 void like_merge(float minprop, double scale, int best);
 
 void query_read(char *fname);
-void gibbs_query(char *stem, int K, char *qname, int dots, int this_qpart, int qparts);
+void gibbs_query(char *stem, int K, char *qname, int dots, int procs);
 
 void print_maxz(char *fname);
 
