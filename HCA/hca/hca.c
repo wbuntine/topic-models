@@ -189,7 +189,7 @@ static void usage() {
 	  "   -U mindocsize  #  minimum allowed, default is 1\n"
 	  "   -v             #  up the verbosity by one\n"
 	  "   -W W           #  change max W\n"
-	  "   -x             #  enable use of exclude topics for -Q\n"
+	  "   -x N           #  exclude the top N docs from query results\n"
 	  "  testing and reports:\n"
 	  "   -h HOLD,arg    #  use document completion in '-l' testing\n"
           "                  #  HOLD=dict, hold out words w with (w%%arg)==0\n"
@@ -216,7 +216,7 @@ static void usage() {
           "                  #    use twice to set #topics to value set by -o\n"
 	  "   -P secs        #  calc test perplexity every interval in secs\n"
 #ifdef QUERY
-	  "   -Q nres,file   #  do queries using query file, must use '-rphi'\n"
+	  "   -Q nres,file,scale #  do queries using query file, must use '-rphi'\n"
 #endif
           "   -t traindocs   #  train documents, at start, default all-test\n"
           "   -T testdocs    #  test documents, at end, default 0\n"
@@ -350,7 +350,6 @@ int main(int argc, char* argv[])
   double BDKval = 0;
   enum ScoreType score=ST_idf;
   
-  int doexclude = 0;
   int cal_perp = 0;
   clock_t t1=0, t2=0, t3=0;
   time_t wall_start = 0;
@@ -375,6 +374,8 @@ int main(int argc, char* argv[])
 #ifdef QUERY
   char *queryfile = NULL;
   int querycnt = 0;
+  int excludedoc = 0;
+  float queryscale = 1.0;
 #endif
   /*
    *  default values
@@ -386,7 +387,7 @@ int main(int argc, char* argv[])
   pctl_init();
   diag_alloc();
 
-  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:J:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:U:vVW:xX"))>=0 ) {
+  while ( (c=getopt(argc, argv,"A:B:c:C:d:D:eE:f:F:g:G:h:iI:J:K:l:L:mM:N:o:OpP:q:Q:r:R:s:S:t:T:U:vVW:x:X"))>=0 ) {
     switch ( c ) {
     case 'A':
       if ( !optarg )
@@ -672,8 +673,8 @@ int main(int argc, char* argv[])
     case 'Q':
       {
 	queryfile = malloc(strlen(optarg));
-	if( !optarg || (sscanf(optarg, "%d,%[^,]", 
-			       &querycnt, queryfile) < 2) )
+	if( !optarg || (sscanf(optarg, "%d,%[^,],%f", 
+			       &querycnt, queryfile, &queryscale) < 2) )
 	  yap_quit("Need a valid 'Q' argument\n"); 
 	nosample = 1;
       }
@@ -762,7 +763,8 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'W' argument\n");
       break;
     case 'x': 
-      doexclude = 1;
+      if ( !optarg || sscanf(optarg,"%d",&excludedoc)<1 )
+	yap_quit("Need a valid 'x' argument\n");
       break;
     case 'X':
       doclass = 1;
@@ -840,13 +842,6 @@ int main(int argc, char* argv[])
       if ( buf ) {
 	maxW = atoi(buf);
 	free(buf);
-      }
-    }
-    if ( doexclude==0 ) {
-      if ( ddP.n_excludetopic ) {
-	ddP.n_excludetopic = 0;
-	free(ddP.excludetopic);
-	free(ddP.bits_et);
       }
     }
   }
@@ -1093,7 +1088,8 @@ int main(int argc, char* argv[])
   
 #ifdef QUERY
   if ( queryfile ) {
-    gibbs_query(stem, querycnt, queryfile, dots, procs);
+    gibbs_query(stem, querycnt+excludedoc, queryfile, dots, procs, 
+		excludedoc, queryscale);
     restart_offset = ddN.DT;
     cal_perp = 0;
     checkpoint = 0;
