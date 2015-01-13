@@ -574,6 +574,17 @@ static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
   }
 }
 
+static void pprune(double *pvec, int N, float cutoff) {
+  int i;
+  double maxp = 0;
+  for (i=0; i<N; i++)
+    if ( pvec[i]>maxp )
+      maxp = pvec[i];
+  for (i=0; i<N; i++)
+    if ( pvec[i]<maxp*cutoff )
+      pvec[i] = 0;
+}
+
 /*
  *   compute doc probability vector for query q
  */
@@ -658,6 +669,7 @@ static void QT_write(char *qname, int topQ, QT_t *top) {
  *  write term report;
  *  rather inefficient use of memory
  */
+#define TERM_CUTOFF 1.0e-4
 static void QT_terms(char *stem, char *qname, int topQ, QT_t *top) {
   FILE *fp = fopen(qname,"w");
   int i, q;
@@ -700,6 +712,7 @@ static void QT_terms(char *stem, char *qname, int topQ, QT_t *top) {
 	wprob[ddD.w[l]] += dprob[i];
       }
     }
+    pprune(wprob,ddN.W,TERM_CUTOFF);
     for (i=0; i<ddN.W; i++) 
       if ( wprob[i]>0 ) {
 	double wp = wprob[i]/top->saved[q];
@@ -712,6 +725,7 @@ static void QT_terms(char *stem, char *qname, int topQ, QT_t *top) {
      *  build term probs
      */
     tstats = twstats_init(dprob, ddD.NdTcum, ddN.T, ddN.DT, stem);
+    pprune(tstats->Nt,tstats->K,TERM_CUTOFF);
     for (i=0; i<tstats->K; i++) 
       if ( tstats->Nt[i]>0 ) {
 	double wp = tstats->Nt[i]/top->saved[q];
@@ -734,6 +748,7 @@ static void QT_terms(char *stem, char *qname, int topQ, QT_t *top) {
 	tprob[Z_t(ddS.z[l])] += dprob[i]/Nt;
       }
     }
+    pprune(tprob,ddN.T,TERM_CUTOFF);
     for (i=0; i<ddN.T; i++) 
       if ( tprob[i]>0 ) {
 	fprintf(fp, "T %d %d %lf\n", q, i, tprob[i]);
