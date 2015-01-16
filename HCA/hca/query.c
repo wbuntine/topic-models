@@ -35,76 +35,6 @@
 #endif
 #include "atomic.h"
 
-/*
- *   a query is a mapping from the word indices to
- *   the position in the query; non-query words map to -1;
- *   the file has multiple lines in format:
- *        NW, W1, W2, ...
- *   where NW = #words, Wk = 0-offset index of word;
- *   so each word assumed to exist only once and ignored otherwise;
- *   each line is one query
- */
-#define QMAX 1000
-void query_read(char *qname) {
-  FILE  *fp;
-  unsigned win = 0, nw = 0, nq=0, qin;
-  int i;
-  uint32_t *wlist = malloc(sizeof(wlist[0])*QMAX);
-  uint32_t *qlist = malloc(sizeof(qlist[0])*QMAX);
-  int16_t *map = malloc(sizeof(map[0])*ddN.W);
-  if ( !map || !wlist || !qlist)
-    yap_quit("Cannot allocate memory in query_read()\n");
-  fp = fopen(qname,"r");
-  if ( !fp )
-    yap_sysquit("Cannot open query bag file '%s'\n", qname);
-  for (i=0; i<ddN.W; i++) 
-    map[i] = -1;
-  nw = 0;  qin = 0;
-  while ( fscanf(fp," %u", &nw) == 1 ) {
-    for (i=0; i<nw; i++) {
-      if ( fscanf(fp," %u", &win) != 1 || win>=ddN.W )
-	yap_sysquit("Cannot read %d-th entry from '%s'\n", 
-		    i, qname);
-      if ( map[win]<0 ) {
-	qlist[nq] = qin;
-	wlist[nq] = win;
-	map[win] = nq++;
-	if ( nq>=QMAX ) 
-	  yap_quit("Predefined query length maximum (%d) too small\n", QMAX);
-      } else {
-	/*  
-	 *    word appears already:  same query, drop, other query, copy
-	 */
-	if ( qlist[map[win]]!=qin ) {
-	  qlist[nq] = qin;
-	  wlist[nq] = win;
-	  nq++;
-	  if ( nq>=QMAX ) 
-	    yap_quit("Predefined query length maximum (%d) too small\n", QMAX);
-	}
-      }
-    }
-    qin++;
-    nw = 0;
-  }
-  if ( ferror(fp) )
-    yap_sysquit("Cannot read data line from '%s'\n", qname);
-  fclose(fp);
-  ddP.query = map;
-  ddP.qid = realloc(qlist, nq*sizeof(qlist[0]));
-  ddP.qword = realloc(wlist, nq*sizeof(wlist[0]));
-  ddP.qposn = malloc(sizeof(ddP.qposn[0])*(qin+1));
-  if ( !ddP.qword || !ddP.qid || !ddP.qposn )
-    yap_quit("Cannot allocate memory in query_read()\n");
-  ddP.n_words = nq;
-  ddP.n_query = qin;
-  ddP.qposn[0] = 0;
-  for (i=1; i<ddP.n_words; i++) {
-    if ( ddP.qid[i] != ddP.qid[i-1] )
-      ddP.qposn[ddP.qid[i]] = i;
-  }
-  ddP.qposn[ddP.n_query] = ddP.n_words;
-}
 
 static int besttopic(int w, double *tp) {
   int t, bestt = 0;
@@ -519,6 +449,60 @@ static void QT_free(QT_t *buf) {
   }
 #endif
 }
+
+#if 0
+/*
+ *   pull out saved docs and store in ordered array in docs[];
+ *   add "-1" at end;
+ *   docs[] array assumed t be big enough;
+ *   return count
+ */
+#define din(vec,i) ((vec[((unsigned)i)/32u]>>(((unsigned)i)%32u))&01u)
+#define dset(vec,i) vec[((unsigned)i)/32u] |= 01u<<(((unsigned)i)%32u)
+#define dunset(vec,i) vec[((unsigned)i)/32u] ^= 01u<<(((unsigned)i)%32u)
+static int  QT_docs(int topQ, QT_t *top, int *docs) {
+  uint32_t *dv;
+  int q,l, dv_len;
+  int docs_used = 0;
+  dv_len = ddN.DT/32+1;
+  dv = malloc(dv_len);
+  for (l=0; l<dv_len; l++)
+    dv[l] = 0;
+  /*
+   *  set bit vector with docs used
+   */
+  for (q=0; q<ddP.n_query*topQ; q++) {
+    l = top->k[q];
+    if ( l<0 )
+      continue;
+    dset(dv,l);
+  }
+  /*
+   *  build docs[], and count
+   */
+  for (q=0; q<ddP.n_query*topQ; q++) {
+    l = top->k[q];
+    if ( l<0 )
+      continue;
+    if ( din(dv,l) ) {
+      int val = l;
+      dunset(dv,l);
+      /*
+       *   bubble it in to keep sorted
+       */
+      for (l=docs_used++; l>0; l--) {
+	if ( docs[l-1]<val ) 
+	  break;
+	docs[l] = docs[l-1];
+      }
+      docs[l] = val;
+    }
+  }
+  docs[docs_used] = -1; 
+  return docs_used;
+}
+#endif
+
 static void QT_save(int i, int topQ, QT_t *top, QD_t *doc) {
   int j;
   /*
@@ -788,7 +772,6 @@ void *querying_p(void *qargs) {
       yap_message(".");
     QT_save(i, par->topQ, par->top, &QDbuf);
   }
-
   QD_free(&QDbuf);
   if ( ddP.bdk!=NULL ) misi_free(&dD);
   return NULL;
@@ -813,6 +796,7 @@ void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs,
   char *qdname = yap_makename(queryfile,".docs");
   char *qtname = yap_makename(queryfile,".terms");
 
+  topQ += excludedoc;
   QT_init(&Qtop, topQ, procs);
   
   /*
@@ -867,6 +851,10 @@ void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs,
 #endif
 
   if ( excludedoc ) {
+    /*
+     *   delete the top "excludedoc" entry
+     *   e.g.,  if exact match exists and want to avoid
+     */
     int q, i;
     for (q=0; q<ddP.n_query; q++) {
       for (i=0; i<Qtop.saved[q] && i<excludedoc; i++) {

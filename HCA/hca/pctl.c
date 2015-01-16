@@ -184,6 +184,7 @@ void pctl_init() {
   ddP.mltburn = 5;
   ddP.cofile = NULL;
   ddP.queryiter = 0;
+  ddP.queryiter0 = 0;
   ddP.query = NULL;
   ddP.qword = NULL;
   ddP.n_query = 0;
@@ -729,6 +730,77 @@ void pctl_fix(int ITER, int loadphi) {
 
   if ( ddP.Tfree<0 )
     ddP.Tfree = ITER;
+}
+
+/*
+ *   a query is a mapping from the word indices to
+ *   the position in the query; non-query words map to -1;
+ *   the file has multiple lines in format:
+ *        NW, W1, W2, ...
+ *   where NW = #words, Wk = 0-offset index of word;
+ *   so each word assumed to exist only once and ignored otherwise;
+ *   each line is one query
+ */
+#define QMAX 1000
+void pctl_query(char *qname) {
+  FILE  *fp;
+  unsigned win = 0, nw = 0, nq=0, qin;
+  int i;
+  uint32_t *wlist = malloc(sizeof(wlist[0])*QMAX);
+  uint32_t *qlist = malloc(sizeof(qlist[0])*QMAX);
+  int16_t *map = malloc(sizeof(map[0])*ddN.W);
+  if ( !map || !wlist || !qlist)
+    yap_quit("Cannot allocate memory in query_read()\n");
+  fp = fopen(qname,"r");
+  if ( !fp )
+    yap_sysquit("Cannot open query bag file '%s'\n", qname);
+  for (i=0; i<ddN.W; i++) 
+    map[i] = -1;
+  nw = 0;  qin = 0;
+  while ( fscanf(fp," %u", &nw) == 1 ) {
+    for (i=0; i<nw; i++) {
+      if ( fscanf(fp," %u", &win) != 1 || win>=ddN.W )
+	yap_sysquit("Cannot read %d-th entry from '%s'\n", 
+		    i, qname);
+      if ( map[win]<0 ) {
+	qlist[nq] = qin;
+	wlist[nq] = win;
+	map[win] = nq++;
+	if ( nq>=QMAX ) 
+	  yap_quit("Predefined query length maximum (%d) too small\n", QMAX);
+      } else {
+	/*  
+	 *    word appears already:  same query, drop, other query, copy
+	 */
+	if ( qlist[map[win]]!=qin ) {
+	  qlist[nq] = qin;
+	  wlist[nq] = win;
+	  nq++;
+	  if ( nq>=QMAX ) 
+	    yap_quit("Predefined query length maximum (%d) too small\n", QMAX);
+	}
+      }
+    }
+    qin++;
+    nw = 0;
+  }
+  if ( ferror(fp) )
+    yap_sysquit("Cannot read data line from '%s'\n", qname);
+  fclose(fp);
+  ddP.query = map;
+  ddP.qid = realloc(qlist, nq*sizeof(qlist[0]));
+  ddP.qword = realloc(wlist, nq*sizeof(wlist[0]));
+  ddP.qposn = malloc(sizeof(ddP.qposn[0])*(qin+1));
+  if ( !ddP.qword || !ddP.qid || !ddP.qposn )
+    yap_quit("Cannot allocate memory in query_read()\n");
+  ddP.n_words = nq;
+  ddP.n_query = qin;
+  ddP.qposn[0] = 0;
+  for (i=1; i<ddP.n_words; i++) {
+    if ( ddP.qid[i] != ddP.qid[i-1] )
+      ddP.qposn[ddP.qid[i]] = i;
+  }
+  ddP.qposn[ddP.n_query] = ddP.n_words;
 }
 
 int pctl_Tmax(int Tmax, int iter) {

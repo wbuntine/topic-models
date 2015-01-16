@@ -176,6 +176,8 @@ void wordtableindicatorprob(int j, int t, double *uone, double *uzero) {
  *       Ttot - total tables
  */
 double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
+  if ( ddP.theta ) 
+    return ddP.theta[d][t];
   if ( ddP.PYalpha ) {
     double p;
     if ( ddP.PYalpha==H_HPDD && ddS.TDt[t]==0 ) {

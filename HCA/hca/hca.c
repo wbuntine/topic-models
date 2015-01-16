@@ -216,7 +216,9 @@ static void usage() {
           "                  #    use twice to set #topics to value set by -o\n"
 	  "   -P secs        #  calc test perplexity every interval in secs\n"
 #ifdef QUERY
-	  "   -Q nres,file,scale #  do queries using query file, must use '-rphi'\n"
+	  "   -Q nres,file,scale  #  do queries using query 'file', must use '-rphi'\n"
+	  "                  #     use -rtheta to make run faster\n"
+          "                  #     use scale optionally (e.g., 0.1, scales log prob) \n"
 #endif
           "   -t traindocs   #  train documents, at start, default all-test\n"
           "   -T testdocs    #  test documents, at end, default 0\n"
@@ -374,6 +376,7 @@ int main(int argc, char* argv[])
 #ifdef QUERY
   char *queryfile = NULL;
   int querycnt = 0;
+  int querycnt0 = 0;
   int excludedoc = 0;
   float queryscale = 1.0;
 #endif
@@ -615,7 +618,7 @@ int main(int argc, char* argv[])
 	  yap_quit("Need a valid 'L lrs,' argument\n");
 #ifdef QUERY
       } else if ( strncmp(optarg,"query,",6)==0 ) {
-	if ( sscanf(&optarg[6],"%d",&ddP.queryiter)<1 )
+	if ( sscanf(&optarg[6],"%d,%d",&ddP.queryiter, &ddP.queryiter0)<1 )
 	  yap_quit("Need a valid 'L query,' argument\n");
 #endif
       } else
@@ -672,9 +675,11 @@ int main(int argc, char* argv[])
 #ifdef QUERY
     case 'Q':
       {
+	if( !optarg ) 
+	  yap_quit("Need a valid 'Q' argument\n"); 
 	queryfile = malloc(strlen(optarg));
-	if( !optarg || (sscanf(optarg, "%d,%[^,],%f", 
-			       &querycnt, queryfile, &queryscale) < 2) )
+	if ( (sscanf(optarg, "%d,%[^,],%f,%d",
+		     &querycnt, queryfile, &queryscale, &querycnt0) < 1) ) 
 	  yap_quit("Need a valid 'Q' argument\n"); 
 	nosample = 1;
       }
@@ -855,7 +860,14 @@ int main(int argc, char* argv[])
     for (t=0; t<ddN.T; t++)
       ddP.bdk[t]  = BDKval;
   }
-  pctl_fix(ITER, loadphi);
+#ifdef QUERY
+  if ( queryfile ) {
+    if ( loadphi==0  ) 
+      yap_quit("Querying with -Q needs phi (using -r phi) and no test\n");
+    pctl_query(queryfile);
+  }
+#endif 
+   pctl_fix(ITER, loadphi);
 #ifdef EXPERIMENTAL2
   Tmax = ddP.Tinit;
 #else
@@ -1016,15 +1028,6 @@ int main(int argc, char* argv[])
      ddS.alpha = NULL;
    if ( doclass )
      data_class(stem);
-#ifdef QUERY
-   if ( queryfile ) {
-     if ( loadphi==0  ) 
-       yap_quit("Querying with -Q needs phi (using -r phi) and no test\n");
-     query_read(queryfile);
-     if ( ddP.queryiter==0 )
-       ddP.queryiter = 10;
-   }
-#endif
    hca_alloc();
    if ( ddP.bdk!=NULL ) 
      dmi_init(&ddM, ddS.z, ddD.w, ddD.NdTcum,
@@ -1088,7 +1091,7 @@ int main(int argc, char* argv[])
   
 #ifdef QUERY
   if ( queryfile ) {
-    gibbs_query(stem, querycnt+excludedoc, queryfile, dots, procs, 
+    gibbs_query(stem, querycnt, queryfile, dots, procs, 
 		excludedoc, queryscale);
     restart_offset = ddN.DT;
     cal_perp = 0;

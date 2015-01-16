@@ -83,6 +83,7 @@ typedef struct D_pars_s {
   int alphaiter, alphaburn;     // burnin and iterations for topic prior probs
   int progiter, progburn;   //  progress reports
   int queryiter;            //  iterations for query
+  int queryiter0;           //  iterations for query, first pass
   int memory;               //  higher value means conserve more memory
   int training;             //  suggested training set size
   char *teststem;           //  stem for the test data, only if different
@@ -191,6 +192,7 @@ int pctl_Tmax(int Tmax, int iter);
 int pctl_hold(int i);
 int pctl_training(int D);
 void pctl_free();
+void pctl_query(char *qname);
 
 double pctl_gammaprior(double x);
 
