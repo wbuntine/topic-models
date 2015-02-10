@@ -103,7 +103,7 @@ int myarmsMH(double xl, double xr,
              *xval, myarms_evals);
           /*  hit bounds, for safety use start val */
 	  result = startval;
-   }
+  } 
   /*
    *    note, sometimes the value is returned
    *    unchanged .... seems to be when the 
@@ -115,8 +115,13 @@ int myarmsMH(double xl, double xr,
 		result, (!ISFINITE(result))?"(inf)":"",
 		*xval, myarms_evals,
 		(startval==result)?"UNCHANGED":"");
-  if ( ISFINITE(result) )  
+  if ( ISFINITE(result) ) {
+    if ( result<xl )
+      result = xl;
+    else if ( result>xr )
+      result = xr;
     *xval = result;
+  }
   if ( !ISFINITE(result) ) {
     return 1;
   }

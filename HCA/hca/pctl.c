@@ -145,7 +145,7 @@ void pctl_init() {
   ddT[ParB0].cycles = BCYCLES;
   ddT[ParBW].cycles = BCYCLES;
   ddT[ParBW0].cycles = BCYCLES;
-  ddT[ParAD].cycles = ACYCLES;
+  ddT[ParAD].cycles = 3*BCYCLES;
   ddT[ParA].cycles = ACYCLES;
   ddT[ParA0].cycles = ACYCLES;
   ddT[ParAW].cycles = ACYCLES;
@@ -160,9 +160,9 @@ void pctl_init() {
   /*
    *     WARNING:  ad and bdk cannot resample at the
    *               same time as ad will re-construct stable;
-   *               tis offset seems to do it!
+   *               this offset seems to do it!
    */
-  ddT[ParAD].offset = 0;
+  ddT[ParAD].offset = 1;
 
   ddP.progiter = 5;
   ddP.progburn = 0;
