@@ -47,6 +47,7 @@ void theta_init(char *resstem) {
   ddS.theta = fmat(ddN.D, ddN.T);
   if ( !ddS.theta )
     yap_quit("Not enough memory in theta_init()\n");
+  ddS.theta_cnt = 0;
 }
 void mu_init(char *resstem) {
   mu_file = yap_makename(resstem,".mu");
@@ -103,6 +104,8 @@ void phi_save() {
   int e;
   char ebuf[10];
   char *fname;
+  if ( verbose ) 
+    yap_message("Saving '%s' with count %d\n", phi_file, ddS.phi_cnt);
   for (e=0; e<ddN.E; e++) {
     sprintf(ebuf,"%03d",e);
     fname = yap_makename(phi_file, ebuf);
@@ -111,10 +114,14 @@ void phi_save() {
   }
 }
 void theta_save() {
+  if ( verbose ) 
+    yap_message("Saving '%s' with count %d\n", theta_file, ddS.theta_cnt);
   write_fmat(theta_file,ddN.D,ddN.T,ddS.theta);
 }
 
 void mu_save() {
+  if ( verbose ) 
+    yap_message("Saving '%s' with count %d\n", mu_file, ddS.mu_cnt);
   write_fmat(mu_file,ddN.E,ddN.T,ddS.mu);
 }
 
@@ -156,12 +163,30 @@ void theta_update() {
 
   for (d=0,e=0; e<ddN.E; e++) {
     mu_prob_iter(e, pvec);
-    for ( ; ddD.e[d]==e; d++) {
-      double prob = (ddS.n_dt[d][t]-ddP.a_theta*ddS.c_dt[d][t]) 
-	+ (ddP.b_theta + ddP.a_theta * ddS.C_dT[d])*pvec[t];
-      for (t=0; t<ddN.T; t++)
-	ddS.mu[e][t] = (ddS.theta_cnt*ddS.theta[d][t] + prob) 
-	  / (ddS.theta_cnt+1);
+    for ( ; d<ddN.DT && ddD.e[d]==e; d++) {
+      double total = ddS.N_dT[d] + ddP.b_theta;
+	for (t=0; t<ddN.T; t++) {
+	  double prob = (ddS.n_dt[d][t]-ddP.a_theta*ddS.c_dt[d][t]) 
+	    + (ddP.b_theta + ddP.a_theta * ddS.C_dT[d])*pvec[t];
+	  prob /= total;
+	  ddS.theta[d][t] = (ddS.theta_cnt*ddS.theta[d][t] + prob) 
+	    / (ddS.theta_cnt+1);
+	}
+    }
+  }
+  if ( ddN.D>ddN.DT ) {
+    for (e=0; e<ddN.E; e++) {
+      mu_prob_iter(e, pvec);
+      for ( ; d<ddN.D && ddD.e[d]==e; d++) {
+	double total = ddS.N_dT[d] + ddP.b_theta;
+	for (t=0; t<ddN.T; t++) {
+	  double prob = (ddS.n_dt[d][t]-ddP.a_theta*ddS.c_dt[d][t]) 
+	    + (ddP.b_theta + ddP.a_theta * ddS.C_dT[d])*pvec[t];
+	  prob /= total;
+	  ddS.theta[d][t] = (ddS.theta_cnt*ddS.theta[d][t] + prob) 
+	    / (ddS.theta_cnt+1);
+	}
+      }
     }
   }
   free(pvec);

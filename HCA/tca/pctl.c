@@ -176,8 +176,9 @@ static char *mystem;
 static double readf(char *type) {
   char *par = readpar(mystem,type,50);
   if ( par ) {
-    return atof(par);
+    double pp = atof(par);
     free(par);
+    return pp;
   }
   return 0.0;
 }
