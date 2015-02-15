@@ -28,6 +28,7 @@
 #include "stats.h"
 
 static char *phi_file = NULL;
+static char *theta_file = NULL;
 static char *mu_file = NULL;
 
 void phi_init(char *resstem) {
@@ -40,6 +41,12 @@ void phi_init(char *resstem) {
     if ( !ddS.phi[e] )
       yap_quit("Not enough memory in phi_init()\n");
   }
+}
+void theta_init(char *resstem) {
+  theta_file = yap_makename(resstem,".theta");
+  ddS.theta = fmat(ddN.D, ddN.T);
+  if ( !ddS.theta )
+    yap_quit("Not enough memory in theta_init()\n");
 }
 void mu_init(char *resstem) {
   mu_file = yap_makename(resstem,".mu");
@@ -62,6 +69,18 @@ void phi_free() {
     }
     free(ddS.phi);
     ddS.phi = NULL;
+  }
+}
+
+void theta_free() {
+  ddS.theta_cnt = 0;
+  if ( theta_file ) {
+    free(theta_file);
+    theta_file = NULL;
+  }
+  if ( ddS.theta ) {
+    free(ddS.theta[0]); free(ddS.theta);
+    ddS.theta = NULL;
   }
 }
 
@@ -90,6 +109,9 @@ void phi_save() {
     write_fmat(fname,ddN.W,ddN.T,ddS.phi[e]);
     free(fname);
   }
+}
+void theta_save() {
+  write_fmat(theta_file,ddN.D,ddN.T,ddS.theta);
 }
 
 void mu_save() {
@@ -127,11 +149,30 @@ void mu_update() {
   ddS.mu_cnt++;
 }
 
+void theta_update() {
+  int d, e, t;
+  double *pvec = dvec(ddN.T);
+  mu_prob_iter(-1, pvec);
+
+  for (d=0,e=0; e<ddN.E; e++) {
+    mu_prob_iter(e, pvec);
+    for ( ; ddD.e[d]==e; d++) {
+      double prob = (ddS.n_dt[d][t]-ddP.a_theta*ddS.c_dt[d][t]) 
+	+ (ddP.b_theta + ddP.a_theta * ddS.C_dT[d])*pvec[t];
+      for (t=0; t<ddN.T; t++)
+	ddS.mu[e][t] = (ddS.theta_cnt*ddS.theta[d][t] + prob) 
+	  / (ddS.theta_cnt+1);
+    }
+  }
+  free(pvec);
+  ddS.theta_cnt++;
+}
+
 float *phi_mean(int k) {
   int e, w;
   float tot=0, prop[ddN.E];
   float *wvec;
-  if ( !ddP.phi )
+  if ( !ddS.phi )
     return NULL;
   wvec = fvec(ddN.W);
   for (e=0; e<ddN.E; e++)
@@ -140,7 +181,7 @@ float *phi_mean(int k) {
     prop[e] /= tot;
   for (e=0; e<ddN.E; e++)
     for (w=0; w<ddN.W; w++)
-      wvec[w] += ddP.phi[e][w][k] * prop[e];
+      wvec[w] += ddS.phi[e][w][k] * prop[e];
   return wvec;
 }
 
@@ -148,7 +189,7 @@ float *mu_mean() {
   int e, k;
   float tot=0, prop[ddN.E];
   float *kvec;
-  if ( !ddP.mu )
+  if ( !ddS.mu )
     return NULL;
   kvec = fvec(ddN.T);
   for (e=0; e<ddN.E; e++)
@@ -157,6 +198,20 @@ float *mu_mean() {
     prop[e] /= tot;
   for (e=0; e<ddN.E; e++)
     for (k=0; k<ddN.T; k++)
-      kvec[k] += ddP.mu[e][k] * prop[e];
+      kvec[k] += ddS.mu[e][k] * prop[e];
+  return kvec;
+}
+
+float *theta_mean() {
+  int d, k;
+  float *kvec;
+  if ( !ddS.theta )
+    return NULL;
+  kvec = fvec(ddN.T);
+  for (d=0; d<ddN.D; d++)
+    for (k=0; k<ddN.T; k++)
+      kvec[k] += ddS.theta[d][k];
+  for (k=0; k<ddN.T; k++)
+    kvec[k] /= ddN.D;
   return kvec;
 }

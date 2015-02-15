@@ -116,7 +116,7 @@ static void usage() {
           "                  #  HOLD=doc, hold out at place l with (l%%arg)==0\n"
           "                  #  HOLD=fract, hold out last fract words in doc\n"
           "   -l DIAG,cycles,burn #  cycles for runtime calculations\n"
-	  "                  #  DIAG is one of 'mu', 'phi' or 'prog'\n"
+	  "                  #  DIAG is one of 'mu', 'phi', 'prog' or 'theta'\n"
           "   -L DIAG,cycles,burn #  cycles for diagnostic calculations\n"
 	  "                  #  DIAG is one of 'like'\n"
           "   -o SC          #  SC=score type, 'count', 'idf', 'cost', 'Q'\n"
@@ -303,6 +303,9 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'l ' argument\n");
       if ( strncmp(optarg,"phi,",4)==0 ) {
 	if ( sscanf(&optarg[4],"%d,%d",&ddP.phiiter, &ddP.phiburn)<2 )
+	  yap_quit("Need a valid 'l word,' argument\n");      
+      } else if ( strncmp(optarg,"theta,",6)==0 ) {
+	if ( sscanf(&optarg[6],"%d,%d",&ddP.thetaiter, &ddP.thetaburn)<2 )
 	  yap_quit("Need a valid 'l word,' argument\n");      
       } else if ( strncmp(optarg,"mu,",3)==0 ) {
 	if ( sscanf(&optarg[3],"%d,%d",&ddP.muiter, &ddP.muburn)<2 )
@@ -621,6 +624,10 @@ int main(int argc, char* argv[])
     mu_init(resstem);
   else 
     ddS.mu = NULL;
+  if ( ddP.thetaiter>0 )
+    theta_init(resstem);
+  else 
+    ddS.theta = NULL;
   tca_alloc();
   if ( PCTL_BURSTY() ) 
     dmi_init(&ddM, ddS.z, ddD.w, ddD.N_dTcum,
@@ -802,6 +809,8 @@ int main(int argc, char* argv[])
     }
     if ( ddP.phiiter>0 && iter>ddP.phiburn && (iter%ddP.phiiter)==0 )
       phi_update();
+    if ( ddP.thetaiter>0 && iter>ddP.thetaburn && (iter%ddP.thetaiter)==0 )
+      theta_update();
     if ( ddP.muiter>0 && iter>ddP.muburn && (iter%ddP.muiter)==0 )
       mu_update();
   } // over iter
@@ -826,6 +835,8 @@ int main(int argc, char* argv[])
 
   if ( ddP.phiiter>0 )
       phi_save(resstem);
+  if ( ddP.thetaiter>0 )
+      theta_save(resstem);
   if ( ddP.muiter>0 )
       mu_save(resstem);
 
@@ -833,6 +844,7 @@ int main(int argc, char* argv[])
    *  free
    */
   phi_free();
+  theta_free();
   mu_free();
   cache_free();
   pctl_free();

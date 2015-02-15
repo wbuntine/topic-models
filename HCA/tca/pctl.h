@@ -61,6 +61,7 @@ typedef struct D_pars_s {
    *  test and report controls
    */
   int phiiter, phiburn;     // burnin and iterations for topicXword probs
+  int thetaiter, thetaburn;  // burnin and iterations for doc topic probs
   int muiter, muburn;       // burnin and iterations for topic prior probs
   int mltiter, mltburn;     //  burnin and iterations for ML testing
   char *cofile;             //  set if want to do PMI-based coherency test

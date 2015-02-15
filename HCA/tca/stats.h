@@ -32,8 +32,10 @@ typedef struct D_stats_s {
    *    and stores the estimated phi matrix
    */
   float ***phi;
+  float **theta;
   float **mu;
   int phi_cnt;
+  int theta_cnt;
   int mu_cnt;
   /*
    *  Basic topic data for simplest LDA model
@@ -166,10 +168,11 @@ void phi_prob_iter(int e, double **mtx) ;
  *    during Gibbs estimate proportion
  *    of topics for all documents
  */
-void tprob_init();
-void tprob_null();
-void tprob_free();
-void tprob_report(char *resstem, double epsilon);
+void theta_init(char *resstem);
+float *theta_mean();
+void theta_update();
+void theta_free();
+void tprob_save();
 
 /*
  *  optionally save/update phi matrix at end of cycles
@@ -180,6 +183,14 @@ void phi_save();
 void phi_free();
 float *phi_mean(int k);
 
+/*
+ *  optionally save/update mu matrix at end of cycles
+ */
+void mu_init(char *resstem);
+void mu_update();
+void mu_save();
+void mu_free();
+float *mu_mean();
 /*
  *  optionally save/update mu matrix at end of cycles
  */
