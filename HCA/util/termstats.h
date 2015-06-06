@@ -53,7 +53,7 @@ void tstats_free(T_stats_t *ptr);
  *      computes terms per topic in Nkt[][]
  */
 T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
-		       int T, int DT,  // dims
+		       int T, int DT, // dims
 		       char *stem);
 
 /*
@@ -65,6 +65,6 @@ T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
  */
 T_stats_t *twstats_init(double *score,
 			uint32_t *NdTcum, //  cumsum(NdT)
-			int T, int DT,  // dims
+			int T, int DT, // dims
 			char *stem);
 #endif

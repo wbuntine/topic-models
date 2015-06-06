@@ -65,12 +65,12 @@ char **read_vocab(char *infile, int W0, int WE, int len) {
   cvec[0] = 0;
   for (i=0;i<W0;i++) {
     if ( fgets(&cmem[cvec[0]],MAXSTRING-1,fr)==NULL )
-      yap_sysquit("Cannot read line %d/%d from '%s'\n", i+1, W, vocfile);
+      yap_sysquit("Cannot read line %d/%d from initial %d of '%s'\n", i+1, W, W0, vocfile);
   }
   for (i=0;i<W;i++) {
     int sl;
     if ( fgets(&cmem[cvec[i]],MAXSTRING-1,fr)==NULL )
-      yap_sysquit("Cannot read line %d/%d from '%s'\n", i+1, W, vocfile);
+      yap_sysquit("Cannot read line %d/%d from '%s' (past initial %d)\n", i+1, W, vocfile, W0);
     sl = strlen(&cmem[cvec[i]]);
     if ( ! iscntrl(cmem[cvec[i]+sl-1]) ) {
       /*

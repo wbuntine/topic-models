@@ -192,6 +192,7 @@ void pctl_init() {
   ddP.mergeinit = 0;
   ddP.mergemin = 0;
   ddP.mergebest = 1;
+  ddP.topcor = 1;
 
   ddP.Tinc = 5;
   ddP.Tcycle = 20;

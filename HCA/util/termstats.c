@@ -21,6 +21,7 @@
 #include "util.h"
 #include "yap.h"
 #include "termstats.h"
+extern int verbose;
 
 void tstats_free(T_stats_t *ptr) {
   if ( !ptr )
@@ -163,7 +164,7 @@ static void readwstats(char *collsfile, T_stats_t *ptr, uint32_t *NdTcum,
  *      all arguments come from the standard data structures
  */
 T_stats_t *tstats_setup(char *collsname,
-			int T, int DT,  // dims
+			int T, int DT, // dims
 			char *stem) {
   int kmin, kmax;
   T_stats_t *ptr;
@@ -182,9 +183,11 @@ T_stats_t *tstats_setup(char *collsname,
    */
   ptr->T = T;
   ptr->DT = DT;
-  if ( kmin==0 || kmax==0 || kmax<kmin ) 
+  if ( kmin==0 || kmax==0 || kmax<=kmin ) 
     yap_quit("Term ranges [%d,%d] weird\n", kmin, kmax);
   ptr->Kmin = kmin;
+  if ( verbose>1 )
+    yap_message("Terms in range [%d,%d]\n", kmin, kmax);
   ptr->K = kmax-kmin;
   /*
    *    load up tokens
@@ -197,7 +200,7 @@ T_stats_t *tstats_setup(char *collsname,
  *      all arguments come from the standard data structures
  */
 T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
-		       int T, int DT,  // dims
+		       int T, int DT, // dims
 		       char *stem) {
   char *collsname;
   T_stats_t *ptr;
@@ -221,7 +224,7 @@ T_stats_t *tstats_init(uint16_t *z, uint32_t *NdTcum, //  cumsum(NdT)
  */
 T_stats_t *twstats_init(double *docprob,
 			uint32_t *NdTcum, //  cumsum(NdT)
-			int T, int DT,  // dims
+			int T, int DT, // dims
 			char *stem) {
   char *collsname;
   T_stats_t *ptr;

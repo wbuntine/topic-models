@@ -137,11 +137,10 @@ float **hca_topmtx() {
     free(tvec);
   }
   for (t1=0; t1<ddN.T; t1++)
-    vec[t1] /= ddN.T;
+    vec[t1] /= ddN.DT;
   for (t1=0; t1<ddN.T; t1++)
     for (t2=0; t2<t1; t2++) {
-      mtx[t1][t2] = mtx[t1][t2]/ddN.T - vec[t1] * vec[t2];
-      mtx[t1][t2] = 1.0 + mtx[t1][t2]/(vec[t1] * vec[t2]);
+      mtx[t1][t2] = mtx[t1][t2]/(ddN.DT*vec[t1]*vec[t2]);
     }
   free(vec);
   return mtx;
@@ -258,8 +257,8 @@ static void build_termNwK(T_stats_t *ptr) {
     }
     termNWK += termNwK[w];
   }
-  if ( termNWK==0 )
-    yap_quit("empty termNWK in build_termNwK()\n");
+  if ( termNWK==0 ) 
+    yap_quit("empty termNWK in build_termNwK(), collocations empty!\n");
   termNwk = ptr->Nkt;
 }
 
@@ -913,7 +912,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     for (t1=0; t1<ddN.T; t1++) {
       for (t2=0; t2<t1; t2++) 
-	 if ( cmtx[t1][t2]>1.0e-3 ) 
+	 if ( cmtx[t1][t2]>1.0e-7 ) 
 	  fprintf(fp, "%d %d %0.6f\n", t1, t2, cmtx[t1][t2]);
     }
     fclose(fp);

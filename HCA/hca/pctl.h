@@ -89,6 +89,7 @@ typedef struct D_pars_s {
   char *teststem;           //  stem for the test data, only if different
   int mergeiter, mergeinit; //  when to start, number of iterations
   float mergemin;             //  ignore topics with this or less proportion
+  float topcor;              // report topic correlation if GT
   int mergebest;            //  include best non-clashing merges at each round
   /*
    *     window control ... only work on this much data at once

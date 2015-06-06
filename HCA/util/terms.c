@@ -183,7 +183,7 @@ int main(int argc, char* argv[])
 
   {
     char *wname = yap_makename(stem, ".tokens");
-    tokens = read_vocab(wname,dbp->W,50);
+    tokens = read_vocab(wname,0,dbp->W,50);
     free(wname);
   }
   
