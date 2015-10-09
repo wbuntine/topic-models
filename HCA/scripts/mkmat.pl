@@ -4,12 +4,12 @@ eval 'exec /usr/bin/perl -w -S $0 ${1+"$@"}'
     if 0; # not running under some shell
 
 use strict;
-use utf8;
 use POSIX;
 use Getopt::Long;
 use Pod::Usage;
            
 # encoding pragmas follow any includes like "use"
+use encoding 'utf8';
 use open ':utf8';
 binmode STDIN, ":utf8";
 binmode STDERR, ":utf8";
@@ -41,20 +41,31 @@ while ( ($_=<T>) ) {
 }
 close(T);
 
+print STDERR "Read $cnt vocab from '$stem.tokens'\n";
+
 #  build map from source vocab
 
 open(T,"<$vocfile");
 $cnt = 0;
+my $mapped = 0;
+my %gotv = ();
 while ( ($_=<T>) ) {
     chomp();
     if ( defined($voc{$_}) ) {
-	$map[$cnt] = $voc{$_};
+	if ( !defined($gotv{$voc{$_}}) ) {
+	    $map[$cnt] = $voc{$_};
+	    $gotv{$voc{$_}} = 1;
+            $mapped++;
+	}
     } else {
 	$map[$cnt] = -1;
     }
     $cnt++;
 }
 close(T);
+
+print STDERR "Read $cnt vocab from '$vocfile'\n";
+print STDERR "Mapped $mapped vocab from '$vocfile' to '$stem'\n";
 
 open(M,"<$mtxfile");
 while ( ($_=<M>) ) {
