@@ -445,19 +445,21 @@ void pctl_dims() {
      */
     double betain = ddP.betatot/ddN.W;
     double betac = betain;
-     if ( betac==0 ) 
+    if ( betac==0 ) 
       betac = DIR_MIN*10;
-     if ( betac< DIR_MIN ) 
+    if ( betac< DIR_MIN ) 
       betac = DIR_MIN;
     if ( betac>DIR_MAX ) 
       betac = DIR_MAX;
     if ( betac>DIR_TOTAL_MAX/ddN.W )
       betac = DIR_TOTAL_MAX/ddN.W;
-    if ( verbose>=1 && betain!=betac ) {
-      yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
-		  betain, betac);
+    if ( betain!=betac ) {
+      if ( verbose>=1 )
+	yap_message("beta changed from %lf to %lf due to Dirichlet constrains\n",
+		    betain, betac);
       ddP.betatot = betac*ddN.W;
     }
+    assert(ddP.betatot>0);
   }
   if ( ddP.window>0 ) {
     if ( ddP.window>=ddN.DT )
