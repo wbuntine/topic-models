@@ -134,6 +134,7 @@ double report_pmi(char *topfile,  /* name of topics file to read */
                   float *tpmi)
 {
   int k, e, thee;
+  int myT = 0;
   /*
    *   mapping from local index to actual word index
    */
@@ -156,6 +157,10 @@ double report_pmi(char *topfile,  /* name of topics file to read */
   if ( !wind || !wuse )
     yap_quit("Out of memory in report_pmi()\n");
 
+  /*   count nonzero topics */
+  for (k=0; k<T; k++)
+    if ( tp[k]>0 ) myT++;
+  
   /*
    *   read in file of top word indices in topic, but
    *   all we do first is collect all the words
@@ -302,7 +307,11 @@ double report_pmi(char *topfile,  /* name of topics file to read */
     }
     coh /= 2;
     if ( cnt>0 ) coh /= cnt;
+#ifdef NORMPMI
     coherency[e] += coh * tp[k];
+#else
+    coherency[e] += coh / myT;
+#endif
     if ( tpmi )
       tpmi[e*(T+1)+k] = coh;
     else

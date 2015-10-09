@@ -426,14 +426,16 @@ void pctl_dims() {
      *  if.alphatot== then .alphac==0.05*(NT/DT)/T;
      */
     double alphain = ddP.alphatot/ddN.T;
-    double alphac = alphain;
-    if ( alphac==0 )
+    assert( (ddP.alphatot>0 && ddP.alphac>0)
+	    || (ddP.alphatot==0 && ddP.alphac==0));
+    if ( alphain==0 )
       ddP.alphac = pctl_alphacinit();
     ddP.alphac = pctl_alpharange(ddP.alphac);
-    if ( verbose>=1 && alphain!=alphac ) {
-      yap_message("alpha changed from %lf to %lf due to Dirichlet constrains\n",
-		  alphain, alphac);
-      ddP.alphatot = alphac*ddN.T;
+    if ( alphain!=ddP.alphac ) {
+      if ( verbose>=1 )
+	yap_message("alpha changed from %lf to %lf due to Dirichlet constrains\n",
+		    alphain, ddP.alphac);
+      ddP.alphatot = ddP.alphac*ddN.T;
     }
   } 
   if ( ddP.PYbeta==H_None ) {
