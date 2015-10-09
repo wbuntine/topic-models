@@ -367,7 +367,7 @@ void pctl_read(char *resstem) {
  *   default alpha values for LDA
  */
 static double pctl_alphacinit() {
-  return 0.05*ddN.NT/(ddN.DT*ddN.T);
+  return (0.05*ddN.NT)/((double)ddN.DT*ddN.T);
 }
 static double pctl_alpharange(double alphac) {
   if ( alphac< DIR_MIN ) 
@@ -430,6 +430,8 @@ void pctl_dims() {
 	    || (ddP.alphatot==0 && ddP.alphac==0));
     if ( alphain==0 )
       ddP.alphac = pctl_alphacinit();
+    else
+      ddP.alphac = alphain;
     ddP.alphac = pctl_alpharange(ddP.alphac);
     if ( alphain!=ddP.alphac ) {
       if ( verbose>=1 )
