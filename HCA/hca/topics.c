@@ -15,6 +15,8 @@
  *   but applied a filter to remove low predictive terms.
  *     
  */
+/*  KL  */
+#define KL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -303,6 +305,12 @@ static double phiscore(int w) {
   return ddS.phi[tscorek][w];
 }
 
+static double phiratioscore(int w) {
+  assert(ddS.TwT);
+  assert(tscorek>=0);
+  return wordprob(w,tscorek)/ddS.TwT[w];
+}
+
 static double lowerQ;
 static double Qscore(int w) {
   int n = getn(w);
@@ -467,6 +475,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   float *gtvec = globalprop();
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
+#ifdef KL
+  float *p0vec = calloc(ddN.W,sizeof(p0vec[0]));
+#endif
   double *ngalpha = NULL;
   T_stats_t *termstats;
   
@@ -474,6 +485,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     pmicount = topword;
   if ( scoretype == ST_idf ) {
     tscore = idfscore;
+  } else if ( scoretype == ST_phirat ) {
+    tscore = phiratioscore;
   } else if ( scoretype == ST_phi ) {
     tscore = phiscore;
   } else if ( scoretype == ST_count ) {
@@ -544,6 +557,13 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     if ( !termindk )
       yap_quit("Cannot allocate termindk in hca_displaytopics()\n");
   }
+
+#ifdef KL
+  ddD.df = malloc(sizeof(*ddD.df)*ddN.W);
+  ddD.n_df = data_df(stem,ddD.df);
+  for (w=0; w<ddN.W; w++)
+    p0vec[w] = ddD.df[w];
+#endif
   
   /*
    *   two passes through, 
@@ -695,8 +715,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double prop = gtvec[kk];
       float *dprop = docprop(kk);
       double spw = 0;
-      double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT); 
+      double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT);
+#ifdef KL
+      double ew = fv_kl(p0vec,pvec,ddN.W);
+#else
       double ew = exp(fv_entropy(pvec,ddN.W));
+#endif
       double ud = fv_helldistunif(pvec,ddN.W);
       double pd = fv_helldist(pvec,gpvec,ddN.W);
       double sl = fv_avestrlen(pvec,ddN.tokens,ddN.W);
@@ -715,7 +739,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	yap_message(" ws=%.1lf%%", 100*(1-spw));
       } 
       yap_message(" ds=%.1lf%%", 100*(1-spd) );
-      yap_message(" ew=%.0lf", ew); 
+#ifdef KL
+      yap_message(" ew=%lf", ew);
+#else
+      yap_message(" ew=%.0lf", ew);
+#endif
 #ifdef MALLET_EW
       yap_message(" ewp=%.1lf", ewp); 
 #endif
@@ -754,7 +782,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  fprintf(rp," 0");
 	}
 	fprintf(rp," %.6lf", (1-spd) );
-	fprintf(rp," %.2lf", ew); 
+#ifdef KL
+	yap_message(" %lf", ew);
+#else
+	fprintf(rp," %.2lf", ew);
+#endif
 #ifdef MALLET_EW
 	fprintf(rp," %.2lf", ewp); 
 #endif
@@ -850,7 +882,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       int w;
       for (w=0; w<ddN.W; w++)
 	pvec[w] = betabasewordprob(w);
+#ifdef KL
+      double ew = fv_kl(p0vec,pvec,ddN.W);
+#else
       double ew = exp(fv_entropy(pvec,ddN.W));
+#endif
+
       double ud = fv_helldistunif(pvec,ddN.W);
       double pd = fv_helldist(pvec,gpvec,ddN.W);
       fprintf(rp,"topic -1 -1 0 0");
@@ -972,6 +1009,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     free(NwK);
     NwK = NULL;
   }
+#ifdef KL
+  free(ddD.df);
+#endif
   free(pvec); 
   free(gtvec);
   free(gpvec);

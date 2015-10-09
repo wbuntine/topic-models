@@ -77,14 +77,35 @@ double fv_entropy(float *vp, int N) {
   for (i=0; i<N; i++ ) {
     tot += vp[i];
   }
+  if ( tot<=0 )
+    return HUGE_VAL;
   for (i=0; i<N; i++ ) {
     double p = vp[i]/tot;
     if ( N*p>1e-7 ) {
       ent -= p * log(p);
     }
   }
-  if ( tot<=0 )
+  return ent;
+}
+double fv_kl(float *vp1, float *vp2, int N) {
+  double ent = 0;
+  double tot1 = 0, tot2 = 0;
+  int i;
+  if ( !vp1 || !vp2 ) 
     return HUGE_VAL;
+  for (i=0; i<N; i++ ) {
+    tot2 += vp2[i];
+    tot1 += vp1[i];
+  }
+  if ( tot1<=0 || tot2<=0 )
+    return HUGE_VAL;
+  for (i=0; i<N; i++ ) {
+    double p1 = vp1[i]/tot1;
+    double p2 = vp2[i]/tot2;
+    if ( N*p1>1e-7 ) {
+      ent += p1 * log(p1/p2);
+    }
+  }
   return ent;
 }
 double fv_bound(float *vp, int N, float alpha) {

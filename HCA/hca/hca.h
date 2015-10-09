@@ -57,7 +57,7 @@
 /*
  *    used when printing words
  */
-enum ScoreType { ST_count, ST_idf, ST_cost, ST_Q, ST_phi };
+enum ScoreType { ST_count, ST_idf, ST_cost, ST_Q, ST_phi, ST_phirat };
 
 /*
  *    type of prior node for PDP

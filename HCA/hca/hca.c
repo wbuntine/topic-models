@@ -642,6 +642,8 @@ int main(int argc, char* argv[])
           score = ST_idf;
         else if ( strncmp(optarg,"phi",3)==0 )
           score = ST_phi;
+        else if ( strncmp(optarg,"rat",3)==0 )
+          score = ST_phirat;
         else if ( strncmp(optarg,"count",5)==0 )
           score = ST_count;
         else if ( strncmp(optarg,"Q",1)==0 )

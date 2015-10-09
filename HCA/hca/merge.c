@@ -37,6 +37,7 @@
  *    adapted by diffing code in like.c
  */ 
 
+//   matches likelihood_DIRalpha()
 static double likemerge_DIRalpha(k1,k2) {
   /*
    *   Dirichlet for topics
@@ -55,24 +56,23 @@ static double likemerge_DIRalpha(k1,k2) {
   return likelihood;
 }
 
+//   likelihood_DIRbeta() 
 static double likemerge_DIRbeta(k1,k2) {
   int j;
-  double likelihood = 0;
   double val = 0;
   for (j=0; j<ddN.W; j++) {
     if ( ddS.Nwt[j][k2]>0 ) {
       assert(ddP.betapr[j]>0);
-      val += gammadiff((int)ddS.Nwt[j][k1]+ddS.Nwt[j][k2], ddP.betapr[j], 0.0)
-	- gammadiff((int)ddS.Nwt[j][k1], ddP.betapr[j], 0.0)
-	- gammadiff((int)ddS.Nwt[j][k2], ddP.betapr[j], 0.0);
+      val += (gammadiff((int)ddS.Nwt[j][k1]+ddS.Nwt[j][k2], ddP.betapr[j], 0.0)
+	      - gammadiff((int)ddS.Nwt[j][k1], ddP.betapr[j], 0.0)
+	      - gammadiff((int)ddS.Nwt[j][k2], ddP.betapr[j], 0.0));
     } 
   }     
-  val -= gammadiff((int)ddS.NWt[k1]+ddS.NWt[k2], ddP.betatot, 0.0)
-    - gammadiff((int)ddS.NWt[k1], ddP.betatot, 0.0)
-    - gammadiff((int)ddS.NWt[k2], ddP.betatot, 0.0);
-  likelihood += val;
-  yap_infinite(likelihood);
-  return likelihood;
+  val -= (gammadiff((int)ddS.NWt[k1]+ddS.NWt[k2], ddP.betatot, 0.0)
+	  - gammadiff((int)ddS.NWt[k1], ddP.betatot, 0.0)
+	  - gammadiff((int)ddS.NWt[k2], ddP.betatot, 0.0));
+  yap_infinite(val);
+  return val;
 }
 
 #ifndef NOOPT_MERGE
@@ -563,8 +563,10 @@ static int next_best(bestmerge_t *B) {
 
 void like_merge(float minprop, double scale, int best) {
   int k1, k2;
+  double realdiff = 0;
   double likediff;
   int got=0;
+  /*  only use this for reporting ; should disable in production */
   float **cmtx;
   int title = 0;
   int mincount = minprop * ddN.NT;
@@ -590,9 +592,9 @@ void like_merge(float minprop, double scale, int best) {
     if ( ddS.NWt[k1]<=mincount ) 
       continue;
     for (k2=0; k2<k1; k2++) {
-      // ????? order k1, k2?
       if ( ddS.NWt[k2]<=mincount )
 	continue;
+      /*  now have a pair to check (k1,k2) with OK counts */
       if ( ddP.PYalpha==H_None )
 	likediff = likemerge_DIRalpha(k1,k2);
       else
@@ -604,8 +606,9 @@ void like_merge(float minprop, double scale, int best) {
       if ( likediff>0 ) {
 	got++;
 	if ( title==0 && verbose ) {
-	  yap_message("\nPre merge log_2(perp)=%.4lf",  
-		      scale * likelihood() );
+	  double like = scale * likelihood();
+	  yap_message("\nPre merge log_2(perp)=%.4lf", like);
+	  realdiff = like;
 	}
 	if ( verbose>1 ) {
 	  if ( title==0 ) 
@@ -645,7 +648,8 @@ void like_merge(float minprop, double scale, int best) {
     if ( ddP.PYalpha ) 
       merge_init_Tdt(k1, k2, &Ma);
     if ( ddP.PYbeta ) 
-      merge_init_Twt(k1, k2, &Mb);
+      merge_init_Twt(k1, k2, &Mb);	       
+    //  WRAY:  need to checkk what this does, it it why change?
     hca_merge_stats(k1, k2, Ma.Tdt, Mb.Twt);
     // hca_correct_tdt(0);
     if ( ddP.PYalpha ) 
@@ -664,8 +668,9 @@ void like_merge(float minprop, double scale, int best) {
     }
   }	
   if ( got && verbose ) {
-    yap_message("\nPost merge log_2(perp)=%.4lf",  
-		scale * likelihood() );
+    double like = scale * likelihood();
+    realdiff -= like;
+    yap_message("\nPost merge log_2(perp)=%.4lf (%.6lf)", like, realdiff);
   }  
   if ( got==0 && verbose ) {
     yap_message("Merge found no candidates\n");
