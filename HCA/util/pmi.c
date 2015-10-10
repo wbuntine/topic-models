@@ -307,6 +307,7 @@ double report_pmi(char *topfile,  /* name of topics file to read */
     }
     coh /= 2;
     if ( cnt>0 ) coh /= cnt;
+#define NORMPMI
 #ifdef NORMPMI
     coherency[e] += coh * tp[k];
 #else

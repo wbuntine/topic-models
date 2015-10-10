@@ -77,7 +77,9 @@ while ( ($_=<M>) ) {
 	    print STDERR "Map undefined for 2:$2\n";
         } elsif ( $map[$1]>=0 && $map[$2]>=0 ) {
             my $score = sprintf "%.${prec}f", $3;
-	    print "$map[$1] $map[$2] $score\n";
+	    if ( $score =~ /[1-9]/ ) {
+		print "$map[$1] $map[$2] $score\n";
+	    }
 	}
     } else {
 	print STDERR "Bad line: $_\n";
