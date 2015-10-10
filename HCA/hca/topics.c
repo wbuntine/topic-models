@@ -307,8 +307,20 @@ static double phiscore(int w) {
 
 static double phiratioscore(int w) {
   assert(ddS.TwT);
-  assert(tscorek>=0);
-  return wordprob(w,tscorek)/ddS.TwT[w];
+  if ( ddS.TwT[w]==0 )
+    return 0;
+  if ( tscorek>=0 )
+    return wordprob(w,tscorek)/ddS.TwT[w];
+  if ( ddD.df[w]>0 )
+    return ddS.TwT[w] / (double) ddD.df[w];
+  return 0;
+}
+
+static double phiinvratioscore(int w) {
+  assert(ddS.TwT);
+  if ( ddS.TwT[w]==0 )
+    return 0;
+  return ddD.df[w] / (double) ddS.TwT[w];
 }
 
 static double lowerQ;
@@ -476,7 +488,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
 #ifdef KL
-  float *p0vec = calloc(ddN.W,sizeof(p0vec[0]));
+  float *dfvec = calloc(ddN.W,sizeof(dfvec[0]));
 #endif
   double *ngalpha = NULL;
   T_stats_t *termstats;
@@ -558,11 +570,11 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_quit("Cannot allocate termindk in hca_displaytopics()\n");
   }
 
-#ifdef KL
   ddD.df = malloc(sizeof(*ddD.df)*ddN.W);
   ddD.n_df = data_df(stem,ddD.df);
+#ifdef KL
   for (w=0; w<ddN.W; w++)
-    p0vec[w] = ddD.df[w];
+    dfvec[w] = ddD.df[w];
 #endif
   
   /*
@@ -717,7 +729,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double spw = 0;
       double spd = ((double)nonzero_Ndt(kk))/((double)ddN.DT);
 #ifdef KL
-      double ew = fv_kl(p0vec,pvec,ddN.W);
+      double ew = fv_kl(dfvec,pvec,ddN.W);
 #else
       double ew = exp(fv_entropy(pvec,ddN.W));
 #endif
@@ -872,7 +884,10 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     tscorek = -1;
     cnt = buildindk(-1,indk);
-    topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
+    if ( scoretype == ST_phirat )
+      topk(topword, cnt, indk, phiratioscore);
+    else
+      topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
     /*
      *     cannot build df mtx for root because
      *     it is latent w.r.t. topics
@@ -883,7 +898,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       for (w=0; w<ddN.W; w++)
 	pvec[w] = betabasewordprob(w);
 #ifdef KL
-      double ew = fv_kl(p0vec,pvec,ddN.W);
+      double ew = fv_kl(dfvec,pvec,ddN.W);
 #else
       double ew = exp(fv_entropy(pvec,ddN.W));
 #endif
@@ -914,10 +929,19 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	if ( ddN.tokens ) 
 	  fprintf(rp, " %s", ddN.tokens[indk[w]]);
 	fprintf(rp, "\n");
-      }   
+      }
+    }
+    yap_message("\nTopical words=");
+    topk(topword, cnt, indk, phiinvratioscore);
+    for (w=0; w<topword && w<cnt; w++) {
+      if ( w>0 ) yap_message(",");
+      if ( ddN.tokens )
+	yap_message("%s", ddN.tokens[indk[w]]);
+      else
+	yap_message("%d", indk[w]);
     }
     yap_message("\n");
-  }
+  }  
   yap_message("\n");
   if ( rp )
     fclose(rp);
@@ -944,8 +968,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     fp = fopen(corfile,"w");
     if ( !fp ) 
       yap_sysquit("Cannot open file '%s' for write\n", corfile);
-   /*
-    *   print file
+    /*
+     *   print file
      */
     for (t1=0; t1<ddN.T; t1++) {
       for (t2=0; t2<t1; t2++) 
@@ -1010,7 +1034,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     NwK = NULL;
   }
 #ifdef KL
-  free(ddD.df);
+  free(dfvec);
 #endif
   free(pvec); 
   free(gtvec);

@@ -426,8 +426,6 @@ void pctl_dims() {
      *  if.alphatot== then .alphac==0.05*(NT/DT)/T;
      */
     double alphain = ddP.alphatot/ddN.T;
-    assert( (ddP.alphatot>0 && ddP.alphac>0)
-	    || (ddP.alphatot==0 && ddP.alphac==0));
     if ( alphain==0 )
       ddP.alphac = pctl_alphacinit();
     else
