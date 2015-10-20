@@ -485,6 +485,10 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   uint32_t *psort;
   FILE *rp = NULL;
   float *gtvec = globalprop();
+//#define XTRA // prints model topic probs after observed
+#ifdef XTRA
+  double *gtavec = calloc(ddN.T,sizeof(gtavec[0]));
+#endif
   float *gpvec = calloc(ddN.W,sizeof(gpvec[0]));
   float *pvec = calloc(ddN.W,sizeof(pvec[0]));
 #ifdef KL
@@ -493,6 +497,10 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
   double *ngalpha = NULL;
   T_stats_t *termstats;
   
+#ifdef XTRA
+  get_probs(gtavec);
+#endif
+
   if ( pmicount>topword )
     pmicount = topword;
   if ( scoretype == ST_idf ) {
@@ -745,6 +753,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       double da = dprop?fv_bound(dprop,ddN.DT,1.0/sqrt((double)ddN.T)):0;
       sparsitydoc += spd;
       yap_message((ddN.T>200)?" p=%.3lf%%":" p=%.2lf%%",100*prop);   
+#ifdef XTRA
+      yap_message((ddN.T>200)?"/%.3lf%%":"/%.2lf%%",100*gtavec[kk]);   
+#endif
       if ( ddS.Nwt ) {
 	spw = ((double)nonzero_Nwt(kk))/((double)ddN.W);
 	sparsityword += spw;
