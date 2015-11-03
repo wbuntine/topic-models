@@ -297,6 +297,8 @@ static double phiscore(int w) {
   if ( tscorek<0 ) {
     if ( ddP.betapr ) 
       return ddP.betapr[w];
+    if ( ddP.PYbeta!=H_PDP )
+      return ddP.phi[ddN.T][w];
     return ddS.TwT[w];
   }
   assert(ddP.phi || ddS.phi);
@@ -306,7 +308,14 @@ static double phiscore(int w) {
 }
 
 static double phiratioscore(int w) {
-  assert(ddS.TwT);
+  assert(ddS.TwT || ddP.phi);
+  if (  ddP.phi  && ddP.PYbeta!=H_PDP) {
+    if ( tscorek>=0 )
+      return wordprob(w,tscorek)/ddP.phi[ddN.T][w];
+    if ( ddD.df[w]>0 )
+      return ddP.phi[ddN.T][w] / (double) ddD.df[w];
+    return 0;
+  } 
   if ( ddS.TwT[w]==0 )
     return 0;
   if ( tscorek>=0 )
@@ -317,7 +326,10 @@ static double phiratioscore(int w) {
 }
 
 static double phiinvratioscore(int w) {
-  assert(ddS.TwT);
+  assert(ddS.TwT || ddP.phi);
+  if (  ddP.phi && ddP.PYbeta!=H_PDP ) {
+    return ddD.df[w] / ddP.phi[ddN.T][w];
+  }
   if ( ddS.TwT[w]==0 )
     return 0;
   return ddD.df[w] / (double) ddS.TwT[w];
@@ -386,8 +398,12 @@ static int buildindk(int k, uint32_t *indk) {
 	if ( ddP.betapr[w]>0.05/ddN.W ) indk[cnt++] = w;
       return cnt;
     }
-    if ( ddP.phi!=NULL ) 
-      return 0;
+    if ( ddP.phi!=NULL  && ddP.PYbeta!=H_PDP) {
+      for (w=0; w<ddN.W; w++) {
+	if ( ddP.phi[ddN.T][w]>0.05/ddN.W ) indk[cnt++] = w;
+      }
+      return cnt;
+    }
     assert(ddS.TwT);
     for (w=0; w<ddN.W; w++) {
       if ( ddS.TwT[w]>0 ) indk[cnt++] = w;
@@ -887,7 +903,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     yap_message("\n");
     free(dfmtx[0]); free(dfmtx); 
   }
-  if ( verbose>1 && ddP.PYbeta && (ddP.phi==NULL || ddP.betapr) ) {
+  if ( verbose>1 && ddP.PYbeta ) {
     int cnt;
     double pcumm = 0;
      /*
@@ -906,8 +922,13 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     yap_message("Topic root words=");
     if ( fullreport ) {
       int w;
-      for (w=0; w<ddN.W; w++)
-	pvec[w] = betabasewordprob(w);
+      if ( ddP.phi && ddP.PYbeta!=H_PDP ) {
+	for (w=0; w<ddN.W; w++)
+	  pvec[w] = ddS.phi[ddN.T][w];
+      } else {
+	for (w=0; w<ddN.W; w++)
+	  pvec[w] = betabasewordprob(w);
+      }
 #ifdef KL
       double ew = fv_kl(dfvec,pvec,ddN.W);
 #else
@@ -928,7 +949,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	yap_message("%s", ddN.tokens[indk[w]]);
       else
 	yap_message("%d", indk[w]);
-      if ( verbose>2 )
+      if ( verbose>2 && !ddP.phi )
 	yap_message("(%6lf)", countscore(indk[w]));
       if ( fullreport ) {
 	fprintf(rp, "word %d %d %d", -1, indk[w], w);
