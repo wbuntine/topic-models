@@ -213,6 +213,7 @@ double gibbs_lda(/*
     hh++;
     if ( ddS.UN ) 
       ddS.UN[did] = 0;
+    ??????????  NB.  need also to adjust use of ddN.DT as a statistic??
     return 0;
   }
 

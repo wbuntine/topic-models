@@ -33,6 +33,10 @@ typedef struct D_stats_s {
    *    latent mass per doc for H_NG
    */
   double *UN;
+#ifdef NG_SPARSE
+  uint32_t *sparseD;
+  uint32_t **sparse;  //  bit vector giving if topic zeroed
+#endif
   /*
    *  Basic topic data for simplest LDA model
    *     we assume maximum number of words in single document
@@ -65,6 +69,10 @@ extern D_stats_t ddS;
 extern D_DMi_t ddM;
 
 #define M_multi(l)  misi_multi(&ddM,l)
+
+#ifdef NG_SPARSE
+#define M_docsparse(i,k) (ddS.sparse[i][(k)/32U]  & (1U<<(((unsigned)k)%32U)))
+#endif
 
 double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental, int proc);
 

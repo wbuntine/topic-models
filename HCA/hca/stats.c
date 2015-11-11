@@ -112,6 +112,9 @@ void hca_alloc() {
   ddS.TwT = NULL;
   ddS.TWt = NULL;
   ddS.UN = NULL;
+#ifdef NG_SPARSE
+  ddS.sparse = NULL
+#endif
   if ( ddP.PYbeta && ddP.phi==NULL ) {
     ddS.Twt = u16mat(ddN.W,ddN.T);
     ddS.TwT = u32vec(ddN.W);
@@ -123,6 +126,16 @@ void hca_alloc() {
     ddS.Tlife = u32vec(ddN.T);
   }
   if ( ddP.NGalpha ) {
+#ifdef NG_SPARSE
+    int i, k;
+    unsigned incr;
+    ddS.sparseD = malloc(ddN.T*sizeof(*ddS.sparse));
+    ddS.sparse = malloc(ddN.D*sizeof(*ddS.sparse));
+    incr = (1 + (ddN.T-1)/32U);
+    ddS.sparse[0] = malloc(ddN.D*sizeof(**ddS.sparse)*incr);
+    for (i=1; i<ddN.D; i++)
+      ddS.sparse[i] = ddS.sparse[i-1] + incr;
+#endif
     ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
   }
   ddS.NdT = u16vec(ddN.D);
@@ -140,6 +153,11 @@ void hca_free() {
   free(ddS.NWt);
   free(ddS.z);
   if ( ddS.UN )  free(ddS.UN);
+  if ( ddS.sparse ) {
+    free(ddS.sparse[0]);
+    free(ddS.sparse);
+    free(ddS.sparseD);
+  }
   if ( ddS.Nwt ) {
     free(ddS.Nwt[0]); free(ddS.Nwt);
   }
@@ -381,6 +399,10 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
   if ( ddS.UN )
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
+  if ( ddS.sparse ) {
+    unsigned incr = (1 + (ddN.T-1)/32U);
+    memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*ddN.D*incr);
+  }
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -432,6 +454,11 @@ void hca_reset_stats(char *resstem,
     aveB /= ddN.T;
     for (i=firstdoc; i<lastdoc; i++) 
       ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+    if ( ddS.sparse ) {
+      for (t=0; t<ddN.T; t++)
+	ddN.sparseD[t] = ddN.DT;
+      ???? is DT adjusted for the dropped docs ???
+    }
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {
