@@ -38,7 +38,7 @@
  */ 
 
 //   matches likelihood_DIRalpha()
-static double likemerge_DIRalpha(k1,k2) {
+static double likemerge_DIRalpha(int k1, int k2) {
   /*
    *   Dirichlet for topics
    */
@@ -57,7 +57,7 @@ static double likemerge_DIRalpha(k1,k2) {
 }
 
 //   likelihood_DIRbeta() 
-static double likemerge_DIRbeta(k1,k2) {
+static double likemerge_DIRbeta(int k1, int k2) {
   int j;
   double val = 0;
   for (j=0; j<ddN.W; j++) {

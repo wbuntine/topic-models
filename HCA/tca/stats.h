@@ -172,6 +172,7 @@ void theta_init(char *resstem);
 float *theta_mean();
 void theta_update();
 void theta_free();
+void theta_save();
 void tprob_save();
 
 /*
@@ -183,14 +184,6 @@ void phi_save();
 void phi_free();
 float *phi_mean(int k);
 
-/*
- *  optionally save/update mu matrix at end of cycles
- */
-void mu_init(char *resstem);
-void mu_update();
-void mu_save();
-void mu_free();
-float *mu_mean();
 /*
  *  optionally save/update mu matrix at end of cycles
  */

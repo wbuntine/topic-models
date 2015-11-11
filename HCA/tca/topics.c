@@ -106,7 +106,7 @@ static double countscore(int w) {
 void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
   int w,k;
   int *indk = NULL;
-  int M_tot;
+  int M_tot = 0;
   double (*tscore)(int) = NULL;
   double sparsityword = 0;
   double sparsitydoc = 0;
@@ -206,8 +206,8 @@ void tca_displaytopics(char *resstem, int topword, enum ScoreType scoretype) {
     yap_message("\nEpoch %d\n", (int)tscoree);
     for (k=0; k<ddN.T; k++) {
       int cnt;
-      double spw;
-      double spd; 
+      double spw=0;
+      double spd=0; 
       tscorek = k;
       /*
        *    print top words

@@ -153,11 +153,13 @@ void hca_free() {
   free(ddS.NWt);
   free(ddS.z);
   if ( ddS.UN )  free(ddS.UN);
+#ifdef NG_SPARSE
   if ( ddS.sparse ) {
     free(ddS.sparse[0]);
     free(ddS.sparse);
     free(ddS.sparseD);
   }
+#endif
   if ( ddS.Nwt ) {
     free(ddS.Nwt[0]); free(ddS.Nwt);
   }
@@ -297,6 +299,13 @@ void hca_read_z(char *resstem, int docstart, int docend) {
   }
   fclose(fr);
   free(restartfile);
+
+  restartfile = yap_makename(resstem, ".UN");
+  if ( docstart!=0 )
+    yap_quit("Cannot read '%s' from %d-th doc\n",
+	     restartfile, docstart);
+  read_dvec(restartfile, docend*ddN.T, ddS.UN);
+  free(restartfile);
 }
 
 void hca_write_z(char *resstem) 
@@ -399,10 +408,12 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
   if ( ddS.UN )
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
+#ifdef NG_SPARSE
   if ( ddS.sparse ) {
     unsigned incr = (1 + (ddN.T-1)/32U);
     memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*ddN.D*incr);
   }
+#endif
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -454,11 +465,13 @@ void hca_reset_stats(char *resstem,
     aveB /= ddN.T;
     for (i=firstdoc; i<lastdoc; i++) 
       ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+#ifdef NG_SPARSE
     if ( ddS.sparse ) {
       for (t=0; t<ddN.T; t++)
 	ddN.sparseD[t] = ddN.DT;
       ???? is DT adjusted for the dropped docs ???
     }
+#endif
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {

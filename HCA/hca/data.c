@@ -183,6 +183,7 @@ extern void hca_write_z(char *resstem);
  *        STEM.twt = Twt matrix in standard sparse format
  *        STEM.zt  = z vector for all training docs sequentially,
  *                  one value per line
+ *        STEM.UN  = U latent var for H_NG
  *        STEM.par = various parameters in readable form
  */
 void data_checkpoint(char *resstem, char *stem, int ITER) {
@@ -207,6 +208,11 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
       }
     }
     hca_write_z(resstem);
+    if ( ddS.UN ) {
+      fname = yap_makename(resstem,".UN");
+      write_dvec(fname, ddN.D*ddN.T, ddS.UN);
+      free(fname);
+    }
 
     fname = yap_makename(resstem,".par");
     FILE *fp = fopen(fname, "w");

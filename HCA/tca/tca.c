@@ -834,11 +834,11 @@ int main(int argc, char* argv[])
   tca_report(resstem, stem, ITER, procs, fix_hold, (dopmi&&displayed>0)?1:0);
 
   if ( ddP.phiiter>0 )
-      phi_save(resstem);
+      phi_save();
   if ( ddP.thetaiter>0 )
-      theta_save(resstem);
+      theta_save();
   if ( ddP.muiter>0 )
-      mu_save(resstem);
+      mu_save();
 
   /*
    *  free

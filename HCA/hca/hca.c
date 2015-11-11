@@ -1087,6 +1087,14 @@ int main(int argc, char* argv[])
       hca_rand_z(ddP.Tinit, 0, ddN.D);
     }
     hca_reset_stats(resstem, restart, 0, 0, ddN.DT);
+    if ( ddP.PYalpha==H_NG ) {
+      int i;
+      ddN.DTused = 0;
+      for (i=0; i<ddN.DT; i++)
+	/*   this must match H_NG test at top of gibbs_lda() */
+	if (  ddD.NdT[i]>=ddP.mindocsize )
+	  ddN.DTused++;
+    }
   }
   if ( ddP.PYalpha )
     yap_message("Initialised with %d classes\n", ddS.TDTnz);

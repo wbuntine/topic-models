@@ -25,6 +25,7 @@ typedef struct D_dims_s {
   int W;     // number of unique words
   int C;     // number of classes (got from ddD.c)
   int D, DT; // number of docs
+  int DTused; //  DT minus "too small" docs
   int TEST;  // number of docs at end for test
   //  train is 0..D-TEST-1
   int N, NT; // number of words in corpus
