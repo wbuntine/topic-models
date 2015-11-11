@@ -72,6 +72,7 @@ extern D_DMi_t ddM;
 
 #ifdef NG_SPARSE
 #define M_docsparse(i,k) (ddS.sparse[i][(k)/32U]  & (1U<<(((unsigned)k)%32U)))
+#define M_bitveclen()    (1 + (ddN.T-1)/32U)
 #endif
 
 double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental, int proc);

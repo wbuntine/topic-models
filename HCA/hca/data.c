@@ -184,6 +184,7 @@ extern void hca_write_z(char *resstem);
  *        STEM.zt  = z vector for all training docs sequentially,
  *                  one value per line
  *        STEM.UN  = U latent var for H_NG
+ *        STEM.ngs = sparsity bit vectors for H_NG
  *        STEM.par = various parameters in readable form
  */
 void data_checkpoint(char *resstem, char *stem, int ITER) {
@@ -212,6 +213,25 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
       fname = yap_makename(resstem,".UN");
       write_dvec(fname, ddN.D*ddN.T, ddS.UN);
       free(fname);
+#ifdef NG_SPARSE
+      {
+	/*
+	 *    write as binary
+	 */
+	FILE *fpout=NULL;
+	fname = yap_makename(resstem,".ngs");
+	fpout = fopen(fname,"wb");
+	if ( !fpout ) 
+	  yap_sysquit("Cannot open file '%s' for write in data_checkpoint()\n", 
+		      fname);
+	size = ddN.D*M_bitveclen();
+	if ( fwrite(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpout) 
+	     !=size )
+	  yap_sysquit("Cannot write bitvector to '%s' in data_checkpoint()\n", fname);
+	fclose(fpout);
+      }
+      free(fname);
+#endif
     }
 
     fname = yap_makename(resstem,".par");

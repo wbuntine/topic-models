@@ -131,7 +131,7 @@ void hca_alloc() {
     unsigned incr;
     ddS.sparseD = malloc(ddN.T*sizeof(*ddS.sparse));
     ddS.sparse = malloc(ddN.D*sizeof(*ddS.sparse));
-    incr = (1 + (ddN.T-1)/32U);
+    incr = M_bitveclen();
     ddS.sparse[0] = malloc(ddN.D*sizeof(**ddS.sparse)*incr);
     for (i=1; i<ddN.D; i++)
       ddS.sparse[i] = ddS.sparse[i-1] + incr;
@@ -299,13 +299,6 @@ void hca_read_z(char *resstem, int docstart, int docend) {
   }
   fclose(fr);
   free(restartfile);
-
-  restartfile = yap_makename(resstem, ".UN");
-  if ( docstart!=0 )
-    yap_quit("Cannot read '%s' from %d-th doc\n",
-	     restartfile, docstart);
-  read_dvec(restartfile, docend*ddN.T, ddS.UN);
-  free(restartfile);
 }
 
 void hca_write_z(char *resstem) 
@@ -410,8 +403,10 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
 #ifdef NG_SPARSE
   if ( ddS.sparse ) {
-    unsigned incr = (1 + (ddN.T-1)/32U);
-    memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*ddN.D*incr);
+    memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*
+	   ddN.D*M_bitveclen());
+    for (t=0; t<ddN.T; t++) 
+      ddN.sparseD[t] = ddN.DTused;
   }
 #endif
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
@@ -455,23 +450,57 @@ void hca_reset_stats(char *resstem,
   }
 
   if ( ddS.UN ) {
-    double aveB = 0;
-    double totA = 0;
-    assert(ddP.NGbeta);
-    for (t=0; t<ddN.T; t++) {
-      aveB += ddP.NGbeta[t];
-      totA += ddP.NGalpha[t];
-    }
-    aveB /= ddN.T;
-    for (i=firstdoc; i<lastdoc; i++) 
-      ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+    if ( restart ) {
+      char *restartfile = yap_makename(resstem, ".UN");
+      if ( firstdoc!=0 )
+	yap_quit("Cannot read '%s' from %d-th doc\n",
+		 restartfile, firstdoc);
+      read_dvec(restartfile, lastdoc*ddN.T, ddS.UN);
+      free(restartfile);
 #ifdef NG_SPARSE
-    if ( ddS.sparse ) {
-      for (t=0; t<ddN.T; t++)
-	ddN.sparseD[t] = ddN.DT;
-      ???? is DT adjusted for the dropped docs ???
-    }
+      {
+	FILE *fpin=NULL;
+	fname = yap_makename(resstem,".ngs");
+	fpin = fopen(fname,"rb");
+	if ( !fpin ) 
+	  yap_sysquit("Cannot open file '%s' for read in hca_read_z()\n", 
+		      fname);
+	size = lastdoc*M_bitveclen();
+	if ( fwrite(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpin) 
+	     !=size )
+	  yap_sysquit("Cannot write bitvector to '%s' in data_checkpoint()\n", fname);
+	fclose(fpin);
+	for (t=0; t<ddN.T; t++) {
+	  ddN.sparseD[t] = 0;
+	}
+	for (i=0; i<ddN.DT && i<lastdoc; i++0) {
+	  if ( ddD.NdT[i]<ddP.mindocsize )
+	    continue;
+	  for (t=0; t<ddN.T; t++) {
+	    if ( M_docsparse(i,t) )
+	      ddN.sparseD[t]++;
+	  }
+	}
+      }
 #endif
+    } else {
+      double aveB = 0;
+      double totA = 0;
+      assert(ddP.NGbeta);
+      for (t=0; t<ddN.T; t++) {
+	aveB += ddP.NGbeta[t];
+	totA += ddP.NGalpha[t];
+      }
+      aveB /= ddN.T;
+      for (i=firstdoc; i<lastdoc; i++) 
+	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+#ifdef NG_SPARSE
+      /*
+       *   note have previously initialised ddS.sparse
+       */
+#endif
+
+    }
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {
