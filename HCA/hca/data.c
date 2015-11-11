@@ -211,7 +211,7 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
     hca_write_z(resstem);
     if ( ddS.UN ) {
       fname = yap_makename(resstem,".UN");
-      write_dvec(fname, ddN.D*ddN.T, ddS.UN);
+      write_dvec(fname, ddN.D, ddS.UN);
       free(fname);
 #ifdef NG_SPARSE
       {
@@ -219,6 +219,7 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
 	 *    write as binary
 	 */
 	FILE *fpout=NULL;
+	int size;
 	fname = yap_makename(resstem,".ngs");
 	fpout = fopen(fname,"wb");
 	if ( !fpout ) 
@@ -229,8 +230,8 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
 	     !=size )
 	  yap_sysquit("Cannot write bitvector to '%s' in data_checkpoint()\n", fname);
 	fclose(fpout);
+	free(fname);
       }
-      free(fname);
 #endif
     }
 
