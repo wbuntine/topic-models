@@ -219,9 +219,14 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
       *tip = uone/(uone + uzero);
     }
     return p;
-  } else if ( ddP.NGalpha )
+  } else if ( ddP.NGalpha ) {
+#ifdef NG_SPARSE
+    if ( M_docsparse(d,t)==0 )
+      return ???;
+#endif
     return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
       / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+  }
   return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);
 }
 
@@ -231,12 +236,17 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 double topicprob(int d, int t, int Ttot) {
   if ( ddP.theta ) 
     return ddP.theta[d][t];
-  if ( ddP.NGalpha ) 
+  if ( ddP.NGalpha ) {
     /*
      *  this isn't normalised
      */
+#ifdef NG_SPARSE
+    if ( M_docsparse(d,t)==0 )
+      return 0;
+#endif
     return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
       / (ddS.UN[d]+ddP.NGbeta[t]);
+  }
   if ( ddP.PYalpha==H_None ) 
     return ((double)ddS.Ndt[d][t]+ddP.alphapr[t])
       / ((double)ddS.NdT[d]+ddP.alphatot);

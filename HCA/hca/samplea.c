@@ -357,7 +357,10 @@ static double UNterms(double myUN, void *mydata) {
   double like = 0;
   like = (ddS.NdT[d]-1) * log(myUN);
   for (k=0; k<ddN.T; k++)
-    like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
+#ifdef NG_SPARSE
+    if (  M_docsparse(d,k) )
+#endif
+      like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
   return like;
 }
 
@@ -369,12 +372,24 @@ void sample_UN(int d) {
   myarms(0.00001, ddN.NT,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
 }
 
+#define UN_SAMPLE
 void opt_UN(int did) {
     double val = 0;
     int t;
+    assert(ddS.UN);
     for (t=0; t<ddN.T; t++)
-      val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
-        / (ddS.UN[did]+ddP.NGbeta[t]);
+#ifdef NG_SPARSE
+      if (  M_docsparse(did,t) ) 
+#endif
+	val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
+	  / (ddS.UN[did]+ddP.NGbeta[t]);
+    assert(val>0);
+#ifdef UN_SAMPLE
+    //   approximate sampler
+    ddS.UN[did] = rng_gamma(rngp,ddS.NdT[did])/val;
+#else
+    //   fixed point
     ddS.UN[did] = (ddS.NdT[did]-1.0)/val;
+#endif
     assert(ddS.UN[did]>0);
 }

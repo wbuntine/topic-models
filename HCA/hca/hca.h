@@ -15,6 +15,11 @@
 #ifndef __HCA_H
 #define __HCA_H
 
+/*
+ *  testing IBP with H_NG
+ */
+//  #define NG_SPARSE
+
 #include <unistd.h>
 #include "lgamma.h" 
 #include "util.h" 

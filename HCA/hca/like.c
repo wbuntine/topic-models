@@ -60,9 +60,12 @@ double likelihood_NGalpha() {
   int i,t;
   double likelihood = 0;
   for (i=0; i<ddN.DT; i++) {
-    if ( ddS.NdT[i]==0 ) continue;
+    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
     for (t=0; t<ddN.T; t++) {
       int n=ddS.Ndt[i][t];
+#ifdef NG_SPARSE
+      if (  M_docsparse(i,t)==0 ) continue;
+#endif
       if ( n>0 ) 
 	likelihood += gammadiff(n, ddP.NGalpha[t], 0.0);
       likelihood += ddP.NGalpha[t]*log(ddP.NGbeta[t])
@@ -74,6 +77,10 @@ double likelihood_NGalpha() {
   for (t=0; t<ddN.T; t++) {
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
     likelihood += pctl_gammaprior(ddP.NGalpha[t]);
+#ifdef NG_SPARSE
+    likelihood += lgamma(1.0+ddN.DTused-ddS.sparseD[t])
+      + lgamma(1.0+ddS.sparseD[t]) - lgamma(2.0+ddN.DTused);
+#endif
   }
   return likelihood;
 }

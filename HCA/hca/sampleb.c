@@ -182,8 +182,13 @@ static double ngaterms(double ak, void *mydata) {
   /*   is this the right prior ??? */
   double val = pctl_gammaprior(ak);
   for (j=0; j<ddN.DT; j++) {
-    val += gammadiff((int)ddS.Ndt[j][k], ak, 0.0);
-    val += ak*log(ddP.NGbeta[k]/(ddS.UN[j]+ddP.NGbeta[k]));
+#ifdef NG_SPARSE
+    if (  M_docsparse(j,k) ) continue; 
+#endif
+    if ( ddS.UN[j]>0 ) {
+      val += gammadiff((int)ddS.Ndt[j][k], ak, 0.0);
+      val += ak*log(ddP.NGbeta[k]/(ddS.UN[j]+ddP.NGbeta[k]));
+    }
   }
   myarms_evals++;
 #ifdef B_DEBUG
@@ -197,6 +202,9 @@ static double ngbterms(double bk, void *mydata) {
   int k = *((int *)mydata);
   double val = -1;
   for (j=0; j<ddN.DT; j++) {
+#ifdef NG_SPARSE
+    if (  M_docsparse(j,k) ) continue; 
+#endif
     if ( ddS.UN[j]>0 ) {
       val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
       val += ddP.NGalpha[k]*log(bk);
