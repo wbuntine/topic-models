@@ -96,6 +96,13 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
   ddS.NdT[did]--;
   assert(ddS.Ndt[did][t]>0);
   ddS.Ndt[did][t]--;
+#ifdef NG_SPARSE
+  if ( ddP.NGalpha && ddS.Ndt[did][t]==0 ) {
+    ??? have to decide whether we should or not!!!
+    M_docsp_unset(i,t);
+    ddS.sparseD[t]--;
+  }
+#endif
   if ( ud ) {
     /*
      *    subtract affect of table indicator for topic PYP
@@ -136,6 +143,16 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
   ddS.NdT[did]++;
   if ( PCTL_BURSTY() ) 
     wid = misi_incr(dD, i, mi, t, wid, dtip);	
+  /*
+   *   dealing with H_NG and sparsity
+   */
+#ifdef NG_SPARSE
+  if ( ddP.NGalpha && M_docsparse(did,t)==0 ) {
+    assert(ddS.Ndt[did][t]==1);
+    M_docsp_set(i,t);
+    ddS.sparseD[t]++;
+  }
+#endif
   /*
    *   figure out reassigning table id
    */

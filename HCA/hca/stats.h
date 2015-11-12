@@ -72,6 +72,8 @@ extern D_DMi_t ddM;
 
 #ifdef NG_SPARSE
 #define M_docsparse(i,k) (ddS.sparse[i][(k)/32U]  & (1U<<(((unsigned)k)%32U)))
+#define M_docsp_set(i,k) (ddS.sparse[i][(k)/32U] |= (1U<<(((unsigned)k)%32U)))
+#define M_docsp_unset(i,k) (ddS.sparse[i][(k)/32U] ^= (1U<<(((unsigned)k)%32U)))
 #define M_bitveclen()    (1 + (ddN.T-1)/32U)
 #endif
 
