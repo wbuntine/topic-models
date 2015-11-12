@@ -401,14 +401,6 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
   if ( ddS.UN )
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
-#ifdef NG_SPARSE
-  if ( ddS.sparse ) {
-    memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*
-	   ddN.D*M_bitveclen());
-    for (t=0; t<ddN.T; t++) 
-      ddS.sparseD[t] = ddN.DTused;
-  }
-#endif
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -452,8 +444,11 @@ void hca_reset_stats(char *resstem,
   if ( ddS.UN ) {
     int readOK = 0;
     char *restartfile;
+    FILE *fpin;
+    /*
+     *  first, deal with .UN
+     */
     if ( restart ) {
-      FILE *fpin;
       /*
        *  check if file exists
        */
@@ -473,42 +468,10 @@ void hca_reset_stats(char *resstem,
     if ( restart && readOK ) {
       read_dvec(restartfile, lastdoc, ddS.UN);
       free(restartfile);
-#ifdef NG_SPARSE
-      {
-	/*
-	 *  now read sparse bitvectors
-	 */
-	FILE *fpin;
-	restartfile = yap_makename(resstem,".ngs");
-	fpin = fopen(restartfile,"rb");
-	if ( !fpin ) {
-	  yap_message("Cannot open file '%s' for read, setting NG sparse to default\n", 
-		      restartfile);
-	} else {
-	  int size = lastdoc*M_bitveclen();
-	  if ( fread(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpin) 
-	       !=size )
-	    yap_sysquit("Cannot read bitvector from '%s'\n", restartfile);
-	  fclose(fpin);
-	  /*
-	   *  fix up total vectors
-	   */
-	  for (t=0; t<ddN.T; t++) {
-	    ddS.sparseD[t] = 0;
-	  }
-	  for (i=0; i<ddN.DT && i<lastdoc; i++) {
-	    if ( ddD.NdT[i]<ddP.mindocsize )
-	      continue;
-	    for (t=0; t<ddN.T; t++) {
-	      if ( M_docsparse(i,t) )
-		ddS.sparseD[t]++;
-	    }
-	  }
-	}
-	free(restartfile);
-      }
-#endif
     } else {
+      /*
+       *   no restart OR no ".UN" file to restart with
+       */
       double aveB = 0;
       double totA = 0;
       assert(ddP.NGbeta);
@@ -525,6 +488,77 @@ void hca_reset_stats(char *resstem,
        */
 #endif
     }
+#ifdef NG_SPARSE
+    /*
+     *  now, deal with .sparse
+     */
+    if ( restart ) {
+      /*
+       *  check if file exists
+       */
+      restartfile = yap_makename(resstem, ".ngs");
+      if ( firstdoc!=0 )
+	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
+      fpin = fopen(restartfile ,"rb"); 
+      if ( !fpin ) {
+	free(restartfile);
+	readOK = 0;
+	yap_message("Cannot open file '%s', setting .sparse to default\n", restartfile);
+      } else {
+	readOK = 1;
+      }
+    } else {
+      /*
+       * default on no restart is no sparsity
+       */
+      if ( ddS.sparse ) {
+	memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*
+	       ddN.D*M_bitveclen());
+	for (t=0; t<ddN.T; t++) 
+	  ddS.sparseD[t] = ddN.DTused;
+      }
+    }
+    if ( restart && readOK ) {
+      /*
+       *  now read sparse bitvectors
+       */
+      int size;
+      size = lastdoc*M_bitveclen();
+      if ( fread(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpin) 
+	   !=size )
+	yap_sysquit("Cannot read bitvector from '%s'\n", restartfile);
+      fclose(fpin);
+      free(restartfile);
+    }
+    if ( restart && !readOK ) {
+      /*
+       *  nothing to read so make all zero topics sparse
+       */
+      memset((void*)ddS.sparse[0], 0, sizeof(ddS.sparse[0][0])*
+	     ddN.D*M_bitveclen());
+      for (i=0; i<ddN.DT && i<lastdoc; i++) {
+	if ( ddD.NdT[i]<ddP.mindocsize )
+	  continue;
+	for (t=0; t<ddN.T; t++) 
+	  if ( ddS.Ndt[i][t]>0 )
+	    M_docsp_set(i,t);
+      }
+    }
+    /*
+     *  fix up total vectors
+     */
+    for (t=0; t<ddN.T; t++) {
+      ddS.sparseD[t] = 0;
+    }
+    for (i=0; i<ddN.DT && i<lastdoc; i++) {
+      if ( ddD.NdT[i]<ddP.mindocsize )
+	continue;
+      for (t=0; t<ddN.T; t++) {
+	if ( M_docsparse(i,t) )
+	  ddS.sparseD[t]++;
+      }
+    }
+#endif
   }
 
   if ( ddP.PYbeta && ddP.phi==NULL ) {
