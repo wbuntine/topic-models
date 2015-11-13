@@ -76,6 +76,27 @@ void check_Ndt(int d) {
 #endif
 }
 
+#ifdef NG_SPARSE
+void check_sparse() {
+#ifndef NDEBUG
+  int i,k;
+  int cnt;
+  for (k=0; k<=ddN.T; k++) {
+    cnt = 0;
+    for (i=0; i<ddN.DT; i++) {
+      if ( M_docsparse(i,k) ) {
+	cnt++;
+	if ( ddS.Ndt[i][k]==0 )
+	    yap_quit("ddS.sparse[%d][%d]==1 but actual count 0 in check_sparse()\n", i, k);
+      }
+    }
+    if ( cnt!=ddS.sparseD[k] )
+      yap_quit("ddS.sparseD[%d]!=actual in check_sparse()\n", k);
+  }
+#endif
+}
+#endif
+
 void check_TWT() {
 #ifndef NDEBUG
   int w;

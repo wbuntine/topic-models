@@ -34,8 +34,8 @@ typedef struct D_stats_s {
    */
   double *UN;
 #ifdef NG_SPARSE
-  uint32_t *sparseD;
-  uint32_t **sparse;  //  bit vector giving if topic zeroed
+  uint32_t *sparseD;  //  count of non-sparse entries for topic
+  uint32_t **sparse;  //  bit vector giving if topic not zeroed
 #endif
   /*
    *  Basic topic data for simplest LDA model

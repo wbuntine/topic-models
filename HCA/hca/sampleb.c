@@ -183,7 +183,7 @@ static double ngaterms(double ak, void *mydata) {
   double val = pctl_gammaprior(ak);
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
-    if (  M_docsparse(j,k) ) continue; 
+    if (  M_docsparse(j,k)==0 ) continue; 
 #endif
     if ( ddS.UN[j]>0 ) {
       val += gammadiff((int)ddS.Ndt[j][k], ak, 0.0);
@@ -203,7 +203,7 @@ static double ngbterms(double bk, void *mydata) {
   double val = -1;
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
-    if (  M_docsparse(j,k) ) continue; 
+    if (  M_docsparse(j,k)==0 ) continue; 
 #endif
     if ( ddS.UN[j]>0 ) {
       val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);

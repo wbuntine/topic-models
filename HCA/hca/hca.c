@@ -1332,7 +1332,10 @@ int main(int argc, char* argv[])
       else
 	yap_message(" %d", iter);
     }
-  
+#ifdef NG_SPARSE
+    check_sparse();
+#endif
+    
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);
       yap_message(" checkpointed\n");

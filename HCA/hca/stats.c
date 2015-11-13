@@ -496,11 +496,6 @@ void hca_reset_stats(char *resstem,
       aveB /= ddN.T;
       for (i=firstdoc; i<lastdoc; i++) 
 	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
-#ifdef NG_SPARSE
-      /*
-       *   note have previously initialised ddS.sparse
-       */
-#endif
     }
 #ifdef NG_SPARSE
     /*
