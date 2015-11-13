@@ -98,9 +98,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
   ddS.Ndt[did][t]--;
 #ifdef NG_SPARSE
   if ( ddP.NGalpha && ddS.Ndt[did][t]==0 ) {
-    ??? have to decide whether we should or not!!!
-    M_docsp_unset(i,t);
-    ddS.sparseD[t]--;
+    hca_rand_sparse(did, t);
   }
 #endif
   if ( ud ) {
@@ -383,6 +381,10 @@ double gibbs_lda(/*
 		    wid,t,did,i,ddS.z[i],
 		    (int)ddS.Nwt[wid][t],(int)ddS.Twt[wid][t]);
 #endif
+      /*
+       *  should we do this every time, or just once every major loop
+       *  if every time, then we should keep incremental stats!
+       */
       if ( ddS.UN ) opt_UN(did);
     }
 
@@ -391,6 +393,18 @@ double gibbs_lda(/*
       mi++;
     }
   }
+#ifdef NG_SPARSE
+  if ( ddP.NGalpha ) {
+    /*
+     *   check and sample all the sparse bits,
+     *   not only those with ddS.Ndt[did][t]==0 can change
+     */
+    for (t=0; t<ddN.T; t++) {
+      if ( ddS.Ndt[did][t]==0 ) 
+	hca_rand_sparse(did, t);
+    }
+  }
+#endif
   return logdoc;
 }
 

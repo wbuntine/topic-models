@@ -78,8 +78,8 @@ double likelihood_NGalpha() {
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
     likelihood += pctl_gammaprior(ddP.NGalpha[t]);
 #ifdef NG_SPARSE
-    likelihood += lgamma(1.0+ddN.DTused-ddS.sparseD[t])
-      + lgamma(1.0+ddS.sparseD[t]) - lgamma(2.0+ddN.DTused);
+    likelihood += lgamma(NGS_0+ddN.DTused-ddS.sparseD[t])
+      + lgamma(NGS_1+ddS.sparseD[t]) - lgamma(NGS_0+NGS_1+ddN.DTused);
 #endif
   }
   return likelihood;

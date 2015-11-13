@@ -241,6 +241,20 @@ uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
   return mtx;
 }
 
+#ifdef NG_SPARSE
+void hca_rand_sparse(int did, int k) {
+  if ( (ddN.DTused+NGS_0+NGS_1) * rng_unit(rngp) < (ddS.sparseD[k]+NGS_1) ) {
+    if ( !M_docsparse(did,k) ) {
+      M_docsp_set(did,k);
+      ddS.sparseD[k]++;
+    }
+  } else if ( M_docsparse(did,k) ) {
+    M_docsp_xor(did,k);
+    ddS.sparseD[k]--;
+  }
+}
+#endif
+
 /*
  *    randomise topics for docs in range
  */
