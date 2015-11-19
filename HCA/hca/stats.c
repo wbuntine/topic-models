@@ -242,8 +242,15 @@ uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
 }
 
 #ifdef NG_SPARSE
+// #define NG_ALWAYS
 void hca_rand_sparse(int did, int k) {
-  if ( (ddN.DTused+NGS_0+NGS_1) * rng_unit(rngp) < (ddS.sparseD[k]+NGS_1) ) {
+#ifdef NG_ALWAYS
+  if ( M_docsparse(did,k) ) {
+    M_docsp_xor(did,k);
+    ddS.sparseD[k]--;
+  }
+#else
+  if ( (ddN.DTused+ddP.ngs0+ddP.ngs1) * rng_unit(rngp) < (ddS.sparseD[k]+ddP.ngs1) ) {
     if ( !M_docsparse(did,k) ) {
       M_docsp_set(did,k);
       ddS.sparseD[k]++;
@@ -252,6 +259,7 @@ void hca_rand_sparse(int did, int k) {
     M_docsp_xor(did,k);
     ddS.sparseD[k]--;
   }
+#endif
 }
 #endif
 
@@ -471,9 +479,10 @@ void hca_reset_stats(char *resstem,
 	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
       fpin = fopen(restartfile ,"r"); 
       if ( !fpin ) {
-	free(restartfile);
 	readOK = 0;
-	yap_message("Cannot open file '%s', setting UN to default\n", restartfile);
+	yap_message("Cannot open file '%s', setting UN to default\n",
+		    restartfile);
+	free(restartfile);
       } else {
 	fclose(fpin);
 	readOK = 1;
@@ -510,9 +519,9 @@ void hca_reset_stats(char *resstem,
 	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
       fpin = fopen(restartfile ,"rb"); 
       if ( !fpin ) {
-	free(restartfile);
 	readOK = 0;
 	yap_message("Cannot open file '%s', setting .sparse to default\n", restartfile);
+	free(restartfile);
       } else {
 	readOK = 1;
       }

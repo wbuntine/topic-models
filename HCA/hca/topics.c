@@ -801,6 +801,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	  * (ngalpha[kk]/ddP.NGalpha[kk]);
 	yap_message(" ng=%.4lf,%.4lf", 
 		    ngalpha[kk], ngvar/ngalpha[kk]);
+#ifdef NG_SPARSE
+	yap_message(",%.4f", 1-((float)ddS.sparseD[kk])/ddN.DTused);
+#endif
 	if ( verbose>2 )
 	    yap_message(" ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
 		    ddP.NGalpha[kk]/ddP.NGbeta[kk], 
@@ -985,6 +988,16 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	      "Underused topics = %.1lf%%\n",
 	      100*(1-sparsitydoc/ddN.T), 
 	      100.0*underused/(double)ddN.T);
+#ifdef NG_SPARSE
+  if ( ddP.NGalpha ) {
+    double avesp = 0;
+    for (k=0; k<ddN.T; k++) {
+        avesp += gtvec[k]*((float)ddS.sparseD[k])/ddN.DTused;
+    }
+    yap_message("IBP sparsity = %.2lf%%\n", 100*(1-avesp));
+  }
+#endif
+	
   if ( pmicount ) 
     yap_message("Average PMI = %.3f\n", tpmi[ddN.T]);
 

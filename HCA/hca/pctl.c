@@ -69,7 +69,7 @@ void pctl_init() {
     ddT[par].ptr = NULL;
     ddT[par].fix = 0;
     ddT[par].start = STARTCYCLES;
-    ddT[par].cycles = 0;
+    ddT[par].cycles = 1;
     ddT[par].offset = 0;
   }
   ddT[ParAD].name = "ad";
@@ -84,6 +84,8 @@ void pctl_init() {
   ddT[ParBW0].name = "bw0";
   ddT[ParNGAlpha].name = "NGalpha"; 
   ddT[ParNGBeta].name = "NGbeta";  
+  ddT[ParNGS0].name = "ngs0";  
+  ddT[ParNGS1].name = "ngs1";  
   ddT[ParAlpha].name = "alphatot"; 
   ddT[ParBeta].name = "betatot";  
   ddT[ParA].ptr = &ddP.apar;
@@ -100,6 +102,8 @@ void pctl_init() {
   ddT[ParBeta].ptr = &ddP.betatot;
   ddT[ParAD].ptr = &ddP.ad;
   ddT[ParBDK].ptr = NULL;
+  ddT[ParNGS0].ptr = &ddP.ngs0;
+  ddT[ParNGS1].ptr = &ddP.ngs1;
   ddT[ParA].sampler = &sample_a;
   ddT[ParAW].sampler = &sample_aw;
   ddT[ParA0].sampler = &sample_a0;
@@ -114,9 +118,14 @@ void pctl_init() {
   ddT[ParNGBeta].samplerk = &sample_NGbeta;
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
+  ddT[ParNGS0].fix = 1;
+  ddT[ParNGS1].fix = 1;
 
+  ddP.empirical = 0;
   ddP.alphatot = 0;
   ddP.alphac = 0;
+  ddP.ngs0 = NGS0;
+  ddP.ngs1 = NGS1;
   ddP.NGalpha = NULL;
   ddP.NGbeta = NULL;
   ddP.alphapr = NULL;
@@ -303,7 +312,7 @@ void pctl_read(char *resstem) {
     ddP.betatot = readf("betatot");
   }
   ddP.PYalpha = readi("PYalpha");
-  if ( ddP.PYalpha ) {
+  if ( ddP.PYalpha && ddP.PYalpha!=H_NG ) {
     /*
      *  its a Pitman-Yor
      */
@@ -318,7 +327,11 @@ void pctl_read(char *resstem) {
     else
       ddP.alphatot = 0;
     ddP.alphac = 0.0;
+  } else if ( ddP.PYalpha==H_NG ) {
+    ;
   } else {
+    ddP.ngs0 = readf("ngs0");
+    ddP.ngs1 = readf("ngs1");
     ddP.NGalpha = readfv("NGalpha", ddN.T);
     if ( ddP.NGalpha ) {
       int t;
@@ -333,8 +346,6 @@ void pctl_read(char *resstem) {
       for (t=0; t<ddN.T; t++) tot += ddP.NGbeta[t];
       tot /= ddN.T;
       for (t=0; t<ddN.T; t++) ddP.NGbeta[t] /= tot;
-      ddP.NGbetamin = dmin(ddN.T, ddP.NGbeta);
-      ddP.NGbetamax = dmax(ddN.T, ddP.NGbeta);
     } else {
       /*
        *  its a Dirichlet
@@ -409,8 +420,6 @@ void pctl_dims() {
       ddP.NGbeta = malloc(ddN.T*sizeof(*ddP.NGbeta));
       for (t=0; t<ddN.T; t++)
         ddP.NGbeta[t] = 1.0/ddN.T;
-      ddP.NGbetamin = 1.0/ddN.T;
-      ddP.NGbetamax = 1.0/ddN.T;
     }
     if ( !ddP.NGalpha ) {
       double alphac = pctl_alpharange(pctl_alphacinit());
@@ -879,8 +888,9 @@ void pctl_report() {
   
 }
 
-double pctl_gammaprior(double x) {
-  return -x/PYP_CONC_PSCALE/ddN.W + (PYP_CONC_PSHAPE-1)*log(x);
+double pctl_gammaprior(double x, int K) {
+  return -x/PYP_CONC_PSCALE //K // why is the "/K" here?
+    + (PYP_CONC_PSHAPE-1)*log(x);
 }
 
 /*

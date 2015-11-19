@@ -147,7 +147,7 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
 #ifdef NG_SPARSE
   if ( ddP.NGalpha && M_docsparse(did,t)==0 ) {
     assert(ddS.Ndt[did][t]==1);
-    M_docsp_set(i,t);
+    M_docsp_set(did,t);
     ddS.sparseD[t]++;
   }
 #endif
@@ -284,13 +284,12 @@ double gibbs_lda(/*
 	      bdterm = (ddP.bdk[t]+ddP.ad*dD->Si[t])/(ddP.bdk[t]+dD->Mi[t]);
 	    ddG.code[proc][n][t] += bdterm;
 	  }
-	  if ( ddG.doprob ) {
+	  if ( ddG.doprob & ddP.empirical ) {
 	    /*    this is indexed by document so is thread safe */
-	    double bdterm = 1;
 	    if ( did<ddN.DT )
-	      ddG.prob[did][t] += bdterm;
+	      ddG.prob[did][t] ++;
 	    else
-	      ddG.tprob[did-ddN.DT][t] += bdterm;
+	      ddG.tprob[did-ddN.DT][t] ++;
 	  }
 	  goto endword;
 	}
@@ -339,16 +338,15 @@ double gibbs_lda(/*
       for (t=0; t<ddN.T; t++) 
 	ddG.code[proc][n][t] += p[t]*bdterm/Z;
     }
-    if ( ddG.doprob ) {
-      /*   indexed by doc so thread safe */
-      double bdterm = 1;
-      if ( did<ddN.DT )
+    if ( ddG.doprob && ddP.empirical ) {
+      double norm = Z * ddD.NdT[did];
+      if ( did<ddN.DT ) {
 	for (t=0; t<ddN.T; t++) 
-	  ddG.prob[did][t] += p[t]*bdterm/Z;
-      else
+	  ddG.prob[did][t] += p[t]/norm;
+      } else
 	for (t=0; t<ddN.T; t++) 
-	  ddG.tprob[did-ddN.DT][t] += p[t]*bdterm/Z;
-    }
+	  ddG.tprob[did-ddN.DT][t] += p[t]/norm;
+    } 
     if ( fix!=GibbsHold || fix_doc==GibbsHold )
       logdoc += log(Z/tot);
     if ( !finite(logdoc) && logdocwarn==0 ) {
@@ -391,6 +389,28 @@ double gibbs_lda(/*
     endword:
     if ( PCTL_BURSTY() && M_multi(i) ) {
       mi++;
+    }
+  }
+  if ( ddG.doprob && !ddP.empirical ) {
+    if ( ddP.NGalpha ) {
+      /*  topicprob() isn't normalised for this one */
+      double tot = 0;
+      double tp[ddN.T];
+      for (t=0; t<ddN.T; t++)
+	tot += tp[t] = topicprob(did,t,Td_);
+      if ( did<ddN.DT )
+	for (t=0; t<ddN.T; t++) 
+	  ddG.prob[did][t] += tp[t]/tot;
+      else
+	for (t=0; t<ddN.T; t++) 
+	  ddG.tprob[did-ddN.DT][t] += tp[t]/tot;
+    } else {
+      if ( did<ddN.DT ) {
+	for (t=0; t<ddN.T; t++)  
+	  ddG.prob[did][t] += topicprob(did,t,Td_);
+      } else
+	for (t=0; t<ddN.T; t++) 
+	  ddG.tprob[did-ddN.DT][t] += topicprob(did,t,Td_);
     }
   }
 #ifdef NG_SPARSE

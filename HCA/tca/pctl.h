@@ -140,7 +140,7 @@ int pctl_hold(int i);
 int pctl_training(int D);
 void pctl_free();
 
-double pctl_gammaprior(double x);
+double pctl_gammaprior(double x, int K);
 void pctl_loadphi(char *resstem);
 void pctl_loadmu(char *resstem);
 

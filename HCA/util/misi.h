@@ -129,7 +129,7 @@ void dmi_check(D_DMi_t *pdmi, int i);
 void dmi_rand(D_DMi_t *pdmi, int firstdoc, int lastdoc);
 
 /*  compute likelihood  */
-double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
+double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double, int),
                       double a_burst, double *b_burst, stable_t *SD);
 
 /*
@@ -157,7 +157,7 @@ void dmi_freebstore(D_DMi_t *ptr, uint16_t **docstats);
  *     otherwise  ==>   compute for just that t
  */
 double dmi_likelihood_bterms(D_DMi_t *ptr, int uset, uint16_t **docstats,
-			     double (*gammaprior)(double),
+			     double (*gammaprior)(double, int),
 			     double a_burst, double *b_burst);
 
 /*
@@ -183,7 +183,7 @@ void dmi_freeastore(D_DMi_t *ptr, uint16_t **docstats);
  *         gets stats from those built with dmi_astore()
  */
 double dmi_likelihood_aterms(D_DMi_t *ptr, uint16_t **docstats,
-			     double (*gammaprior)(double),
+			     double (*gammaprior)(double, int),
 			     double a_burst, double *b_burst, stable_t *SD);
 
 #endif

@@ -426,7 +426,7 @@ void dmi_free(D_DMi_t *ptr) {
  *   sampling hyperparameters
  *
  ***********************************************************/
-double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
+double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double, int),
                       double a_burst, double *b_burst, stable_t *SD) {
   D_MiSi_t dD;   
   double la = 0;
@@ -486,7 +486,7 @@ double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
     //  misi_unbuild(&dD, i, 0);
   }
   for (t=0; t<ptr->T; t++)
-    likelihood += gammaprior(b_burst[t]);
+    likelihood += gammaprior(b_burst[t], ptr->T);
   
   misi_free(&dD);
   return likelihood;
@@ -498,7 +498,7 @@ double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
  *         gets stats from those built with dmi_astore()
  */
 double dmi_likelihood_aterms(D_DMi_t *ptr, uint16_t **docstats,
-			     double (*gammaprior)(double),
+			     double (*gammaprior)(double, int),
 			     double a_burst, double *b_burst, stable_t *SD) {
   double *lgabd = dvec(ptr->T);
   double la;
@@ -541,7 +541,7 @@ double dmi_likelihood_aterms(D_DMi_t *ptr, uint16_t **docstats,
  *     otherwise  ==>   compute for just that t
  */
 double dmi_likelihood_bterms(D_DMi_t *ptr, int uset, uint16_t **docstats,
-			     double (*gammaprior)(double),
+			     double (*gammaprior)(double, int),
 			     double a_burst, double *b_burst) {
   double *lgbd = dvec(ptr->T);
   double *lgabd = dvec(ptr->T);
@@ -582,9 +582,9 @@ double dmi_likelihood_bterms(D_DMi_t *ptr, int uset, uint16_t **docstats,
   }
   if ( uset<0 ) {
     for (t=0; t<ptr->T; t++)
-      likelihood += gammaprior(b_burst[t]);
+      likelihood += gammaprior(b_burst[t], ptr->T);
   } else
-    likelihood += gammaprior(b_burst[uset]);
+    likelihood += gammaprior(b_burst[uset], ptr->T);
   free(lgabd);
   free(lgbd);
   free(lb);

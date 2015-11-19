@@ -222,13 +222,13 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
   } else if ( ddP.NGalpha ) {
 #ifdef NG_SPARSE
     if ( M_docsparse(d,t)==0 )
-      return ((NGS_1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+NGS_0))
+      return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
 	*  ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
 	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
-#else
-    return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
-      / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+    else
 #endif
+      return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
   }
   return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);
 }

@@ -71,7 +71,7 @@ double likelihood_PYalpha() {
   double lgb = lgamma(ddP.b_theta);
 
   // theta part
-  likelihood += pctl_gammaprior(ddP.b_theta);
+  likelihood += pctl_gammaprior(ddP.b_theta,ddN.T);
   for (d=0; d<ddN.DT; d++) {
     likelihood += poch(ddP.b_theta, ddP.a_theta, ddS.C_dT[d]);
     likelihood -= gammadiff(ddS.N_dT[d], ddP.b_theta, lgb);
@@ -91,9 +91,9 @@ double likelihood_PYalpha() {
     yap_infinite(likelihood);
     
     // mu part
-    likelihood += pctl_gammaprior(ddP.b_mu[0]);
+    likelihood += pctl_gammaprior(ddP.b_mu[0],ddN.T);
     if ( ddN.E>1 )
-      likelihood += pctl_gammaprior(ddP.b_mu[1]);
+      likelihood += pctl_gammaprior(ddP.b_mu[1],ddN.T);
     for (e=0; e<ddN.E; e++) {
       likelihood += poch(ddP.b_mu[e], ddP.a_mu, ddS.Cp_e[e]);
       if (e<ddN.E-1) {
@@ -131,9 +131,9 @@ double likelihood_PYbeta() {
 
   // prior
   for (t=0; t<ddN.T; t++) {
-    likelihood += pctl_gammaprior(ddP.b_phi[0][t]);
+    likelihood += pctl_gammaprior(ddP.b_phi[0][t],ddN.W);
     if ( ddN.E>1 )
-      likelihood += pctl_gammaprior(ddP.b_phi[1][t]);
+      likelihood += pctl_gammaprior(ddP.b_phi[1][t],ddN.W);
   }
   //  note we dont sample a_phi and b_phi0
   

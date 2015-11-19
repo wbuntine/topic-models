@@ -75,11 +75,11 @@ double likelihood_NGalpha() {
   }
   //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
-    likelihood += pctl_gammaprior(ddP.NGbeta[t]);
-    likelihood += pctl_gammaprior(ddP.NGalpha[t]);
+    likelihood += pctl_gammaprior(ddP.NGbeta[t], ddN.T);
+    likelihood += pctl_gammaprior(ddP.NGalpha[t], ddN.T);
 #ifdef NG_SPARSE
-    likelihood += lgamma(NGS_0+ddN.DTused-ddS.sparseD[t])
-      + lgamma(NGS_1+ddS.sparseD[t]) - lgamma(NGS_0+NGS_1+ddN.DTused);
+    likelihood += lgamma(ddP.ngs0+ddN.DTused-ddS.sparseD[t])
+      + lgamma(ddP.ngs1+ddS.sparseD[t]) - lgamma(ddP.ngs0+ddP.ngs1+ddN.DTused);
 #endif
   }
   return likelihood;
@@ -238,7 +238,7 @@ double likelihood_PYbeta() {
   double likelihood = 0;
   double lbw = log(ddP.bwpar);
   double law = log(ddP.awpar);
-  likelihood += pctl_gammaprior(ddP.bwpar);
+  likelihood += pctl_gammaprior(ddP.bwpar, ddN.W);
   /*
    *    term for k-th node
    */
@@ -312,7 +312,7 @@ double likelihood_PYbeta_HDP() {
       likelihood += gammadiff((int)ddS.TwT[j],p0,0.0);
     }
   }      
-  likelihood += pctl_gammaprior(ddP.bw0);
+  likelihood += pctl_gammaprior(ddP.bw0, ddN.W);
   likelihood -= lgamma(ddP.bw0+ddS.TWT) - lgamma(ddP.bw0);
   //yap_infinite(likelihood);
   return likelihood;
@@ -344,7 +344,7 @@ double likelihood_PYbeta_HPDD() {
 	likelihood += lgamma(ddS.TwT[j]-ddP.aw0) - lgaw0;
     }
   }
-  likelihood += pctl_gammaprior(ddP.bw0);
+  likelihood += pctl_gammaprior(ddP.bw0, ddN.W);
   likelihood -= lgamma(ddP.bw0+ddS.TWT) - lgamma(ddP.bw0);
   //yap_infinite(likelihood);
   return likelihood;

@@ -76,11 +76,6 @@ void hca_rand_sparse(int did, int k);
 #define M_docsp_set(i,k) (ddS.sparse[i][(k)/32U] |= (1U<<(((unsigned)k)%32U)))
 #define M_docsp_xor(i,k) (ddS.sparse[i][(k)/32U] ^= (1U<<(((unsigned)k)%32U)))
 #define M_bitveclen()    (1 + (ddN.T-1)/32U)
-/*
- *   pars for prior Beta()
- */
-#define NGS_0 1.0
-#define NGS_1 1.0
 #endif
 
 double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental, int proc);

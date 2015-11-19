@@ -152,7 +152,7 @@ static void usage() {
           "   -A/B hpdd      #  for alpha/beta prior use truncated GEM\n"
           "   -A   ng        #  for alpha prior use normalised Gamma\n"
           "   -S var=value   #  initialise var=a,b,a0,b0,aw,bw,aw0,bw0,\n"
-	  "                  #  ad,bdk,alpha,beta\n"
+	  "                  #  ad,bdk,alpha,beta,ngs0,ngs1\n"
 	  "  sampling hyperparameters:\n"
           "   -D cycles,start   #  sample alpha every this many cycles\n"
           "   -E cycles,start  #  sample beta every this many cycles\n"
@@ -196,6 +196,8 @@ static void usage() {
           "                  #  HOLD=doc, hold out at place l with (l%%arg)==0\n"
           "                  #  HOLD=fract, hold out last fract words in doc\n"
 	  "   -h all         #  no test set, done on training set\n"
+	  "   -l empirical   #  some instances of '-l' record data, not pars\n"
+	  "                  #  ('testprob', 'theta')\n"
           "   -l DIAG,cycles,start #  cycles for runtime calculations\n"
 	  "                  #  DIAG is one of 'alpha','phi','prog','sparse',\n"
 	  "                  #     'theta' or 'testprob' \n"
@@ -581,7 +583,9 @@ int main(int argc, char* argv[])
     case 'l':
       if ( !optarg )
 	yap_quit("Need a valid 'l ' argument\n");
-      if ( strncmp(optarg,"sparse,",7)==0 ) {
+      if ( strncmp(optarg,"empirical",9)==0 ) {
+	ddP.empirical = 1;
+      } else if ( strncmp(optarg,"sparse,",7)==0 ) {
 	if ( sscanf(&optarg[7],"%d,%d",&ddP.spiter, &ddP.spburn)<2 )
 	  yap_quit("Need a valid 'l sparse,' argument\n");
       } else if ( strncmp(optarg,"testprob,",9)==0 ) {
@@ -1087,7 +1091,7 @@ int main(int argc, char* argv[])
       hca_rand_z(ddP.Tinit, 0, ddN.D);
     }
     hca_reset_stats(resstem, restart, 0, 0, ddN.DT);
-    if ( ddP.PYalpha==H_NG ) {
+    if ( ddP.NGalpha ) {
       int i;
       ddN.DTused = 0;
       for (i=0; i<ddN.DT; i++)
@@ -1202,6 +1206,8 @@ int main(int argc, char* argv[])
       ddG.didcode++;
       ddG.docode = 0;
     }
+
+    check_TDT();
 
     /*
      *  now run testing
@@ -1333,7 +1339,7 @@ int main(int argc, char* argv[])
 	yap_message(" %d", iter);
     }
 #ifdef NG_SPARSE
-    check_sparse();
+    if ( ddP.NGalpha ) check_sparse();
 #endif
     
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {

@@ -81,14 +81,18 @@ void check_sparse() {
 #ifndef NDEBUG
   int i,k;
   int cnt;
-  for (k=0; k<=ddN.T; k++) {
+  if ( !ddP.NGalpha )
+    return;
+  for (k=0; k<ddN.T; k++) {
     cnt = 0;
     for (i=0; i<ddN.DT; i++) {
-      if ( M_docsparse(i,k) ) {
+      if ( ddD.NdT[i]<ddP.mindocsize )
+	continue;
+      if ( !M_docsparse(i,k) ) {
+	if ( ddS.Ndt[i][k]>0 )
+	    yap_quit("ddS.sparse[%d][%d]==0 but actual count >1 in check_sparse()\n", i, k);
+      } else
 	cnt++;
-	if ( ddS.Ndt[i][k]==0 )
-	    yap_quit("ddS.sparse[%d][%d]==1 but actual count 0 in check_sparse()\n", i, k);
-      }
     }
     if ( cnt!=ddS.sparseD[k] )
       yap_quit("ddS.sparseD[%d]!=actual in check_sparse()\n", k);
@@ -110,5 +114,23 @@ void check_TWT() {
     yap_message("ddS.TWT = %d, computed %d\n", ddS.TWT, tot);
   if ( totnz != ddS.TWTnz )
     yap_message("ddS.TWTnz = %d, computed %d\n", ddS.TWTnz, totnz);
+#endif
+}
+
+void check_TDT() {
+#ifndef NDEBUG
+  int k;
+  int tot = 0;
+  int totnz = 0;
+  if ( !ddS.TDt )
+	return;
+  for (k=0; k<ddN.T; k++) {
+    tot += ddS.TDt[k];
+    if ( ddS.TDt[k]>0 ) totnz++;
+  }
+  if ( tot != ddS.TDT )
+    yap_message("ddS.TDT = %d, computed %d\n", ddS.TDT, tot);
+  if ( totnz != ddS.TDTnz )
+    yap_message("ddS.TDTnz = %d, computed %d\n", ddS.TDTnz, totnz);
 #endif
 }

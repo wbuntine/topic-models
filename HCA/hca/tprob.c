@@ -82,12 +82,12 @@ void tprob_report(char *resstem, double epsilon) {
 	fprintf(fp," %d", ddD.c[n]);
     }
     for (k=0; k<ddN.T; k++) {
-      double val = ddG.tprob[n-ddN.DT][k]/ddG.didtprob/ddD.NdT[n];
+      double val = ddG.tprob[n-ddN.DT][k]/ddG.didtprob;
       if ( val>epsilon ) 
 	fprintf(fp," %d:%f", k, val);
       tot += val;
     }
-    fprintf(fp,"\n");
+    fprintf(fp," = %f\n", tot);
   }
   fclose(fp);
   if ( verbose )
@@ -141,6 +141,7 @@ void prob_load(char *resstem, char *suff, float **mat) {
 
 
 void prob_report(char *resstem, double epsilon) {
+  int zeroes = 0;
   FILE *fp;
   int n, k;
   char *fname = yap_makename(resstem,".theta");
@@ -159,18 +160,35 @@ void prob_report(char *resstem, double epsilon) {
       } else
 	fprintf(fp," %d", ddD.c[n]);
     }
-    for (k=0; k<ddN.T; k++) {
-      double val = ddG.prob[n][k]/ddG.didprob/ddD.NdT[n];
-      if ( val>epsilon ) 
-	fprintf(fp," %d:%f", k, val);
-      tot += val;
+    if ( epsilon>0 ) {
+      float p[ddN.T];
+      for (k=0; k<ddN.T; k++) {
+	double val = p[k] = ddG.prob[n][k]/ddG.didprob;
+	if ( val>epsilon ) 
+	  tot += val;
+	if ( val==0 ) zeroes++;
+      }
+      for (k=0; k<ddN.T; k++) {
+	if ( p[k]>epsilon ) 
+	  fprintf(fp," %d:%f", k, p[k]/tot);
+      }
+    } else {
+      for (k=0; k<ddN.T; k++) {
+	double val = ddG.prob[n][k]/ddG.didprob;
+	if ( val>epsilon ) 
+	  fprintf(fp," %d:%f", k, val);
+	tot += val;
+	if ( val==0 ) zeroes++;
+      }
     }
-    fprintf(fp,"\n");
+    fprintf(fp," = %f\n", tot);
   }
   fclose(fp);
-  if ( verbose )
+  if ( verbose ) {
     yap_message("Written training theta estimate as tagged sparse matrix to '%s'\n",
                 fname);
+    yap_message("   sparsity = %lf\n", ((double)zeroes)/ddN.T/ddN.DT );
+  }
   free(fname);
 }
 

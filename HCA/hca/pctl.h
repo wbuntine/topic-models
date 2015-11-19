@@ -32,6 +32,11 @@
 #define BCYCLES 3      //  by default update b's
 #define DIRCYCLES 4     //  by default update alpha/beta
 #define STARTCYCLES 1      //  when to start sampling hypers
+/*
+ *   pars for prior Beta()
+ */
+#define NGS0 10.0
+#define NGS1 1.0
 
 /*
  *  hyperparameters and test parameters
@@ -51,8 +56,7 @@ typedef struct D_pars_s {
 
   double *NGalpha;        // alpha vector for H_NG
   double *NGbeta;         // beta vector for H_NG
-  double NGbetamin;
-  double NGbetamax;
+  double ngs0, ngs1;        // Beta priors for sparsity
 
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
   double betac;           // individual constant, set from betatot
@@ -76,6 +80,7 @@ typedef struct D_pars_s {
   int lrsiter, lrsburn;     //  burnin and iterations for LRS testing
   int mltiter, mltburn;     //  burnin and iterations for ML testing
   char *cofile;             //  set if want to do PMI-based coherency test
+  int empirical;            //  =0 means '-l' records pars, else data
   int spiter, spburn;       //  burnin and iterations for sparsity testing
   int tprobiter, tprobburn;  //  burnin and iters for test docXtopic probs
   int probiter, probburn;   //  burnin and iters for train docXtopic probs
@@ -151,6 +156,7 @@ typedef struct D_pars_s {
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 
                ParAD, ParBDK, ParNGAlpha, ParNGBeta,
+	       ParNGS0, ParNGS1,
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {
   char *name;
@@ -195,6 +201,6 @@ int pctl_training(int D);
 void pctl_free();
 void pctl_query(char *qname);
 
-double pctl_gammaprior(double x);
+double pctl_gammaprior(double x, int K);
 
 #endif

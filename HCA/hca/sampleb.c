@@ -28,12 +28,17 @@
 #include "hca.h"
 #include "stats.h"
 
+/*
+ *  use either ARMS or the approximate NGbeta sampler
+ */
+//  #define NGB_ARMS
+
 
 // #define B_DEBUG
 
 
 static double b0terms_PDD(double b, void *mydata) {
-  double val = pctl_gammaprior(b);
+  double val = pctl_gammaprior(b, ddN.T);
   if ( ddP.a0==0 )
     val += ddS.TDTnz*log(b);
   else
@@ -67,7 +72,7 @@ static double b0terms_DP(double b, void *mydata) {
 static double bterms(double b, void *mydata) {
   int i;
   uint16_t *localTd = (uint16_t *)mydata;
-  double val = pctl_gammaprior(b);
+  double val = pctl_gammaprior(b, ddN.T);
   double lgb = lgamma(b);
   double lgba = 0;
   if ( ddP.apar>0 )
@@ -148,7 +153,7 @@ static double betaterms(double mytbeta, void *mydata) {
 
 
 static double bw0terms_PDD(double bw, void *mydata) {
-  double val = pctl_gammaprior(bw);
+  double val = pctl_gammaprior(bw, ddN.W);
   if ( ddP.aw0==0 )
     val += ddS.TWTnz*log(bw);
   else
@@ -180,7 +185,7 @@ static double ngaterms(double ak, void *mydata) {
   int j;
   int k = *((int *)mydata);
   /*   is this the right prior ??? */
-  double val = pctl_gammaprior(ak);
+  double val = pctl_gammaprior(ak, ddN.T);
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
     if (  M_docsparse(j,k)==0 ) continue; 
@@ -197,6 +202,7 @@ static double ngaterms(double ak, void *mydata) {
   return val;
 }
 
+#ifdef NGB_ARMS
 static double ngbterms(double bk, void *mydata) {
   int j;
   int k = *((int *)mydata);
@@ -216,10 +222,11 @@ static double ngbterms(double bk, void *mydata) {
 #endif
   return val;
 }
+#endif
 
 static double bwterms(double bw, void *mydata) {
   int t;
-  double val = pctl_gammaprior(bw);
+  double val = pctl_gammaprior(bw, ddN.W);
 #ifdef SBW_USECACHE
   struct gcache_s lgba_t;
   struct gcache_s lgb_t;
@@ -323,6 +330,7 @@ void sample_NGalpha(double *a, int k) {
     a[k] = PYP_CONC_MAX;
 }
 
+#ifdef NGB_ARMS
 void sample_NGbeta(double *b, int k) {
   char label[30];
   sprintf(&label[0],"NGbeta[%d]", k);
@@ -332,11 +340,29 @@ void sample_NGbeta(double *b, int k) {
     b[k] = PYP_CONC_MIN;
   if ( b[k]>PYP_CONC_MAX )
     b[k] = PYP_CONC_MAX;
-  if ( b[k]<ddP.NGbetamin ) 
-    ddP.NGbetamin = b[k]; 
-  if ( b[k]>ddP.NGbetamax ) 
-    ddP.NGbetamax = b[k];
 }
+#else
+void sample_NGbeta(double *b, int k) {
+  int j;
+  double val = 0;
+  int cnt = 0;
+  for (j=0; j<ddN.DT; j++) {
+#ifdef NG_SPARSE
+    if (  M_docsparse(j,k)==0 ) continue; 
+#endif
+    if ( ddS.UN[j]>0 ) {
+      cnt ++;
+      val += (ddP.NGalpha[k]+ddS.Ndt[j][k])/(ddS.UN[j]+b[k]);
+    }
+  }
+  b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt*ddP.NGalpha[k])
+    / (PYP_CONC_PSCALE/ddN.T + val);
+  if ( b[k]<PYP_CONC_MIN )
+    b[k] = PYP_CONC_MIN;
+  if ( b[k]>PYP_CONC_MAX )
+    b[k] = PYP_CONC_MAX;
+}
+#endif
 
 /*
  *  this allows Dirichlet prior to be non-uniform,
