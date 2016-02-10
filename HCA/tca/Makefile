@@ -11,7 +11,7 @@ HFILES = data.h tca.h probs.h sample.h stats.h pctl.h change.h
 all:    tca
 
 tca:	tca.o $(subst .c,.o,$(CFILES) ) ../util/libhca.a
-	cc  $(CPPFLAGS) $(CFLAGS)  -o tca tca.o $(subst .c,.o,$(CFILES)) $(LDFLAGS)
+	$(CC)  $(CPPFLAGS) $(CFLAGS)  -o tca tca.o $(subst .c,.o,$(CFILES)) $(LDFLAGS) $(LIBS)
 
 ../util/libhca.a:
 

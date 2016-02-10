@@ -6,7 +6,7 @@
 ###########################################
 #     installed location of where to find libstb
 #       i.e.,   libstb.a is in $(STB)/lib/
-STB_HOME := /home/wbuntine
+STB_HOME := $(shell pwd)/../../libstb
 export STB_HOME
 
 #######################################
@@ -18,19 +18,23 @@ export STB_HOME
 # MYDEBUG=-pg -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
 # MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
 MYDEBUG=-g
-MYLIB=-g
-CPPFLAGS =  -I../util/ -I$(STB_HOME)/include/ $(MYDEBUG)
-CFLAGS = -Wall 
-LDFLAGS = -L../util -L$(STB_HOME)/lib -lhca -lstb$(MYLIB)  -lm -pthread
+CPPFLAGS :=  -I$(shell pwd)/util/ -I$(STB_HOME)/lib/ $(MYDEBUG)
+CFLAGS = -Wall
+LDFLAGS := -L$(shell pwd)/util -L$(STB_HOME)/lib
+LIBS = -lhca -lstb -lm -pthread
+
+CC = gcc
 
 ####################################################
 ##  Mac OSX versions
 #CFLAGS = -D__WORDSIZE=64 -I/opt/local/include -Wall
 #LDFLAGS = -L/opt/local/lib -L../util -L../lib -lhca -lstb -lm -pthread
-#CPPFLAGS=-I/opt/local/include -I../util/ -I../lib/ 
+#CPPFLAGS=-I/opt/local/include -I../util/ -I../lib/
 
+export CC
 export CFLAGS
 export LDFLAGS
+export LIBS
 export CPPFLAGS
 
 all:    util hca tca
@@ -38,32 +42,32 @@ all:    util hca tca
 yes:
 
 util:    yes
-	cd util; make 
+	cd util; ${MAKE}
 
 terms:    yes
-	cd util; make terms
+	cd util; ${MAKE} terms
 
 heap:    yes
-	cd util; make heap
+	cd util; ${MAKE} heap
 
 hca:    yes
 
 hca:    yes
-	cd hca; make 
+	cd hca; ${MAKE}
 
 tca:    yes
-	cd tca; make 
+	cd tca; ${MAKE}
 
 clean:  yes
-	cd util; make clean
-	cd hca; make clean	
-	cd tca; make clean	
+	cd util; ${MAKE} clean
+	cd hca; ${MAKE} clean
+	cd tca; ${MAKE} clean
 
-distclean: 
+distclean:
 	rm -f TAGS */TAGS
-	cd util; make distclean
-	cd hca; make distclean	
-	cd tca; make distclean	
+	cd util; ${MAKE} distclean
+	cd hca; ${MAKE} distclean
+	cd tca; ${MAKE} distclean
 
-etags:  
+etags:
 	etags  util/*.c util/*.h dca/*.h cca/*.h
