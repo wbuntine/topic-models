@@ -36,8 +36,23 @@ double logadd(double V, double lp) {
   return V + log(1.0+exp(lp-V));
 }
 
+/*
+ *  a hack to make Gibbs picjk the best, not sample
+ */
+// #define MAXT
 unsigned samplet(float *fact, double facttot, unsigned dim, double U) {
   unsigned k;
+#ifdef MAXT
+  unsigned mk = 0;
+  float mf = fact[0];
+  for (k=1; k<dim; k++) {
+    if ( fact[k]>mf ) {
+      mf = fact[k];
+      mk = k;
+    }
+  }
+  k = mk;
+#else
   /*   got the relative proportions, so sample */
   if ( facttot<=0 ) {
     /*
@@ -52,6 +67,7 @@ unsigned samplet(float *fact, double facttot, unsigned dim, double U) {
         break;
     }
   }
+#endif
   if ( k>=dim )
     k = dim - 1;
   return k;

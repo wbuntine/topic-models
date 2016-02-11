@@ -16,7 +16,9 @@
   \Prog{hca} is research software
 that does various versions of non-parametric topic models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, all with/without burstiness modelling.  Various diagnostics, ``document completion'' testing and coherence measurements with PMI are also supported. The code
 runs on multi-core getting about 50\% efficiency with 8 cores.
-
+Be warned, however, that it is research code.
+Not all combinations of options behave as expected, not all
+errors behave gracefully.
 \end{Name}
 
 \section{Synopsis}
@@ -42,11 +44,15 @@ or combinations of options work correctly.
 Note that in this release, all the more experimental features
 have been stripped, so this release contains
 only moderately well tested components.
+However, different combinations of options are not thoroughly
+tested.
 Note also, this is not intended to be code that others could easily
 modify.  In order to get performance, to provide all the features,
 and to run multi-core, the code is quite convoluted.
 Researchers seeking simple code they can experiment and
 modify themselves should request a cutdown version from the author.
+The safest thing is to work with the examples given at the
+end of the document.
 
 The programme runs a Gibbs sampler for a variety of
 non-parametric topic models
@@ -151,6 +157,7 @@ and the alpha vector is uniform.
 This is not hierarchical because alpha is constant.
 If the \texttt{file} optional argument is used
 then it specifies \texttt{alpha}.
+\end{Description}
 \item[{-A}{ng}]  Each topic now has its own independent gamma distribution,
 \texttt{Gamma(NGalpha,NGbeta)},
 and these are normalised to get the topic probabilities.  There are 2*\texttt{T}
@@ -158,10 +165,12 @@ parameters now, the vector of alpha parameters for each topic and the
 vector of beta parameters for each topic.
 By default these are sampled in batches 
 during standard hyper-parameter sampling.
-\end{Description}
 \item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
+When this mode is running, an extra latent variable is
+sampled per document, which is saved as \File{RepStem.UN}
+when checkpointing.
 \emph{Warning:}
  the value stored internally and printed is the total of this over the
 number of words \texttt{W}.
@@ -563,7 +572,9 @@ the same as the \File{DataStem.docword} format.
 \item[\File{RepStem.tdt}] Document by topic table counts if
 the Alpha side of the model is non-parametric.
 \item[\File{RepStem.twt}] Word by topic table counts if
-the Beta side of the model is non-parametric.
+  the Beta side of the model is non-parametric.
+\item[\File{RepStem.UN}]  latent ``mass'' variable kept
+  for each document when the \texttt{-Ang} option is used.
 \item[\File{RepStem.zt}] With no burstiness, gives topic
 index (offset by 0), one per line.  
 With burstiness, gives one ``z,r'' per line where ``z'' is the
@@ -604,6 +615,8 @@ the LDA default.
 It is 1 for hdp, 2 for hpdd and 3 for pdp.
 Likewise for the \texttt{PYbeta} variable and the \Opt{-B} option.
 
+If the \texttt{-Ang} option is used then vectores
+\texttt{NGalpha} and \texttt{NGbeta} are saved as well.
 
 \section{Examples}
 %%%%%%%%%%%%%%%%%%
