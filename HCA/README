@@ -42,8 +42,9 @@ the OSX doesn't support it the same.
 MAKING the PROGRAMME
 ====================
 
-The only prerequisite is libstb.  Although in Windows you will need to
-compile with "gcc", and in OSX "gcc" is best supported.
+The only prerequisite is libstb.  By default, it is expected to be
+found in the same directory where topic-models is found.  In Windows
+you will need to compile with "gcc", and in OSX "gcc" is best supported.
 
 There is a simple Makefile in this directory currently configured to
 optimise the compiler for a Linux machine.  Edit the configuration if
