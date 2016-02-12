@@ -14,12 +14,14 @@
 \begin{Name}{1}{hca}{Wray Buntine}{Data Analysis Tools}{hca}
 
   \Prog{hca} is research software
-that does various versions of non-parametric topic models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, all with/without burstiness modelling.  Various diagnostics, ``document completion'' testing and coherence measurements with PMI are also supported. The code
+that does various versions of non-parametric topic models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, NG-LDA all with/without burstiness modelling.  Various diagnostics, ``document completion'' testing and coherence measurements with PMI are also supported. The code
 runs on multi-core getting about 50\% efficiency with 8 cores.
 Be warned, however, that it is research code.
 Not all combinations of options behave as expected, not all
 errors behave gracefully.
 \end{Name}
+
+% \tableofcontents 
 
 \section{Synopsis}
 %%%%%%%%%%%%%%%%%%
@@ -39,24 +41,9 @@ A log of the run is reported to \File{stderr} if the
 \Opt{-e} option is used.  By default, the log goes to
 \File{RepStem.log}.
 
-The programme is research software, so not all options
-or combinations of options work correctly.
-Note that in this release, all the more experimental features
-have been stripped, so this release contains
-only moderately well tested components.
-However, different combinations of options are not thoroughly
-tested.
-Note also, this is not intended to be code that others could easily
-modify.  In order to get performance, to provide all the features,
-and to run multi-core, the code is quite convoluted.
-Researchers seeking simple code they can experiment and
-modify themselves should request a cutdown version from the author.
-The safest thing is to work with the examples given at the
-end of the document.
-
 The programme runs a Gibbs sampler for a variety of
 non-parametric topic models
-including HDP-LDA.
+including simple HDP-LDA.
 The model selected has three parts:
 \begin{Description}[alpha]
 \item[alpha:] this is the prior on topic vector (theta) for each document.
@@ -76,7 +63,7 @@ There are various model parameters, notably the
 discount and concentrations for the different Pitman-Yor
 processes in the model.
 These are usually sampled using Adaptive Rejection Sampling.
-They are also kept bounded using constraints coded
+They are also kept bounded using constraints hard-coded
 into the \File{util/dimdir.h} header file.
 So when a parameter fails to change, check the sampling
 by increasing verbosity and you may observe the value tries to 
@@ -90,6 +77,25 @@ and these can be modified with the \Opt{-N} option.
 This should be used for collections with larger  numbers of
 documents, but its best to run first and on
 error, increase the bounds.
+See the \emph{Errors} for details.
+
+\subsection{Caveat Emptor}
+The programme is research software, so not all options
+or combinations of options work correctly.
+Note that in this release, all the poorly tested experimental features
+have been stripped, so this release contains
+only moderately well tested components.
+However, different combinations of options are not thoroughly
+tested.  Documentation, itself, may also be out of date in some
+places (unfortunately).
+
+Note also, this is not intended to be code that others could easily
+modify.  In order to get performance, to provide all the features,
+and to run multi-core, the code is quite convoluted.
+Researchers seeking simple code they can experiment and
+modify themselves should request a cutdown version from the author.
+The safest thing is to work with the examples given at the
+end of the document.
 
 \section{Options}
 %%%%%%%%%%%%%%%%%
@@ -97,10 +103,16 @@ error, increase the bounds.
 Options have a single letter followed by a possible
 single argument.  Options are grouped under
 the following functions:
+\begin{itemize}
+\item
 \emph{setting of hyperparameters}, 
+\item
 \emph{controlling sampling of hyperparameters},
+\item
 \emph{general control}, and
-\emph{testing and reports}
+\item
+\emph{testing and reports}.
+\end{itemize}
 
 \subsection{Setting up the model and hyperparameters}
 For these, \texttt{theta} is a vector for each document representing the
@@ -120,15 +132,15 @@ using adaptive rejection sampling.
 using this \texttt{value} (a float/real) for each dimension.  The value must be a positive float.  With the optional \texttt{file} argument, the file
 specifies the probability vector to use as the mean vector of the
 Dirichlet. The file is in text format representing  \texttt{T} 
-(the number of topics) floats.
+(the number of topics) floats, which will be normalised.
 Then multiply the mean vector by \texttt{T*value} 
 to get the Dirichlet parameter vector.
-i.e, the mean of the \texttt{T} values 
+\emph{i.e.}, the mean of the \texttt{T} values 
 in the Dirichlet parameter vector is \texttt{value}.
 \item[{-A}{dir[,file]}]  Same as \OptArg{-A}{value[,file]} but
 \texttt{value} is set to a default,
-0.05*\texttt{ave-len}/\texttt{T} where
-\texttt{ave-len} is the average document length in the training set.
+0.05*\texttt{avelen}/\texttt{T} where
+\texttt{avelen} is the average document length in the training set.
 \item[{-A}{type[,file]}]  This other version of the
 \Opt{-A} option  changes the Alpha side 
 Dirichlet on theta to a Pitman-Yor process, thus
@@ -158,13 +170,18 @@ This is not hierarchical because alpha is constant.
 If the \texttt{file} optional argument is used
 then it specifies \texttt{alpha}.
 \end{Description}
-\item[{-A}{ng}]  Each topic now has its own independent gamma distribution,
+\item[{-A}{ng}]
+  The instigates the \emph{normalised Gamma} prior on theta.
+  Each topic now has its own independent gamma distribution,
 \texttt{Gamma(NGalpha,NGbeta)},
 and these are normalised to get the topic probabilities.  There are 2*\texttt{T}
 parameters now, the vector of alpha parameters for each topic and the
 vector of beta parameters for each topic.
+This means each dimension has its own independent variance parameter,
+so both mean and variance are fit per dimension.
 By default these are sampled in batches 
 during standard hyper-parameter sampling.
+Do not use with burstiness as this has not been evaluated.
 \item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
@@ -574,7 +591,7 @@ the Alpha side of the model is non-parametric.
 \item[\File{RepStem.twt}] Word by topic table counts if
   the Beta side of the model is non-parametric.
 \item[\File{RepStem.UN}]  latent ``mass'' variable kept
-  for each document when the \texttt{-Ang} option is used.
+  for each document when the \OptArg{-A}{ng} option is used.
 \item[\File{RepStem.zt}] With no burstiness, gives topic
 index (offset by 0), one per line.  
 With burstiness, gives one ``z,r'' per line where ``z'' is the
@@ -615,11 +632,30 @@ the LDA default.
 It is 1 for hdp, 2 for hpdd and 3 for pdp.
 Likewise for the \texttt{PYbeta} variable and the \Opt{-B} option.
 
-If the \texttt{-Ang} option is used then vectores
+If the \OptArg{-A}{ng} option is used then vectores
 \texttt{NGalpha} and \texttt{NGbeta} are saved as well.
 
 \section{Examples}
 %%%%%%%%%%%%%%%%%%
+Examples are given for
+\begin{itemize}
+\item
+  \emph{basic running},
+\item
+  \emph{different models},
+\item
+  \emph{diagnostic reports},
+\item
+  \emph{restarts and printing words},
+\item
+  \emph{sparsity mappings and topic probabilities}
+\item
+  \emph{testing}
+\item
+  \emph{estimating model parameters}
+\item
+  \emph{burstiness}
+\end{itemize}
 
 \subsection{Basic running}
 
@@ -717,6 +753,43 @@ level and Pitman-Yor process or Dirichlet process at the document level;
 \item
 and \texttt{TEST=0} means there is no test data.
 \end{itemize}
+
+\subsection{Different models}
+
+The list below gives different models that one might run.
+Note all hyperparameters will subsequently be fit during sampling,
+unless you use the \Opt{-F} option to switch individual fitting
+off.
+\begin{description}
+\item[{-Adir} {-Bdir} :] this is standard LDA using the default settings
+  for symmetric Dirichlet priors.
+  Replace the word ``dir'' with a float to get specific values
+  initialised.   
+\item[{-B0.001} :] this is HDP-LDA using a Dirichlet prior for phi
+   (word probability vector),
+  and a default non-parametric prior (HPDD) for
+  theta (topic probability vector).
+\item[\texttt{default}:]
+  default is full non-parametric topic modelling \emph{without} burstiness,
+  we call NP-LDA,
+  both priors for theta and phi use the
+  default non-parametric prior (HPDD).
+\item[{-Ang} :]
+  this uses a normalised Gamma for the
+  prior for theta, which means different dimensions
+  have both mean and variance fit,
+  we call NG-LDA.
+  Phi has the
+  default non-parametric prior (HPDD).
+\item[{-Sbdk=100} :]
+  full non-parametric topic modelling \emph{with burstiness},
+  bursty NP-LDA,
+  both priors for theta and phi use the
+  default non-parametric prior (HPDD).
+\end{description}
+
+\subsection{Diagnostic reports}
+
 By default, every 5 cycles, a short report is printed:
 \begin{verbatim}
 [26/05/2014:10:01:38] cycles:  81 82 83 84 85
@@ -1134,7 +1207,7 @@ also of \Date.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{description}
-\item[Copyright] \copyright\ 2011-2014, Prof.~Wray Buntine, 
+\item[Copyright] \copyright\ 2011-2015, Prof.~Wray Buntine, 
   NICTA, Canberra, Australia (to 2013), and Monash
 University (from 2014),
      \Email{wray.buntine@monash.edu}.
