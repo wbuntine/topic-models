@@ -914,10 +914,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
      */
     tscorek = -1;
     cnt = buildindk(-1,indk);
-    if ( scoretype == ST_phirat )
-      topk(topword, cnt, indk, phiratioscore);
-    else
-      topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
+    /*  this case gives bad results */
+    // if ( scoretype == ST_phirat ) topk(topword, cnt, indk, phiratioscore);
+    topk(topword, cnt, indk, (ddP.phi==NULL)?countscore:phiscore);
     /*
      *     cannot build df mtx for root because
      *     it is latent w.r.t. topics

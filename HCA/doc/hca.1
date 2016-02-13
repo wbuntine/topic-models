@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sat Feb 13 08:52:08 AEDT 2016
+.\" Manual page created with latex2man on Sat Feb 13 11:01:18 AEDT 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -10,7 +10,7 @@
 
 .fi
 ..
-.TH "HCA" "1" "2014/08/04" "Data Analysis Tools " "Data Analysis Tools "
+.TH "HCA" "1" "2016/02/13" "Data Analysis Tools " "Data Analysis Tools "
 .SH NAME
 
 .PP
@@ -89,7 +89,7 @@ The programme uses generalised second order Stirling numbers
 with the library extracted from libstb
 version 1.8 
 released at \fBhttps://github.com/wbuntine/libstb\fP\&.
-This is initialised with predefined bounds on the tables, 
+This is (annoyingly) initialised with predefined bounds on the tables, 
 and these can be modified with the \fB\-N\fP
 option. 
 This should be used for collections with larger numbers of 
@@ -376,6 +376,11 @@ but subsequent sampling will allow a different value per topic.
 .RE
 .PP
 .SS CONTROLLING SAMPLING OF HYPERPARAMETERS
+Most hyperparameters are fit with adaptive rejection sampling (ARS) by default. 
+The discount parameter of a Pitman\-Yor process, when set to zero is 
+not fit, as it is assumed you want a Dirichlet process instead. 
+Options give which cycles to run ARS on which hyperparameters 
+and which hyperparameters not to sample. 
 .RE
 .TP
 \fB\-D\fP\fIcycles,start\fP
@@ -545,6 +550,8 @@ fract
 then the fract
 proportion at the tail of the document is held out. 
 The initial proportion is used in estimating. 
+Some documents vary in topic over the length, so 
+this method is not advised. 
 .RE
 .RS
 .PP
@@ -678,6 +685,10 @@ this word that are in this topic.
 .TP
 phi: 
 rank by computed phi value (if loaded). 
+.TP
+rat: 
+rank by ratio with the beta prior 
+(``background topic\&'') produced by NP\-LDA. 
 .RE
 .RS
 .PP
@@ -1273,9 +1284,17 @@ The figures give 0.19380 seconds per cycle for the Gibbs sampler
 and 0.01307 seconds per cycle for the adative rejection sampling 
 of hyperparameters. Note these figures are not collected 
 correctly for the multi\-core version. 
+.PP
 Some basic details for the topics are given too. 
-These are listed in terms of decreasing proportion. 
-Details are as follows: 
+With verbosity level of 1 only diagnostics are given for topics. 
+With higher verbosity word indices or words are reported as well, 
+as ranked using the \fB\-o\fP
+option. 
+The topics are listed in terms of decreasing proportion. 
+So ``Topic 6/0\&'' means ``topic number 6, which is the most frequent\&'' 
+and ``Topic 14/2\&'' means ``topic number 14, which is the 3rd most frequent.\&'' 
+.PP
+Details of the diagnostics are as follows: 
 .TP
 co: 
 coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011. 
@@ -1359,6 +1378,7 @@ use 8 threads for Gibbs sampling.
 This just repeats the above but should be faster! 
 .PP
 .SS RESTART AND PRINT WORDS FOR THE TOPICS
+.PP
 Restart from checkpoint after the previous run but run no cycles. 
 Input the tokens from 
 data/ch.tokens,
@@ -1366,7 +1386,7 @@ and print top 10 words for each topic.
 .Vb
    hca \-v \-v \-r0 \-e \-V \-C0 data/ch c1
 .Ve
-The command line means: 
+The new command line options mean: 
 .TP
 ``\-v \-v\&'': 
 use level two verbosity; 
@@ -1386,9 +1406,40 @@ After printing initial details, this will print two
 sets of details. 
 The first is a list of top topic words (if verbosity is greater than 1) 
 and topic diagnostics. 
+The topic diagnostics were explained in the precious subsection. 
 Topics are printed in decreasing order of occurrence. 
 The extra verbosity level and the \fB\-V\fP
 means that topic words will be printed out too. 
+.PP
+Here are some sample topic lists with just ``\fB\-v\fP
+\fB\-v\fP\&'',
+which uses word ranking ``\fB\-o\fP\fIidf\fP\&''
+by default: 
+.Vb
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=1679,1412,780,1234,1612,1096,1758,1552,1066,584
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=452,623,1241,1701,1275,1434,1448,1489,1062,1079
+.Ve
+Here are some sample topic lists with words, 
+``\fB\-v\fP
+\fB\-v\fP
+\fB\-V\fP\&'':
+.Vb
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=bernardin,miami,chicago,concert,beach,pop,designer,murders,killing,music
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=germany,nazi,papers,territory,hitler,crimes,chancellor,sentence,victims,troops
+.Ve
+Here are some sample topic lists with words 
+using ratio ranking, ``\fB\-o\fP\fIrat\fP\&'',
+which does not work with plain Dirichlet priors on phi: 
+.Vb
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=bernardin,miami,chicago,concert,fans,pop,designer,music,killing,video
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=germany,nazi,papers,territory,hitler,nobel,crimes,german,prize,chancellor
+.Ve
 .PP
 For more detail to the RepStem.topset
 file, use: 
@@ -1412,6 +1463,7 @@ The first two lines give brief column heads for the topic and word lines.
 The scores match those printed with diagnostics. 
 .PP
 .SS PRODUCE SPARSITY MAPPINGS AND DOCUMENT TOPIC PROBABILITIES
+.PP
 Restart again and build a topic probability vector for each document, 
 as well as sparsity mappings for the words in 
 data/ch.smap
@@ -1666,6 +1718,61 @@ the percentage of
 non\-unique words in documents that are passed up by the burstiness 
 sub\-module to the topic model. 
 .PP
+.SS SAMPLE SCRIPTS
+.PP
+This section lists some useful scripts for doing combined runs. 
+Scripts below have common shell parameters: 
+.TP
+K: 
+number of topics 
+.TP
+T: 
+number of documents at end of file to use for testing 
+.TP
+DATA: 
+stem for the data set 
+.TP
+STEM: 
+stem for the result set 
+.PP
+This first example runs standard HDP\-LDA for 1000 cycles on 4 cores, fitting 
+all hyper\-parameters. 
+Check points are done every 100 cycles, and at that stage 
+a test is done using document completion where every 3/4 words 
+are done to train a theta for the test document and the remaining 1/4 
+are used to compute perplexity. 
+The testing runs 40 Gibbs cycles with a burnin of 10 cycles. 
+Basic diagnostics are reported. 
+After the 1000 cycles, a restart then runs Gibbs for 
+200 cycles and theta, phi and alpha are estimated at that stage. 
+Finally, a full diagnostic report is done 
+(without holdout testing, though) to report on 
+the words in the topics using the estimated phi. 
+.Vb
+hca \-Bdir \-K$K \-C1000 \-v \-q4 \-c100 \-T$T \-Llike,40,10 \-hdoc,4 $DATA $STEM
+hca \-r0 \-v \-C200 \-ltheta,5,1 \-lphi,5,1 \-lalpha,5,1 \-q4 \-T$T $DATA $STEM 
+hca \-r0 \-v \-v \-V \-C0 \-ophi \-rphi \-T$T $DATA $STEM
+.Ve
+Using the holdout testing during checkpointing, we get both 
+a training set and a test set perplexity computed for every 
+100 cycles of training. 
+.PP
+This second example tests out burstiness. 
+It runs three versions with testing: 
+with burstiness using PYP discount (parameter ad)
+fixed at 0, 
+burstiness using PYP discount (parameter ad)
+fixed at 0.5, 
+and no burstiness. 
+Files are saved in a common directory. 
+Note the Stirling number tables are also initialised with 
+larger values (60000,3000). 
+.Vb
+hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T \-Sbdk=100 $DATA $STEM/npb
+hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T \-Sbdk=100 \-Sad=0.5 \-Fad $DATA $STEM/npba
+hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T $DATA $STEM/np 
+.Ve
+.PP
 .SH ERRORS
 
 .PP
@@ -1722,10 +1829,10 @@ also at
 .SH VERSION
 
 .PP
-This programme is version 0.6 of 2014/08/04\&.
+This programme is version 0.62 of 2016/02/13\&.
 This incorporates parts of the library libstb
 version 1.8 
-also of 2014/08/04\&.
+also of 2016/02/13\&.
 .PP
 .SH LICENSE AND COPYRIGHT
 

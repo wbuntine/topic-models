@@ -1,25 +1,3 @@
-The 'w' option, 08/05/14
-========================
-I have this basically functioning.  The idea is to build on an initial window
-and then slowly move the window.   Basic thing is working but now:
-     * what to do with likelihood calcs?
-        ->  rebuild and make them on window too!
-     * how do you make it so the new stuff doesn't corrupt statistics as its
-        included 
-        ->  drift slowly
-        ->  incorporate each doc but don't add to stats until all in ?
-Currently under EXPERIMENTAL
+1.  Improve sampling of NGalpha in the -Ang option ... should use PYP
+    style.
 
-Need to ensure "fixed" hyperparameters remain fixed on restore!
-
-From Allen Riddell:
-
-3.  I'm most familiar with Mallet, so I'll use it as an example: You can save the 
-  assignment of each word to topics with the --output-state option. You can then 
-  divide documents by date and count the frequency of words within each topic at 
-  each time step. 100M tokens should not be challenging. The R package "mallet" 
-  also provides an interface for grabbing the empirical distribution over words 
-  for each topic from a subset of documents.
-
-4.  fix the description of A, B, alpha beta in the docs... these are priors
-    on phi, theta etc.

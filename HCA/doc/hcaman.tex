@@ -6,8 +6,8 @@
 
 \usepackage[fancyhdr]{latex2man}
 
-\setDate{2014/08/04}
-\setVersion{0.6}
+\setDate{2016/02/13}
+\setVersion{0.62}
 
 \begin{document}
 
@@ -72,7 +72,7 @@ change but doesn't.
 The programme uses generalised second order Stirling numbers
 with the library extracted from \Prog{libstb} version 1.8
 released at \URL{https://github.com/wbuntine/libstb}.
-This is initialised with predefined bounds on the tables,
+This is (annoyingly) initialised with predefined bounds on the tables,
 and these can be modified with the \Opt{-N} option.
 This should be used for collections with larger  numbers of
 documents, but its best to run first and on
@@ -256,6 +256,11 @@ where \texttt{var} can be one of:
 \end{Description}
 
 \subsection{Controlling sampling of hyperparameters}
+Most hyperparameters are fit with adaptive rejection sampling (ARS) by default.
+The discount parameter of a Pitman-Yor process, when set to zero is
+not fit, as it is assumed you want a Dirichlet process instead.
+Options give which cycles to run ARS on which hyperparameters
+and which hyperparameters not to sample.
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
 \item[\OptArg{-D}{cycles,start}] 
 Start sampling \texttt{alpha} of the symmetric Dirichlet for alpha after
@@ -361,6 +366,8 @@ That is, words at document positions \texttt{arg-1}, \texttt{2*arg-1},
 \item[fract] then the \texttt{fract}
 proportion at the tail of the document is held out.  
 The initial proportion is used in estimating.
+Some documents vary in topic over the length, so
+this method is not advised.
 \end{description}
 \item[\OptArg{-l}{Diag,cycles,start}] 
 Do a run-time estimation of the diagnostic \texttt{Diag}
@@ -436,11 +443,13 @@ Ranking done for top \texttt{count} words, default is 20.
 Methods are
 \begin{Description}
 \item[cost:] rank by proportion of this word in topic
-       minus estimated proportion assuming topic and word independent.
+  minus estimated proportion assuming topic and word independent.
 \item[count:] rank by count in topic.
 \item[idf:] rank by fraction of the total occurrences of
-       this word  that are in this topic.
+  this word  that are in this topic.
 \item[phi:] rank by computed phi value (if loaded).
+\item[rat:] rank by ratio with the beta prior
+  (``background topic'') produced by NP-LDA.
 \end{Description}
 \item[\Opt{-O}] Report log likelihood, not log perplexity.  Both
 are done in base 2.
@@ -863,9 +872,17 @@ The figures give 0.19380 seconds per cycle for the Gibbs sampler
 and 0.01307 seconds per cycle for the adative rejection sampling
 of hyperparameters.  Note these figures are not collected
 correctly for the multi-core version.
+
 Some basic details for the topics are given too.
-These are listed in terms of decreasing proportion.
-Details are as follows:
+With verbosity level of 1 only diagnostics are given for topics.
+With higher verbosity word indices or words are reported as well,
+as ranked using the \Opt{-o} option.
+The topics are listed in terms of decreasing proportion.
+So ``Topic 6/0'' means ``topic number 6, which is the most frequent''
+and ``Topic 14/2'' means ``topic number 14, which is the 3rd most frequent.''
+
+\noindent
+Details of the diagnostics are as follows:
 \begin{description}
 \item[co:] coherence as per Mimno, Wallach, Talley, Leenders and McCallum, EMNLP 2011.
 \item[da:] documents with proportion for topic greater than 1/sqrt($T$).
@@ -918,13 +935,14 @@ and you have an 8-core CPU, then run with 8 threads:
 This just repeats the above but should be faster!
 
 \subsection{Restart and print words for the topics}
+
 Restart from checkpoint after the previous run but run no cycles.
 Input the tokens from
 \File{data/ch.tokens}, and print top 10 words for each topic.
 \begin{verbatim}
    hca -v -v -r0 -e -V -C0 data/ch c1
 \end{verbatim}
-The command line means:
+The new command line options mean:
 \begin{description}
 \item[``-v -v'':] use level two verbosity;
 \item[``-r0'':] restart from document 0, i.e., on all documents;
@@ -936,11 +954,41 @@ Note must have at least level two verbosity;
 After printing initial details, this will print two
 sets of details.
 The first is a list of top topic words (if verbosity is greater than 1)
-and topic diagnostics. 
+and topic diagnostics.
+The topic diagnostics were explained in the precious subsection.
 Topics are printed in decreasing order of occurrence.
 The extra verbosity level and the \Opt{-V}
 means that topic words will be printed out too.
 
+\noindent
+Here are some sample topic lists with just ``\Opt{-v} \Opt{-v}'',
+which uses word ranking ``\OptArg{-o}{idf}'' by default:
+\begin{verbatim}
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=1679,1412,780,1234,1612,1096,1758,1552,1066,584
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=452,623,1241,1701,1275,1434,1448,1489,1062,1079
+\end{verbatim}
+\noindent
+Here are some sample topic lists with words,
+``\Opt{-v} \Opt{-v}  \Opt{-V}'':
+\begin{verbatim}
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=bernardin,miami,chicago,concert,beach,pop,designer,murders,killing,music
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=germany,nazi,papers,territory,hitler,crimes,chancellor,sentence,victims,troops
+\end{verbatim}
+Here are some sample topic lists with words
+using ratio ranking,  ``\OptArg{-o}{rat}'',
+which does not work with plain Dirichlet priors on phi:
+\begin{verbatim}
+Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
+topic 5/0 words=bernardin,miami,chicago,concert,fans,pop,designer,music,killing,video
+Topic 9/1 p=12.78% ws=37.0% ds=42.5% ew=715 ewp=396.8 ed=137.1 ...
+topic 9/1 words=germany,nazi,papers,territory,hitler,nobel,crimes,german,prize,chancellor
+\end{verbatim}
+
+\noindent
 For more detail to the \File{RepStem.topset} file, use:
 \begin{verbatim}
    hca -v -v -r0 -e -V -V -oidf,100 -C0 data/ch c1
@@ -956,6 +1004,7 @@ The first two lines give brief column heads for the topic and word lines.
 The scores match those printed with diagnostics.
 
 \subsection{Produce sparsity mappings and document topic probabilities}
+
 Restart again and build a topic probability vector for each document,
 as well as sparsity mappings for the words in 
 \File{data/ch.smap} file.
@@ -1155,6 +1204,53 @@ non-unique words in documents that are passed up by the burstiness
 sub-module to the topic model.  
 \end{description}
 
+\subsection{Sample Scripts}
+
+This section lists some useful scripts for doing combined runs.
+Scripts below have common shell parameters:
+\begin{description}
+\item[K:]  number of topics
+\item[T:] number of documents at end of file to use for testing
+\item[DATA:] stem for the data set
+\item[STEM:] stem for the result set
+\end{description}
+
+\noindent
+This first example runs standard HDP-LDA for 1000 cycles on 4 cores, fitting
+all hyper-parameters.
+Check points are done every 100 cycles, and at that stage
+a test is done using document completion where every 3/4 words
+are done to train a theta for the test document and the remaining 1/4
+are used to compute perplexity.
+The testing runs 40 Gibbs cycles with a burnin of 10 cycles.
+Basic diagnostics are reported.
+After the 1000 cycles, a restart then runs Gibbs for
+200 cycles and theta, phi and alpha are estimated at that stage.
+Finally, a full diagnostic report is done
+(without holdout testing, though) to report on
+the words in the topics using the estimated phi.
+\begin{verbatim}
+hca -Bdir -K$K -C1000 -v -q4 -c100 -T$T -Llike,40,10 -hdoc,4 $DATA $STEM
+hca -r0 -v -C200 -ltheta,5,1 -lphi,5,1 -lalpha,5,1 -q4 -T$T $DATA $STEM 
+hca -r0 -v -v -V -C0 -ophi -rphi -T$T $DATA $STEM
+\end{verbatim}
+Using the holdout testing during checkpointing, we get both
+a training set and a test set perplexity computed for every
+100 cycles of training.
+
+This second example tests out burstiness.
+It runs three versions with testing:
+with burstiness using PYP discount (parameter \texttt{ad}) fixed at 0,
+burstiness using PYP discount (parameter \texttt{ad}) fixed at 0.5,
+and no burstiness.
+Files are saved in a common directory.
+Note the Stirling number tables are also initialised with
+larger values (60000,3000).
+\begin{verbatim}
+hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T -Sbdk=100 $DATA $STEM/npb
+hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T -Sbdk=100 -Sad=0.5 -Fad $DATA $STEM/npba
+hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T $DATA $STEM/np 
+\end{verbatim}
 
 \section{Errors}
 

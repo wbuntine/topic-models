@@ -1060,8 +1060,11 @@ int main(int argc, char* argv[])
      tprob_init();
    } 
    
-   if ( ddP.phi==NULL && ddS.phi==NULL && score==ST_phi ) 
+   if ( score==ST_phi && ddP.phi==NULL && ddS.phi==NULL ) 
      yap_quit("Option '-o phi' needs a loaded phi matrix\n");
+   if ( score==ST_phirat &&
+	ddP.phi==NULL && (ddP.PYbeta==H_None || ddP.NGalpha) ) 
+     yap_quit("Option '-o rat' needs a PYP for beta or a loaded phi matrix\n");
 
    /*
     *   setup the caches

@@ -4,10 +4,17 @@
 #
 
 ###########################################
+#     Alter these to setup your local
+#     directory structure, ...
+#     but the defaults should work
+
+#     top level for HCA
+PWD := $(shell pwd)
 #     installed location of where to find libstb
 #       i.e.,   libstb.a is in $(STB)/lib/
-STB_HOME := $(shell pwd)/../../libstb
+STB_HOME := $(PWD)/../../libstb
 export STB_HOME
+export PWD
 
 #######################################
 ##  Linux versions
@@ -18,9 +25,9 @@ export STB_HOME
 # MYDEBUG=-pg -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
 # MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
 MYDEBUG=-g
-CPPFLAGS :=  -I$(shell pwd)/util/ -I$(STB_HOME)/lib/ $(MYDEBUG)
+CPPFLAGS :=  -I$(PWD)/util/ -I$(STB_HOME)/lib/ $(MYDEBUG)
 CFLAGS = -Wall
-LDFLAGS := -L$(shell pwd)/util -L$(STB_HOME)/lib
+LDFLAGS := -L$(PWD)/util -L$(STB_HOME)/lib
 LIBS = -lhca -lstb -lm -pthread
 
 CC = gcc
