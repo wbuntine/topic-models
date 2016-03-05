@@ -374,6 +374,14 @@ void pctl_read(char *resstem) {
   }
 }
 
+double pctl_gammaprior(double x) {
+	static double logZ = 0;
+        if ( logZ==0 )
+		logZ = PYP_CONC_PSHAPE * log(PYP_CONC_PSCALE) + lgamma(PYP_CONC_PSHAPE);
+	return -x/PYP_CONC_PSCALE + (PYP_CONC_PSHAPE-1)*log(x) - logZ;
+}
+
+
 /*
  *   default alpha values for LDA
  */
@@ -886,11 +894,6 @@ void pctl_report() {
     yap_message("\n");
   }
   
-}
-
-double pctl_gammaprior(double x, int K) {
-  return -x/PYP_CONC_PSCALE //K // why is the "/K" here?
-    + (PYP_CONC_PSHAPE-1)*log(x);
 }
 
 /*

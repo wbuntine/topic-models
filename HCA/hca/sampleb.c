@@ -38,7 +38,7 @@
 
 
 static double b0terms_PDD(double b, void *mydata) {
-  double val = pctl_gammaprior(b, ddN.T);
+  double val = pctl_gammaprior(b);
   if ( ddP.a0==0 )
     val += ddS.TDTnz*log(b);
   else
@@ -72,7 +72,7 @@ static double b0terms_DP(double b, void *mydata) {
 static double bterms(double b, void *mydata) {
   int i;
   uint16_t *localTd = (uint16_t *)mydata;
-  double val = pctl_gammaprior(b, ddN.T);
+  double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   double lgba = 0;
   if ( ddP.apar>0 )
@@ -153,7 +153,7 @@ static double betaterms(double mytbeta, void *mydata) {
 
 
 static double bw0terms_PDD(double bw, void *mydata) {
-  double val = pctl_gammaprior(bw, ddN.W);
+  double val = pctl_gammaprior(bw);
   if ( ddP.aw0==0 )
     val += ddS.TWTnz*log(bw);
   else
@@ -185,7 +185,7 @@ static double ngaterms(double ak, void *mydata) {
   int j;
   int k = *((int *)mydata);
   /*   is this the right prior ??? */
-  double val = pctl_gammaprior(ak, ddN.T);
+  double val = pctl_gammaprior(ak);
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
     if (  M_docsparse(j,k)==0 ) continue; 
@@ -226,7 +226,7 @@ static double ngbterms(double bk, void *mydata) {
 
 static double bwterms(double bw, void *mydata) {
   int t;
-  double val = pctl_gammaprior(bw, ddN.W);
+  double val = pctl_gammaprior(bw);
 #ifdef SBW_USECACHE
   struct gcache_s lgba_t;
   struct gcache_s lgb_t;
@@ -356,7 +356,7 @@ void sample_NGbeta(double *b, int k) {
     }
   }
   b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt*ddP.NGalpha[k])
-    / (PYP_CONC_PSCALE/ddN.T + val);
+    / (PYP_CONC_PSCALE + val);
   if ( b[k]<PYP_CONC_MIN )
     b[k] = PYP_CONC_MIN;
   if ( b[k]>PYP_CONC_MAX )

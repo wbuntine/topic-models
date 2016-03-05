@@ -32,5 +32,6 @@
  */
 #define PYP_CONC_PSHAPE 1.1
 #define PYP_CONC_PSCALE 1
+#define PYP_CONC_GAMMA(x)  -x/PYP_CONC_PSCALE + (PYP_CONC_PSHAPE-1)*log(x) - PYP_CONC_PSHAPE * log(PYP_CONC_PSCALE) - lgamma(PYP_CONC_PSHAPE)
 
 #endif

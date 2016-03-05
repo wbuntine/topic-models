@@ -43,7 +43,7 @@ extern int verbose;
  */
 static double bterms_theta(double b, void *mydata) {
   int i;
-  double val = pctl_gammaprior(b, ddN.T);
+  double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   double lgba = 0;
   double lb = 0;
@@ -71,7 +71,7 @@ static double bterms_theta(double b, void *mydata) {
 static double bterms_mu1(double b, void *mydata) {
   int e;
   double lgb = lgamma(b);
-  double val = pctl_gammaprior(b, ddN.T);
+  double val = pctl_gammaprior(b);
   assert(ddN.E>1);
   for (e=1; e<ddN.E; e++) {
     val += poch(b, ddP.a_mu, ddS.Cp_e[e]);
@@ -93,7 +93,7 @@ static double bterms_mu1(double b, void *mydata) {
 }
 
 static double bterms_mu0(double b, void *mydata) {
-  double val = pctl_gammaprior(b, ddN.T);
+  double val = pctl_gammaprior(b);
   val += poch(b, ddP.a_mu, ddS.Cp_e[0]);
   val -= gammadiff(ddS.C_e[0]+((ddN.E>1)?ddS.Cp_e[1]:0), b, 0);
   myarms_evals++;
@@ -108,7 +108,7 @@ static double bterms_mu0(double b, void *mydata) {
 
 static double bterms_phi0(double b, void *mydata) {
   int t;
-  double val = pctl_gammaprior(b, ddN.W);
+  double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   for (t=0; t<ddN.T; t++) {
     val += poch(b, ddP.a_phi1, ddS.S_Vte[t][0]);
@@ -129,7 +129,7 @@ static double bterms_phi0(double b, void *mydata) {
 static double bterms_phi1(double b, void *mydata) {
   int e;
   int k = *(int*)mydata;
-  double val = pctl_gammaprior(b, ddN.W);
+  double val = pctl_gammaprior(b);
   double lgb = lgamma(b);
   for (e=1; e<ddN.E; e++) {
     if ( ddS.S_Vte[k][e]==0 ) 

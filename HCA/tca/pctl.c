@@ -414,9 +414,8 @@ void pctl_report() {
   yap_message("bb = %lf\n", ddP.b_burst);
 }
 
-double pctl_gammaprior(double x, int K) {
-  return -x/PYP_CONC_PSCALE  //  /K
-	 + (PYP_CONC_PSHAPE-1)*log(x);
+double pctl_gammaprior(double x) {
+  return -x/PYP_CONC_PSCALE  + (PYP_CONC_PSHAPE-1)*log(x);
 }
 
 /*

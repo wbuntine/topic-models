@@ -426,7 +426,7 @@ void dmi_free(D_DMi_t *ptr) {
  *   sampling hyperparameters
  *
  ***********************************************************/
-double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double, int),
+double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double),
                       double a_burst, double *b_burst, stable_t *SD) {
   D_MiSi_t dD;   
   double la = 0;
@@ -486,7 +486,7 @@ double dmi_likelihood(D_DMi_t *ptr, double (*gammaprior)(double, int),
     //  misi_unbuild(&dD, i, 0);
   }
   for (t=0; t<ptr->T; t++)
-    likelihood += gammaprior(b_burst[t], ptr->T);
+    likelihood += gammaprior(b_burst[t]);
   
   misi_free(&dD);
   return likelihood;

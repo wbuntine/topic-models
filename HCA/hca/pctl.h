@@ -201,6 +201,6 @@ int pctl_training(int D);
 void pctl_free();
 void pctl_query(char *qname);
 
-double pctl_gammaprior(double x, int K);
+double pctl_gammaprior(double x);
 
 #endif
