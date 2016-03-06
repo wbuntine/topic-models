@@ -94,7 +94,6 @@ D_DMi_t ddM;
 
 /*
  *    describes the sampling type
- *    at this stage should not have set ddP.NGalpha
  */
 static const char *stype() {
   if ( ddP.PYalpha && ddP.PYalpha!=H_NG ) {
@@ -414,7 +413,7 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'A' argument\n");
       /*  save copy so later reload of par file wont loose it */
       PYalphain = ddP.PYalpha;
-      if ( ddP.PYalpha != H_HPDD && ddP.PYalpha != H_NG ) {
+      if ( ddP.PYalpha != H_HPDD ) {
 	/*  get file part */
 	char *farg = strchr(optarg,',');
 	if ( farg!=NULL )
@@ -521,7 +520,7 @@ int main(int argc, char* argv[])
 	  if ( !optarg || sscanf(optarg,"%[^, ],%d", &var[0], &st)<1  )
             yap_quit("Need a valid 'g' argument\n");
           par = findpar(var);
-          if ( par==ParBDK || par==ParNGAlpha || par==ParNGBeta )
+          if ( par==ParBDK || par==ParNGBeta )
             ddP.kbatch = st;
           else
             yap_quit("Illegal var for -g\n");
@@ -725,7 +724,7 @@ int main(int argc, char* argv[])
 			       &var[0], &vin)<2  )
 	  yap_quit("Need a valid 'S' argument\n");
 	par = findpar(var);
-	if ( par==ParNone || par==ParNGAlpha || par==ParNGBeta )
+	if ( par==ParNone || par==ParNGBeta )
 	  yap_quit("Illegal var for -S\n");
 	else if ( par==ParBDK ) {
 	  BDKval = vin;
@@ -977,7 +976,8 @@ int main(int argc, char* argv[])
     */
    pctl_dims();
    pctl_samplereport();
-   if ( alphafile==NULL && (ddP.PYalpha==H_HDP||ddP.PYalpha==H_PDP) ) {
+   if ( alphafile==NULL 
+	&& (ddP.PYalpha==H_HDP||ddP.PYalpha==H_PDP||ddP.PYalpha==H_NG) ) {
      if ( restart ) {
        /*
         *  use stored version of alpha
@@ -989,7 +989,7 @@ int main(int argc, char* argv[])
      } else {
        pctl_fixalpha("uniform", resstem);
      } 
-   } else if ( !ddP.NGalpha ) {
+   } else {
      pctl_fixalpha(alphafile, resstem);
    }
    if ( verbose && alphafile!=NULL && strcmp(alphafile,"uniform")!=0 ) {
@@ -1062,8 +1062,7 @@ int main(int argc, char* argv[])
    
    if ( score==ST_phi && ddP.phi==NULL && ddS.phi==NULL ) 
      yap_quit("Option '-o phi' needs a loaded phi matrix\n");
-   if ( score==ST_phirat &&
-	ddP.phi==NULL && (ddP.PYbeta==H_None || ddP.NGalpha) ) 
+   if ( score==ST_phirat && ddP.phi==NULL && (ddP.PYbeta==H_None) ) 
      yap_quit("Option '-o rat' needs a PYP for beta or a loaded phi matrix\n");
 
    /*
@@ -1094,7 +1093,7 @@ int main(int argc, char* argv[])
       hca_rand_z(ddP.Tinit, 0, ddN.D);
     }
     hca_reset_stats(resstem, restart, 0, 0, ddN.DT);
-    if ( ddP.NGalpha ) {
+    if ( ddP.PYalpha==H_NG ) {
       int i;
       ddN.DTused = 0;
       for (i=0; i<ddN.DT; i++)
@@ -1342,7 +1341,7 @@ int main(int argc, char* argv[])
 	yap_message(" %d", iter);
     }
 #ifdef NG_SPARSE
-    if ( ddP.NGalpha ) check_sparse();
+    if ( ddP.PYalpha==H_NG ) check_sparse();
 #endif
     
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {

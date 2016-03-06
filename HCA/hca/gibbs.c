@@ -97,7 +97,7 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
   assert(ddS.Ndt[did][t]>0);
   ddS.Ndt[did][t]--;
 #ifdef NG_SPARSE
-  if ( ddP.NGalpha && ddS.Ndt[did][t]==0 ) {
+  if ( ddP.PYalpha==H_NG && ddS.Ndt[did][t]==0 ) {
     hca_rand_sparse(did, t);
   }
 #endif
@@ -145,7 +145,7 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
    *   dealing with H_NG and sparsity
    */
 #ifdef NG_SPARSE
-  if ( ddP.NGalpha && M_docsparse(did,t)==0 ) {
+  if ( ddP.PYalpha==H_NG && M_docsparse(did,t)==0 ) {
     assert(ddS.Ndt[did][t]==1);
     M_docsp_set(did,t);
     ddS.sparseD[t]++;
@@ -392,7 +392,7 @@ double gibbs_lda(/*
     }
   }
   if ( ddG.doprob && !ddP.empirical ) {
-    if ( ddP.NGalpha ) {
+    if ( ddP.PYalpha==H_NG ) {
       /*  topicprob() isn't normalised for this one */
       double tot = 0;
       double tp[ddN.T];
@@ -414,7 +414,7 @@ double gibbs_lda(/*
     }
   }
 #ifdef NG_SPARSE
-  if ( ddP.NGalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
     /*
      *   check and sample all the sparse bits,
      *   not only those with ddS.Ndt[did][t]==0 can change

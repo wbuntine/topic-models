@@ -56,7 +56,7 @@ double likelihood_bdk() {
   return dmi_likelihood(&ddM,pctl_gammaprior,ddP.ad, ddP.bdk,ddC.SD);
 }
 
-double likelihood_NGalpha() {
+double likelihood_NGalpha_OLD() {
   int i,t;
   double likelihood = 0;
   for (i=0; i<ddN.DT; i++) {
@@ -67,16 +67,55 @@ double likelihood_NGalpha() {
       if (  M_docsparse(i,t)==0 ) continue;
 #endif
       if ( n>0 ) 
-	likelihood += gammadiff(n, ddP.NGalpha[t], 0.0);
-      likelihood += ddP.NGalpha[t]*log(ddP.NGbeta[t])
-	- (n+ddP.NGalpha[t])*log(ddP.NGbeta[t]+ddS.UN[i]);
+	likelihood += gammadiff(n, ddP.alphapr[t], 0.0);
+      likelihood += ddP.alphapr[t]*log(ddP.NGbeta[t])
+	- (n+ddP.alphapr[t])*log(ddP.NGbeta[t]+ddS.UN[i]);
     }
     likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
   }
   //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
-    likelihood += pctl_gammaprior(ddP.NGalpha[t]);
+    likelihood += pctl_gammaprior(ddP.alphapr[t]);
+#ifdef NG_SPARSE
+    likelihood += lgamma(ddP.ngs0+ddN.DTused-ddS.sparseD[t])
+      + lgamma(ddP.ngs1+ddS.sparseD[t]) - lgamma(ddP.ngs0+ddP.ngs1+ddN.DTused);
+#endif
+  }
+  return likelihood;
+}
+
+double likelihood_NGalpha() {
+  int i,t;
+  double likelihood = 0;
+  for (i=0; i<ddN.DT; i++) {
+    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
+    for (t=0; t<ddN.T; t++) {
+      int n=ddS.Ndt[i][t];
+#ifdef NG_SPARSE
+      if (  M_docsparse(i,t)==0 ) continue;
+#endif
+      if ( n==0 ) 
+	continue;
+      likelihood += S_S(ddC.SX,n,ddS.Tdt[i][t])
+	- n*log(ddP.NGbeta[t]+ddS.UN[i]);
+    }
+    likelihood += (ddS.NdT[i]-1)*log(ddS.UN[i]) - lgamma(ddS.NdT[i]);
+  }
+  //yap_infinite(likelihood);
+  for (t=0; t<ddN.T; t++) {
+    double bfact = 1.0/PYP_CONC_PSCALE + ddS.TDt[t];
+    double shapestats = PYP_CONC_PSHAPE;
+    if ( ddS.TDt[t]==0 )
+      continue;
+    for (i=0; i<ddN.DT; i++) {
+      if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
+      shapestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
+    }
+    likelihood += pctl_gammaprior(ddP.NGbeta[t]);
+    likelihood += PYP_CONC_PZ;
+    likelihood += lgamma(bfact);
+    likelihood -= bfact * log(shapestats);
 #ifdef NG_SPARSE
     likelihood += lgamma(ddP.ngs0+ddN.DTused-ddS.sparseD[t])
       + lgamma(ddP.ngs1+ddS.sparseD[t]) - lgamma(ddP.ngs0+ddP.ngs1+ddN.DTused);
@@ -362,7 +401,7 @@ double likelihood() {
   /*
    *  doc X topic part
    */
-  if ( ddP.NGalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
     likelihood += likelihood_NGalpha();
   } else if ( ddP.PYalpha ) {
     likelihood += likelihood_PYalpha();

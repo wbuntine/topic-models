@@ -54,8 +54,8 @@ typedef struct D_pars_s {
   double alphac;          // individual constant, set from alphatot
   double alphatot;        // total of above or alphac*T
 
-  double *NGalpha;        // alpha vector for H_NG
   double *NGbeta;         // beta vector for H_NG
+                          //  alpha stored in alphapr
   double ngs0, ngs1;        // Beta priors for sparsity
 
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
@@ -155,7 +155,7 @@ typedef struct D_pars_s {
  */
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 
-               ParAD, ParBDK, ParNGAlpha, ParNGBeta,
+               ParAD, ParBDK, ParNGBeta,
 	       ParNGS0, ParNGS1,
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {

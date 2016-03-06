@@ -125,7 +125,7 @@ void hca_alloc() {
     ddS.TDt = u32vec(ddN.T);
     ddS.Tlife = u32vec(ddN.T);
   }
-  if ( ddP.NGalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
 #ifdef NG_SPARSE
     int i;
     unsigned incr;
@@ -500,7 +500,7 @@ void hca_reset_stats(char *resstem,
       assert(ddP.NGbeta);
       for (t=0; t<ddN.T; t++) {
 	aveB += ddP.NGbeta[t];
-	totA += ddP.NGalpha[t];
+	totA += ddP.alphapr[t];
       }
       aveB /= ddN.T;
       for (i=firstdoc; i<lastdoc; i++) 

@@ -119,7 +119,7 @@ void cache_init(int maxM, int maxW) {
     gcache_init(&ddC.lgb, ddP.bpar);
     if ( ddP.apar>0 )
       gcache_init(&ddC.lgba, ddP.bpar/ddP.apar);
-  } else if ( !ddP.NGalpha ) {
+  } else {
     if ( ddP.alphac>0 ) {
       gcache_init(&ddC.lgalphac, ddP.alphac);
     }
@@ -178,7 +178,7 @@ void cache_update(char *par) {
       if ( ddC.SX->a != ddP.apar )
 	S_remake(ddC.SX,ddP.apar);
     } 
-  } else if ( !ddP.NGalpha && strcmp(par,"alpha")==0 ) { 
+  } else if ( strcmp(par,"alpha")==0 ) { 
     pctl_fixalpha(NULL, NULL);
     if ( ddP.alphac>0 )
       gcache_init(&ddC.lgalphac, ddP.alphac);
