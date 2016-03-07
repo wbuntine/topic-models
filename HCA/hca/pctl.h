@@ -33,6 +33,12 @@
 #define DIRCYCLES 4     //  by default update alpha/beta
 #define STARTCYCLES 1      //  when to start sampling hypers
 /*
+ *   pars for prior Gamma() for NG alpha
+ */
+#define NGASH 1.1
+#define NGASC 1.0
+
+/*
  *   pars for prior Beta()
  */
 #define NGS0 10.0
@@ -69,6 +75,8 @@ typedef struct D_pars_s {
   double aw0, bw0;        // PDD/PDP params for W root
   double ad;              // PDP params for doc
   double *bdk;            // version with seperate bd for each topic
+  double ngash, ngasc;    // shape and scale for Gamma prior of NG alpha
+  
   /*
    *   min. size of allowed doc
    */
@@ -156,7 +164,7 @@ typedef struct D_pars_s {
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 
                ParAD, ParBDK, ParNGBeta,
-	       ParNGS0, ParNGS1,
+	       ParNGS0, ParNGS1, ParNGASH, ParNGASC,
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {
   char *name;
@@ -202,5 +210,8 @@ void pctl_free();
 void pctl_query(char *qname);
 
 double pctl_gammaprior(double x);
+
+double pctl_ng_alphapriorZ();
+double pctl_ng_alphaprior(double x);
 
 #endif

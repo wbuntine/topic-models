@@ -75,14 +75,14 @@ double likelihood_NGalpha() {
   }
   //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
-    double bfact = 1.0/PYP_CONC_PSCALE + ddS.TDt[t];
-    double shapestats = PYP_CONC_PSHAPE;
+    double bfact = 1.0/ddP.ngasc + ddS.TDt[t];??
+    double shapestats = ddP.ngash;??
     for (i=0; i<ddN.DT; i++) {
       if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
       shapestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
     }
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
-    likelihood += PYP_CONC_PZ;
+    likelihood += ?????????? Z;
     likelihood += lgamma(bfact);
     likelihood -= bfact * log(shapestats);
 #ifdef NG_SPARSE

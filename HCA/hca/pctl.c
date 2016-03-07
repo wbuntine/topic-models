@@ -83,6 +83,8 @@ void pctl_init() {
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
   ddT[ParNGBeta].name = "NGbeta";  
+  ddT[ParNGASH].name = "ngash";  
+  ddT[ParNGASC].name = "ngasc";  
   ddT[ParNGS0].name = "ngs0";  
   ddT[ParNGS1].name = "ngs1";  
   ddT[ParAlpha].name = "alphatot"; 
@@ -102,6 +104,8 @@ void pctl_init() {
   ddT[ParBDK].ptr = NULL;
   ddT[ParNGS0].ptr = &ddP.ngs0;
   ddT[ParNGS1].ptr = &ddP.ngs1;
+  ddT[ParNGASH].ptr = &ddP.ngash;
+  ddT[ParNGASC].ptr = &ddP.ngasc;
   ddT[ParA].sampler = &sample_a;
   ddT[ParAW].sampler = &sample_aw;
   ddT[ParA0].sampler = &sample_a0;
@@ -117,12 +121,16 @@ void pctl_init() {
   ddT[ParBDK].samplerk = &sample_bdk;
   ddT[ParNGS0].fix = 1;
   ddT[ParNGS1].fix = 1;
+  ddT[ParNGASH].fix = 1;
+  ddT[ParNGASC].fix = 1;
 
   ddP.empirical = 0;
   ddP.alphatot = 0;
   ddP.alphac = 0;
   ddP.ngs0 = NGS0;
   ddP.ngs1 = NGS1;
+  ddP.ngash = NGASH;
+  ddP.ngasc = NGASC;
   ddP.NGbeta = NULL;
   ddP.alphapr = NULL;
   ddP.betapr = NULL;
@@ -333,8 +341,12 @@ void pctl_read(char *resstem) {
      */
     //  WRAY  still have to read alpha ???
     ddP.apar = 0;
+#ifdef NG_SPARSE
     ddP.ngs0 = readf("ngs0");
     ddP.ngs1 = readf("ngs1");
+#endif
+    ddP.ngash = readf("ngash");
+    ddP.ngasc = readf("ngasc");
     ddP.NGbeta = readfv("NGbeta", ddN.T);
     if ( !ddP.NGbeta ) 
       yap_quit("Cannot read 'NGbeta' in '%s.par'\n", resstem);
@@ -837,7 +849,14 @@ void pctl_report() {
   if ( ddP.alphapr && ddP.alphac==0 ) 
     yap_message("# alpha proportions read from file\n");
   if ( ddP.PYalpha ) {
-    if ( ddP.PYalpha!=H_NG ) {
+    if ( ddP.PYalpha==H_NG ) {
+#ifdef NG_SPARSE
+      yap_message("ngs0  = %lf\n", ddP.ngs0);
+      yap_message("ngs1  = %lf\n", ddP.ngs1);
+#endif
+      yap_message("ngash = %lf\n", ddP.ngash);
+      yap_message("ngasc = %lf\n", ddP.ngasc);
+    } else {
       yap_message("a     = %lf\n", ddP.apar);
       yap_message("b     = %lf\n", ddP.bpar);
       if ( ddP.PYalpha!=H_PDP ) {
@@ -1092,6 +1111,10 @@ void pctl_print(FILE *fp) {
   fprintf(fp, "PYalpha  = %d\n", (int)ddP.PYalpha);
   if ( ddP.PYalpha==H_NG ) {
     int t;
+#ifdef NG_SPARSE
+    printpar(fp,ParNGS0); printpar(fp,ParNGS1);
+#endif
+    printpar(fp,ParNGASH); printpar(fp,ParNGASC);
     if ( !ddT[ParNGBeta].fix ) 
       fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
 	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
@@ -1157,4 +1180,11 @@ void pctl_free() {
     free(ddP.betapr);
   if ( ddP.alphapr )
     free(ddP.alphapr);
+}
+
+double pctl_ng_alphapriorZ() {
+  return - ddP.ngash * log(ddP.ngasc) - lgamma(ddP.ngash);
+}
+double pctl_ng_alphaprior(double x) {
+  -x/ddP.ngasc + (ddP.ngash-1)*log(x) + pctl_ng_alphapriorZ();
 }

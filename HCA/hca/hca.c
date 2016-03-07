@@ -871,8 +871,12 @@ int main(int argc, char* argv[])
       yap_quit("Querying with -Q needs phi (using -r phi) and no test\n");
     pctl_query(queryfile);
   }
-#endif 
-   pctl_fix(ITER, loadphi);
+#endif
+  /*
+   *   correct parameters after commandline and reading
+   */
+  pctl_fix(ITER, loadphi);
+
 #ifdef EXPERIMENTAL2
   Tmax = ddP.Tinit;
 #else
