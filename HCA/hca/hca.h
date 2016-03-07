@@ -64,16 +64,6 @@
  */
 enum ScoreType { ST_count, ST_idf, ST_cost, ST_Q, ST_phi, ST_phirat };
 
-/*
- *    type of prior node for PDP
- *      - none
- *      - hierarchical DP
- *      - hierarchical PDD (GEM-like)
- *      - constant
- *      - normalised Gamma, for A only
- */
-enum PDPType { H_None=0, H_HDP, H_HPDD, H_PDP, H_NG };
-
 double likelihood();
 
 double lp_test_Pred(char *resstem);

@@ -151,7 +151,7 @@ static void usage() {
           "   -A/B hpdd      #  for alpha/beta prior use truncated GEM\n"
           "   -A   ng        #  for alpha prior use normalised Gamma\n"
           "   -S var=value   #  initialise var=a,b,a0,b0,aw,bw,aw0,bw0,\n"
-	  "                  #  ad,bdk,alpha,beta,ngs0,ngs1\n"
+	  "                  #  ad,bdk,alpha,beta,ngash,ngasc,ngs0,ngs1\n"
 	  "  sampling hyperparameters:\n"
           "   -D cycles,start   #  sample alpha every this many cycles\n"
           "   -E cycles,start  #  sample beta every this many cycles\n"
@@ -506,7 +506,8 @@ int main(int argc, char* argv[])
 	ddT[ParAlpha].fix = 1;
       } else {
 	par = findpar(optarg);
-	if ( par==ParNone ) {
+	if ( par==ParNone || par==ParNGASH || par==ParNGASC ||
+	     par==ParNGS0 || par==ParNGS1 ) {
 	  yap_quit("Illegal arg for -F\n");
 	} else {
 	  ddT[par].fix = 1;

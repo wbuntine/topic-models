@@ -534,7 +534,12 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     lowerQ = 1.0/ddN.T;
   }  
 
-  if ( ddP.NGalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
+    /*
+     *  provide an estimate of alpha
+     */
+    for (k=0; k<ddN.T; k++)
+      ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
     ngalpha = dvec(ddN.T);
     get_probs(ngalpha);
   }
@@ -797,8 +802,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	/*
 	 *   approx. as sqrt(var(lambda_k)/lambda-normaliser
 	 */
-	double ngvar = sqrt(ddP.NGalpha[kk])
-	  * (ngalpha[kk]/ddP.NGalpha[kk]);
+	double ngvar = sqrt(ddP.alphapr[kk])
+	  * (ngalpha[kk]/ddP.alphapr[kk]);
 	yap_message(" ng=%.4lf,%.4lf", 
 		    ngalpha[kk], ngvar/ngalpha[kk]);
 #ifdef NG_SPARSE
@@ -806,9 +811,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 #endif
 	if ( verbose>2 )
 	    yap_message(" ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
-		    ddP.NGalpha[kk]/ddP.NGbeta[kk], 
-		    sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk]),
-		    ddP.NGalpha[kk], ddP.NGbeta[kk]); 
+		    ddP.alphapr[kk]/ddP.NGbeta[kk], 
+		    sqrt(ddP.alphapr[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk]),
+		    ddP.alphapr[kk], ddP.NGbeta[kk]); 
       }
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
@@ -988,7 +993,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	      100*(1-sparsitydoc/ddN.T), 
 	      100.0*underused/(double)ddN.T);
 #ifdef NG_SPARSE
-  if ( ddP.NGalpha ) {
+  if ( ddP.PYalpha==H_NG ) {
     double avesp = 0;
     for (k=0; k<ddN.T; k++) {
         avesp += gtvec[k]*((float)ddS.sparseD[k])/ddN.DTused;

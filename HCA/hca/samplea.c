@@ -29,7 +29,7 @@
 #include "sample.h"
 #include "stats.h"
 
-//  #define A_DEBUG
+// #define A_DEBUG
 
 #ifdef A_DEBUG
   static double last_val = 0;
@@ -348,6 +348,82 @@ void sample_aw(double *myaw) {
   cache_update("aw");
 }
 
+
+/*************************************************/
+
+static double ngashterms(double myng, void *mydata) {
+  int t;
+  double val;
+#ifdef A_DEBUG
+  double like;
+#endif
+  val = PYP_CONC_GAMMA(myng);
+  for (t=0; t<ddN.T; t++) {
+    val += lgamma(myng+ddS.TDt[t]) - lgamma(myng);
+    val -= myng*log(1.0+ddS.NGscalestats[t]*ddP.ngasc);
+  }
+#ifdef A_DEBUG
+  yap_message("Eval ngashterms(%lf) = %lf", myng, val);
+  ddP.ngash = myng;
+  like = likelihood();
+  if ( last_val != 0 ) {
+    yap_message(", lp=%lf diffs=%lf vs %lf\n", like,
+                val-last_val, like-last_like);
+}
+  last_like = like;
+  last_val = val;
+#endif
+  myarms_evals++;
+  return val;
+}
+  
+static double ngascterms(double myng, void *mydata) {
+  int t;
+  double val;
+#ifdef A_DEBUG
+  double like;
+#endif
+  val = PYP_CONC_GAMMA(1.0/myng);
+  for (t=0; t<ddN.T; t++) {
+    val -= ddP.ngash*log(myng);
+    val -= (ddP.ngash+ddS.TDt[t]) *
+      log(1.0/myng + ddS.NGscalestats[t]);
+  }
+#ifdef A_DEBUG
+  yap_message("Eval ngascterms(%lf) = %lf", myng, val);
+  ddP.ngasc = myng;
+  like = likelihood();
+  if ( last_val != 0 ) {
+    yap_message(", lp=%lf diffs=%lf vs %lf\n", like,
+                val-last_val, like-last_like);
+  }
+  last_like = like;
+  last_val = val;
+#endif
+  myarms_evals++;
+  return val;
+}
+
+void sample_ngash(double *myng) {
+#ifdef A_DEBUG
+  last_val = 0;
+  last_like = 0;
+#endif    
+  myarms(PYP_CONC_MIN, PYP_CONC_MAX, &ngashterms, NULL, myng, "ngash");
+  ddP.ngash = *myng;
+  cache_update("ngash");
+}
+void sample_ngasc(double *myng) {
+#ifdef A_DEBUG
+  last_val = 0;
+  last_like = 0;
+#endif    
+  myarmsMH(0.01, 1000, &ngascterms, NULL, myng, "ngasc", 1);
+  ddP.ngasc = *myng;
+  cache_update("ngasc");
+}
+
+
 /*****************************************************/
 
 
@@ -360,15 +436,18 @@ static double UNterms(double myUN, void *mydata) {
 #ifdef NG_SPARSE
     if (  M_docsparse(d,k) )
 #endif
-      like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
+      like -= (ddP.alphapr[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
   return like;
 }
 
 void sample_UN(int d) {
+  int k;
   /*
    *   compute it in first pass,
    *   then use it inside awterms() and awterms_da()
    */
+  for (k=0; k<ddN.T; k++)
+    ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
   myarms(0.00001, ddN.NT,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
 }
 
@@ -377,12 +456,15 @@ void opt_UN(int did) {
     double val = 0;
     int t;
     assert(ddS.UN);
-    for (t=0; t<ddN.T; t++)
+    for (t=0; t<ddN.T; t++) {
+      double alphaprt;
 #ifdef NG_SPARSE
       if (  M_docsparse(did,t) ) 
 #endif
-	val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
+	alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
+	val += ((double)ddS.Ndt[did][t]+alphaprt)
 	  / (ddS.UN[did]+ddP.NGbeta[t]);
+    }
     assert(val>0);
 #ifdef UN_SAMPLE
     //   approximate sampler

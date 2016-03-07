@@ -112,6 +112,7 @@ void hca_alloc() {
   ddS.TwT = NULL;
   ddS.TWt = NULL;
   ddS.UN = NULL;
+  ddS.NGscalestats = NULL;
 #ifdef NG_SPARSE
   ddS.sparse = NULL;
 #endif
@@ -137,6 +138,7 @@ void hca_alloc() {
       ddS.sparse[i] = ddS.sparse[i-1] + incr;
 #endif
     ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
+    ddS.NGscalestats = malloc(ddN.T*sizeof(*ddS.NGscalestats));
   }
   ddS.NdT = u16vec(ddN.D);
   ddS.Ndt = u16mat(ddN.D,ddN.T);
@@ -153,6 +155,7 @@ void hca_free() {
   free(ddS.NWt);
   free(ddS.z);
   if ( ddS.UN )  free(ddS.UN);
+  if ( ddS.NGscalestats )  free(ddS.NGscalestats);
 #ifdef NG_SPARSE
   if ( ddS.sparse ) {
     free(ddS.sparse[0]);
@@ -423,6 +426,8 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
   if ( ddS.UN )
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
+  if ( ddS.NGscalestats )
+    memset((void*)ddS.NGscalestats, 0, sizeof(ddS.NGscalestats[0])*ddN.T);
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -503,8 +508,18 @@ void hca_reset_stats(char *resstem,
 	totA += ddP.alphapr[t];
       }
       aveB /= ddN.T;
-      for (i=firstdoc; i<lastdoc; i++) 
+      for (i=firstdoc; i<lastdoc; i++) {
+	if ( ddS.NdT[i]==0 ) continue;
 	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+      }
+    }
+    {
+      for (i=firstdoc; i<lastdoc; i++) {
+	if ( ddS.NdT[i]==0 ) continue;
+	for (t=0; t<ddN.T; t++) {
+	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
+	}
+      }
     }
 #ifdef NG_SPARSE
     /*

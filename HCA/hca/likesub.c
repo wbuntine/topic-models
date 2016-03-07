@@ -138,6 +138,25 @@ void doctableindicatorprob(int d, int t, int Ttot,
 }
 
 /*
+ *    prob. the NG table indicator is increased, but not forced
+ */
+void NGtableindicatorprob(int d, int t, int Ttot,
+			   double *uone, double *uzero) {
+  int nn = ddS.Ndt[d][t];
+  int tt = ddS.Tdt[d][t];
+  double e1, e0;
+  e1 = S_UV(ddC.SX,nn,tt+1);
+  if ( tt==1 )
+    e0 = nn;
+  else
+    e0 = S_U(ddC.SX,nn,tt);
+  *uone = e1 * 
+    ((ddP.ngash + ddS.TDt[t]) /(1/ddP.ngasc + ddS.NGscalestats[t]))
+    * (tt+1)/(nn+1) / (ddS.UN[d]+ddP.NGbeta[t]);
+  *uzero = e0 * (nn-tt+1)/(nn+1) / (ddS.UN[d]+ddP.NGbeta[t]);
+}
+
+/*
  *    the word table indicator is increased, but not forced
  */
 void wordtableindicatorprob(int j, int t, double *uone, double *uzero) {
@@ -223,18 +242,26 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 #ifdef NG_SPARSE
     if ( M_docsparse(d,t)==0 )
       return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
-	*  ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+	*  ((double)ddS.Ndt[d][t]+ddP.alphapr[t])
 	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
     else
 #endif
-    if ( ddS.Tdt[d][t]==0 ) {
-      /*
-       *   topic empty for this doc
-       */
-      
-      return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
-	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
-    }
+      {
+	double p, uone, uzero;
+	if ( ddS.Tdt[d][t]==0 ) {
+	  /*
+	   *   topic empty for this doc
+	   */
+	  *tip = 1.0;
+	  return (ddP.ngash + ddS.TDt[t]) /
+	    (1/ddP.ngasc + ddS.NGscalestats[t]) / 
+	    ((double)ddS.UN[d]+ddP.NGbeta[t]);
+	}      
+	NGtableindicatorprob(d, t, Ttot, &uone, &uzero);
+	p = uone + uzero;
+	*tip = uone/(uone + uzero);
+	return p;
+      }
   }
   return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);
 }
@@ -249,11 +276,13 @@ double topicprob(int d, int t, int Ttot) {
     /*
      *  this isn't normalised
      */
+    double alphaprt;
 #ifdef NG_SPARSE
     if ( M_docsparse(d,t)==0 )
       return 0;
 #endif
-    return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+    alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
+    return ((double)ddS.Ndt[d][t]+alphaprt)
       / (ddS.UN[d]+ddP.NGbeta[t]);
   }
   if ( ddP.PYalpha==H_None ) 

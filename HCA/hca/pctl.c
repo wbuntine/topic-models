@@ -117,12 +117,12 @@ void pctl_init() {
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
   ddT[ParNGBeta].samplerk = &sample_NGbeta;
+  ddT[ParNGASC].sampler = &sample_ngasc;
+  ddT[ParNGASH].sampler = &sample_ngash;
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
   ddT[ParNGS0].fix = 1;
   ddT[ParNGS1].fix = 1;
-  ddT[ParNGASH].fix = 1;
-  ddT[ParNGASC].fix = 1;
 
   ddP.empirical = 0;
   ddP.alphatot = 0;
@@ -152,6 +152,8 @@ void pctl_init() {
   ddT[ParAlpha].cycles = DIRCYCLES;
   ddT[ParBeta].cycles = DIRCYCLES;
   ddT[ParNGBeta].cycles = DIRCYCLES;
+  ddT[ParNGASH].cycles = ACYCLES;
+  ddT[ParNGASC].cycles = ACYCLES;
   ddT[ParB].cycles = BCYCLES;
   ddT[ParBDK].cycles = BCYCLES;
   ddT[ParB0].cycles = BCYCLES;
@@ -163,6 +165,8 @@ void pctl_init() {
   ddT[ParAW].cycles = ACYCLES;
   ddT[ParAW0].cycles = ACYCLES;
   ddT[ParNGBeta].offset = 1;
+  ddT[ParNGASH].offset = 1;
+  ddT[ParNGASC].offset = 0;
   ddT[ParBeta].offset = 1;
   ddT[ParB0].offset = 1;
   ddT[ParBDK].offset = 0;
@@ -640,6 +644,10 @@ void pctl_fix(int ITER, int loadphi) {
   }
   if ( ddP.PYalpha!=H_NG ) {
     ddT[ParNGBeta].fix = 1;
+    ddT[ParNGASH].fix = 1;
+    ddT[ParNGASC].fix = 1;
+  } else {
+    ddT[ParAlpha].fix = 1;
   }
   if ( ddP.PYalpha==H_None || ddP.PYalpha==H_NG ) {
     ddT[ParA].fix = 1;
@@ -1186,5 +1194,5 @@ double pctl_ng_alphapriorZ() {
   return - ddP.ngash * log(ddP.ngasc) - lgamma(ddP.ngash);
 }
 double pctl_ng_alphaprior(double x) {
-  -x/ddP.ngasc + (ddP.ngash-1)*log(x) + pctl_ng_alphapriorZ();
+  return -x/ddP.ngasc + (ddP.ngash-1)*log(x) + pctl_ng_alphapriorZ();
 }

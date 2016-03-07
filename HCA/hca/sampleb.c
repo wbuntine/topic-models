@@ -346,16 +346,17 @@ void sample_NGbeta(double *b, int k) {
   int j;
   double val = 0;
   int cnt = 0;
+  double alphak = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
     if (  M_docsparse(j,k)==0 ) continue; 
 #endif
     if ( ddS.UN[j]>0 ) {
       cnt ++;
-      val += (ddP.NGalpha[k]+ddS.Ndt[j][k])/(ddS.UN[j]+b[k]);
+      val += (alphak+ddS.Ndt[j][k])/(ddS.UN[j]+b[k]);
     }
   }
-  b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt*ddP.NGalpha[k])
+  b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt*alphak)
     / (PYP_CONC_PSCALE + val);
   if ( b[k]<PYP_CONC_MIN )
     b[k] = PYP_CONC_MIN;

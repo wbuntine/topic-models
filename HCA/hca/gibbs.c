@@ -209,6 +209,7 @@ double gibbs_lda(/*
   float *ttip = NULL;
   float *dtip = NULL;
   int logdocwarn = 0;
+  static double *NGscalestats_diff = NULL;
 
   /*
    *   some of the latent variables are not sampled
@@ -229,6 +230,17 @@ double gibbs_lda(/*
     if ( ddS.UN ) 
       ddS.UN[did] = 0;
     return 0;
+  }
+  if ( ddS.NGscalestats && NGscalestats_diff==NULL )
+    NGscalestats_diff = malloc(ddN.T*sizeof(*NGscalestats_diff));
+  if ( ddS.NGscalestats ) {
+    /*
+     *   we save the NGscalestats[] minus the current
+     *   entry to prevent round-off error propagating
+     */
+    for (t=0; t<ddN.T; t++) 
+      NGscalestats_diff[t] = 
+	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
   }
 
   if ( PCTL_BURSTY() ) {
@@ -383,7 +395,16 @@ double gibbs_lda(/*
        *  should we do this every time, or just once every major loop
        *  if every time, then we should keep incremental stats!
        */
-      if ( ddS.UN ) opt_UN(did);
+      if ( ddS.UN ) {
+	opt_UN(did);
+	/*
+	 *    each time we change this UN, we have to update
+	 *    NGscalestats[]
+	 */
+	for (t=0; t<ddN.T; t++) 
+	  ddS.NGscalestats[t] =
+	    NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+      }
     }
 
     endword:

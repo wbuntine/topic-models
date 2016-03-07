@@ -63,6 +63,10 @@ typedef struct D_stats_s {
   uint32_t *TwT, TWT;  // TwT[w] = \sum_t Twt[w][t]; TWT = \sum_w TwT[w]
   uint32_t  TWTnz;  //  = \sum_w 1(TwT[w]>0)
   uint32_t *TWt;  //  TWt[t] = \sum_w Twt[w][t]; 
+  /*
+   *    intermediate stats for NG model
+   */
+  double *NGscalestats;   // NGscalestats[k] = \sum_d log(1+UN[d]/NBgeta[k])
 } D_stats_t;
 
 extern D_stats_t ddS;

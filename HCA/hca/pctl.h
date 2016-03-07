@@ -54,28 +54,42 @@ typedef struct D_pars_s {
   float **theta;
   float **phi;
   /*
-   *    hyperparameters
+   *    hyperparameters for alpha Dirichlet
    */
   double *alphapr;        // vector normalises to 1 when PYalpha!=H_None
   double alphac;          // individual constant, set from alphatot
   double alphatot;        // total of above or alphac*T
 
-  double *NGbeta;         // beta vector for H_NG
-                          //  alpha stored in alphapr
-  double ngs0, ngs1;        // Beta priors for sparsity
-
+ /*
+   *    hyperparameters for beta Dirichlet
+   */
   double *betapr;         // vector normalises to 1 when PYbeta!=H_None
   double betac;           // individual constant, set from betatot
   double betatot;         // total of above or betac*W
-  char   PYalpha;         // non-zero if using a/b/a0/b0, 1 if PDD, 2 if DP
+
+  /*
+   *  Pitman-Yor parameters
+   */
+  enum PDPType   PYalpha; // non-zero if using table indicators, 
   double apar, bpar;
   double a0, b0;          // PDD/PDP params for root
-  char   PYbeta;          // non-zero if using aw/bw/aw0/bw0, 1=PDD, 2=DP
+  enum PDPType   PYbeta;  // non-zero if using table indicators, 
   double awpar, bwpar;
   double aw0, bw0;        // PDD/PDP params for W root
+
+  /*
+   *  normalised gamma stuff, also uses flag in PYalpha
+   */
+  double *NGbeta;         // beta vector for H_NG
+                          //  alpha stored in alphapr
+  double ngash, ngasc;    // shape and scale for Gamma prior of NG alpha
+  double ngs0, ngs1;       // Beta priors for sparsity
+
+  /*
+   *  burstiness stuff
+   */
   double ad;              // PDP params for doc
   double *bdk;            // version with seperate bd for each topic
-  double ngash, ngasc;    // shape and scale for Gamma prior of NG alpha
   
   /*
    *   min. size of allowed doc
@@ -158,8 +172,12 @@ typedef struct D_pars_s {
 #else
 #define ddP_bwpar(t)  ddP.bwpar
 #endif
-/*
- *  hyperparameters control
+
+/**************
+ * 
+ *  hyperparameters control:   all set up so hyperparameters can be
+ *  sampled semi-automatically ... using C++ might be easier ;-)
+ *
  */
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 

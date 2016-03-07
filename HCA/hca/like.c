@@ -75,16 +75,24 @@ double likelihood_NGalpha() {
   }
   //yap_infinite(likelihood);
   for (t=0; t<ddN.T; t++) {
-    double bfact = 1.0/ddP.ngasc + ddS.TDt[t];??
-    double shapestats = ddP.ngash;??
+    double shapestats = ddP.ngash + ddS.TDt[t];
+    double scalestats = 0;
+    /*
+     *  NGbeta prior is the default Gamma prior
+     */
+    likelihood += pctl_gammaprior(ddP.NGbeta[t]);
+    /*
+     *  NGalpha is marginalised out, so give its posterior here
+     */
     for (i=0; i<ddN.DT; i++) {
       if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
-      shapestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
+      scalestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
     }
-    likelihood += pctl_gammaprior(ddP.NGbeta[t]);
-    likelihood += ?????????? Z;
-    likelihood += lgamma(bfact);
-    likelihood -= bfact * log(shapestats);
+    //   rather devious to place an update here ...
+    ddS.NGscalestats[t] = scalestats;
+    likelihood += pctl_ng_alphapriorZ();
+    likelihood += lgamma(shapestats);
+    likelihood -= shapestats * log(1.0/ddP.ngasc+scalestats);
 #ifdef NG_SPARSE
     likelihood += lgamma(ddP.ngs0+ddN.DTused-ddS.sparseD[t])
       + lgamma(ddP.ngs1+ddS.sparseD[t]) - lgamma(ddP.ngs0+ddP.ngs1+ddN.DTused);
