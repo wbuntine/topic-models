@@ -30,8 +30,9 @@
 #include "stats.h"
 
 // #define A_DEBUG
+#define A1_DEBUG
 
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   static double last_val = 0;
   static double last_like = 0;
 #endif
@@ -354,7 +355,7 @@ void sample_aw(double *myaw) {
 static double ngashterms(double myng, void *mydata) {
   int t;
   double val;
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   double like;
 #endif
   val = PYP_CONC_GAMMA(myng);
@@ -362,7 +363,7 @@ static double ngashterms(double myng, void *mydata) {
     val += lgamma(myng+ddS.TDt[t]) - lgamma(myng);
     val -= myng*log(1.0+ddS.NGscalestats[t]*ddP.ngasc);
   }
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   yap_message("Eval ngashterms(%lf) = %lf", myng, val);
   ddP.ngash = myng;
   like = likelihood();
@@ -380,7 +381,7 @@ static double ngashterms(double myng, void *mydata) {
 static double ngascterms(double myng, void *mydata) {
   int t;
   double val;
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   double like;
 #endif
   val = PYP_CONC_GAMMA(1.0/myng);
@@ -389,7 +390,7 @@ static double ngascterms(double myng, void *mydata) {
     val -= (ddP.ngash+ddS.TDt[t]) *
       log(1.0/myng + ddS.NGscalestats[t]);
   }
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   yap_message("Eval ngascterms(%lf) = %lf", myng, val);
   ddP.ngasc = myng;
   like = likelihood();
@@ -405,19 +406,21 @@ static double ngascterms(double myng, void *mydata) {
 }
 
 void sample_ngash(double *myng) {
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   last_val = 0;
   last_like = 0;
-#endif    
+#endif
+  NGscalestats();
   myarms(PYP_CONC_MIN, PYP_CONC_MAX, &ngashterms, NULL, myng, "ngash");
   ddP.ngash = *myng;
   cache_update("ngash");
 }
 void sample_ngasc(double *myng) {
-#ifdef A_DEBUG
+#ifdef A1_DEBUG
   last_val = 0;
   last_like = 0;
-#endif    
+#endif
+  NGscalestats();
   myarmsMH(0.01, 1000, &ngascterms, NULL, myng, "ngasc", 1);
   ddP.ngasc = *myng;
   cache_update("ngasc");

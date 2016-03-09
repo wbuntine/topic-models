@@ -357,7 +357,7 @@ void sample_NGbeta(double *b, int k) {
     }
   }
   b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt*alphak)
-    / (PYP_CONC_PSCALE + val);
+    / (1.0/PYP_CONC_PSCALE + val);
   if ( b[k]<PYP_CONC_MIN )
     b[k] = PYP_CONC_MIN;
   if ( b[k]>PYP_CONC_MAX )
