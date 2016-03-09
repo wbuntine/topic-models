@@ -519,6 +519,7 @@ void hca_reset_stats(char *resstem,
 	for (t=0; t<ddN.T; t++) {
 	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
 	}
+	ddS.NGscalestats_recomp = 0;
       }
     }
 #ifdef NG_SPARSE
@@ -777,5 +778,23 @@ void hca_correct_tdt(int reset)  {
   for(t = 0; t < ddN.T; t++) {
     if ( ddS.TDt[t]>0 )
       ddS.TDTnz ++;
+  }
+}
+
+/*
+ *   occasionally recompute them
+ */
+void NGscalestats() {
+  if ( ++ddS.NGscalestats_recomp>10000 ) {
+    int i, t;
+    for (t=0; t<ddN.T; t++) 
+      ddS.NGscalestats[t] = 0;
+    for (i=0; i<ddN.DT; i++) {
+      if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
+      for (t=0; t<ddN.T; t++) {
+	ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
+      }
+      ddS.NGscalestats_recomp = 0;
+    }
   }
 }

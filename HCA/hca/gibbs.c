@@ -233,11 +233,12 @@ double gibbs_lda(/*
   }
   if ( ddS.NGscalestats && NGscalestats_diff==NULL )
     NGscalestats_diff = malloc(ddN.T*sizeof(*NGscalestats_diff));
-  if ( ddS.NGscalestats ) {
+  if ( ddS.NGscalestats && did<ddN.DT ) {
     /*
      *   we save the NGscalestats[] minus the current
      *   entry to prevent round-off error propagating
      */
+    NGscalestats();
     for (t=0; t<ddN.T; t++) 
       NGscalestats_diff[t] = 
 	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
@@ -401,9 +402,11 @@ double gibbs_lda(/*
 	 *    each time we change this UN, we have to update
 	 *    NGscalestats[]
 	 */
-	for (t=0; t<ddN.T; t++) 
-	  ddS.NGscalestats[t] =
-	    NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+	if ( did<ddN.DT ) {
+	  for (t=0; t<ddN.T; t++) 
+	    ddS.NGscalestats[t] =
+	      NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+	}
       }
     }
 

@@ -67,6 +67,7 @@ typedef struct D_stats_s {
    *    intermediate stats for NG model
    */
   double *NGscalestats;   // NGscalestats[k] = \sum_d log(1+UN[d]/NBgeta[k])
+  int NGscalestats_recomp;
 } D_stats_t;
 
 extern D_stats_t ddS;
@@ -133,6 +134,7 @@ double topicprob(int d, int t, int Ttot);
 double topicnorm(int d);
 double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
 double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
+void NGscalestats();
 
 #include "change.h"
 
