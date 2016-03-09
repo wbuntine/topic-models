@@ -30,7 +30,7 @@
 #include "stats.h"
 
 // #define A_DEBUG
-#define A1_DEBUG
+// #define A1_DEBUG
 
 #ifdef A1_DEBUG
   static double last_val = 0;
@@ -421,7 +421,7 @@ void sample_ngasc(double *myng) {
   last_like = 0;
 #endif
   NGscalestats();
-  myarmsMH(0.01, 1000, &ngascterms, NULL, myng, "ngasc", 1);
+  myarmsMH(0.01, 100, &ngascterms, NULL, myng, "ngasc", 1);
   ddP.ngasc = *myng;
   cache_update("ngasc");
 }

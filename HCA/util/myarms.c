@@ -81,7 +81,7 @@ int myarmsMH(double xl, double xr,
   if ( doMH ) {
     resvec = malloc(sizeof(resvec[0])*NSAMP);
     errcode = myarms_simple(6, &xl, &xr, myfunc, mydata, doMH, xval, 
-			  resvec, NSAMP);
+			    resvec, NSAMP);
     result = resvec[NSAMP-1];
     free(resvec);
   } else 
@@ -89,7 +89,7 @@ int myarmsMH(double xl, double xr,
   /*
    *  1007, 1003 is out of bounds
    */
-  if ( errcode && errcode!=1007 && errcode!=1003
+  if ( errcode && errcode!=1007 && errcode!=1003 && errcode!=2001
        && (errcode!=2000 || startval!=result  ) ) {
     yap_quit("   myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n", 
 	     startval, label, errcode,
@@ -97,12 +97,23 @@ int myarmsMH(double xl, double xr,
 	     *xval, myarms_evals);
   }
   if ( errcode==1007 || errcode==1003 ) {
-	  yap_message("   error myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n",
-             startval, label, errcode,
-             myarms_last, result, (!ISFINITE(result))?"(inf)":"",
-             *xval, myarms_evals);
-          /*  hit bounds, for safety use start val */
-	  result = startval;
+    /*  
+     *   hit bounds, for safety use start val 
+     */
+    yap_message("   error myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n",
+		startval, label, errcode,
+		myarms_last, result, (!ISFINITE(result))?"(inf)":"",
+		*xval, myarms_evals);
+    result = startval;
+  } 
+  if ( errcode==2001 ) {
+    /* 
+     *   too many calls in Metrop-Hastings 
+     */
+    yap_message("   error myarmsMH(%lf,%s)->%d = %lf,%lf%s->%lf, w %d calls, quitting\n",
+		startval, label, errcode,
+		myarms_last, result, (!ISFINITE(result))?"(inf)":"",
+		*xval, myarms_evals);
   } 
   /*
    *    note, sometimes the value is returned
