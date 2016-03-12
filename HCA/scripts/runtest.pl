@@ -19,6 +19,7 @@ my $TEST = 0;
 my $USESVM = 0;
 my $D = 0;
 my $DIAGNOSTICS = "";
+my $REPORT = ""; 
 my $GIBBSTRAIN=300;
 my $GIBBSEVAL=50;
 my $GIBBSEVALBURN=10;
@@ -51,17 +52,30 @@ sub mysystem() {
 
 #  pick up topic words+details for this call and output to ".tpk"
 sub picklast() {
-    my $hcamatch = shift();
     my $stem = shift();
     local *L;
     open(L, "<$stem.log");
+    #  get line number of last call
+    my $lineno = 0;
+    my $thisno = 0;
     while ( ($_=<L>) ) {
-	if ( /hca .*$hcamatch/ ) {
+	$thisno ++;
+	if ( /COMMAND-LINE: .*$stem\s*$/ ) {
+	    $lineno = $thisno;
+	}
+    }
+    close(L);
+    open(L, "<$stem.log");
+    #  now reread and skip ahead to last call
+    $thisno = 0;
+    while ( ($_=<L>) ) {
+	$thisno ++;
+	if ( $lineno<=$thisno ) {
 	    last;
 	}
     }
     if ( !defined($_) ) {
-	print STDERR "No topic detail in '$stem.log' matching '$hcamatch'\n";
+	print STDERR "No topic detail in '$stem.log'\n";
 	close(L);
 	return;
     }
@@ -71,7 +85,7 @@ sub picklast() {
 	}
     }
     if ( !defined($_) ) {
-	print STDERR "No topic detail in '$stem.log' matching '$hcamatch'\n";
+	print STDERR "No topic detail in '$stem.log'\n";
 	close(L);
 	return;
     }
@@ -129,6 +143,7 @@ GetOptions(
     'hold=s'     => sub { $_=shift(); $HOLD="-h$_"; },
     'phi!'     => \$usephi,
     'diagnostics=s' => \$DIAGNOSTICS,
+    'report=s' => \$REPORT,
     'Y=s'     => \$Y,
     'X=s'     => \$X,
     'q=i'     => \$Q,
@@ -233,6 +248,12 @@ if ( $usephi ) {
      &mysystem("$VERSION $Y $FILE -C0 -v $HOLD -Llike,$GIBBSEVAL,$GIBBSEVALBURN -v -r phi -T$TEST $STEM ${TRIAL}$A","hca test");
    }
 }
+#  generate topic stats files
+foreach my $A ( @tag ) {
+    &mysystem("$VERSION $REPORT $Y $FILE -r0 -C0 -v -rphi -v -V $STEM ${TRIAL}$A","hca report");
+    &picklast("${TRIAL}$A");
+}
+
 __END__
 
 =head1 NAME
@@ -251,6 +272,7 @@ Options:
     -B ARGS             addition arguments for trial B
     -C/-D/.../-F  ARGS       optional 3rd, 4th, ... 6th trials
     --diagnostics S     add string S as args to diagnostics run of hca
+    --report S          add string S when reporting topics with "-v -v -V"
     --gibbsburn C        burnin cycles as part of --gibbseval (deflt=10)
     --gibbseval C        major gibbs cycles with 'hca -l'(deflt=50)
     --gibbstrain C       major gibbs cycles for training (deflt=300)

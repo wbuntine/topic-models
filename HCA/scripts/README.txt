@@ -1,6 +1,10 @@
 Scripts
 -------
 
+All these scripts are offered up as useful, but they are not well supported,
+well documented, or well integrated.  You will also need to 
+modify the header for your particular Perl installation.
+
 The main scripts come with their own man page so use the 
 option "--man" to get the manpage:
 e.g.,   ./cooc2pmi.pl --man
