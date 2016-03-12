@@ -1288,6 +1288,8 @@ int main(int argc, char* argv[])
     }
     if ( nosample==0 ) 
       pctl_sample(iter,procs);
+    if ( ddP.PYalpha==H_NG )
+      NGscalestats(1);
 #ifdef EXPERIMENTAL2
     {
 	int Tmax_before = Tmax;
@@ -1297,6 +1299,7 @@ int main(int argc, char* argv[])
 	}
     }
 #endif
+    
    
     /*
      *   do time calcs here to remove diagnostics+reporting

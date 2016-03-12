@@ -134,7 +134,7 @@ double topicprob(int d, int t, int Ttot);
 double topicnorm(int d);
 double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
 double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
-void NGscalestats();
+void NGscalestats(int redo);
 
 #include "change.h"
 

@@ -238,7 +238,7 @@ double gibbs_lda(/*
      *   we save the NGscalestats[] minus the current
      *   entry to prevent round-off error propagating
      */
-    NGscalestats();
+    NGscalestats(0);
     for (t=0; t<ddN.T; t++) 
       NGscalestats_diff[t] = 
 	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
