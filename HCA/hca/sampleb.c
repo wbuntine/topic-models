@@ -342,6 +342,11 @@ void sample_NGbeta(double *b, int k) {
     b[k] = PYP_CONC_MAX;
 }
 #else
+/*
+ *  called from pctl_sample_thread() driver
+ *  uses existing:
+ *         ddS.NGscalestats[k], ddS.UN[.]
+ */
 void sample_NGbeta(double *b, int k) {
   int j;
   double val = 0;
