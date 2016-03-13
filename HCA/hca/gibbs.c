@@ -224,8 +224,8 @@ double gibbs_lda(/*
 
   if ( ddD.NdT[did]<ddP.mindocsize ) {
     static int hh = 0;
-    if ( hh==0 ) 
-      yap_message("Horrible hack, skipping short doc\n");
+    if ( ddP.mindocsize>1 && hh==0 ) 
+      yap_message("Skipping short docs < %d words\n", ddP.mindocsize);
     hh++;
     if ( ddS.UN ) 
       ddS.UN[did] = 0;
