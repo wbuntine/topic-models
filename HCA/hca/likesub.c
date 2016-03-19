@@ -254,8 +254,8 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 	   */
 	  *tip = 1.0;
 	  return (ddP.ngash + ddS.TDt[t]) /
-	    (1/ddP.ngasc + ddS.NGscalestats[t]) / 
-	    ((double)ddS.UN[d]+ddP.NGbeta[t]);
+	    ( (1/ddP.ngasc + ddS.NGscalestats[t]) *
+	      ((double)ddS.UN[d]+ddP.NGbeta[t]) );
 	}      
 	NGtableindicatorprob(d, t, Ttot, &uone, &uzero);
 	p = uone + uzero;

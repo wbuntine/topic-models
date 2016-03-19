@@ -785,7 +785,7 @@ void hca_correct_tdt(int reset)  {
  *   occasionally recompute them
  */
 void NGscalestats(int redo) {
-  if ( redo || ++ddS.NGscalestats_recomp>10000 ) {
+  if ( redo || ++ddS.NGscalestats_recomp>1000 ) {
     int i, t;
     for (t=0; t<ddN.T; t++) 
       ddS.NGscalestats[t] = 0;
