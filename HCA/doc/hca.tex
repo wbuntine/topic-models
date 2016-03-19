@@ -1,0 +1,95 @@
+\documentclass[twoside,11pt]{article}
+
+% Any additional packages needed should be included after jmlr2e.
+% Note that jmlr2e.sty includes epsfig, amssymb, natbib and graphicx,
+% and defines many common macros, such as 'proof' and 'example'.
+%
+% It also sets the bibliographystyle to plainnat; for more information on
+% natbib citation styles, see the natbib documentation, a copy of which
+% is archived at http://www.jmlr.org/format/natbib.pdf
+
+\usepackage{jmlr2e}
+
+% Definitions of handy macros can go here
+
+\newcommand{\dataset}{{\cal D}}
+\newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+
+% Heading arguments are {volume}{year}{pages}{submitted}{published}{author-full-names}
+
+\jmlrheading{1}{2000}{1-48}{4/00}{10/00}{Wray Buntine}
+
+% Short headings should be running head and authors last names
+
+\ShortHeadings{hca for Topic Models}{Buntine}
+\firstpageno{1}
+
+\begin{document}
+
+\title{hca: Tool for Multicore Non-parametric Topic Models}
+
+\author{\name Wray Buntine \email wray.buntine@monash.edu \\
+       \addr Faculty of Information Technology \\
+       Monash University\\
+       Clayton, VIC, 3800, Australia}
+
+\editor{Enid Blighton}
+
+\maketitle
+
+\begin{abstract}%   <- trailing '%' for backward compatibility of .sty file
+This paper describes {\tt hca}, an open source command-line tool to
+train and test topic models.  The tool implements a variety of Gibbs
+samplers for non-parametric models using an efficient implementation
+of hierarchical Pitman-Yor processes.  These are used for both the
+document-topic component and the topic-word component, and to model
+burstiness of words in topics.  Various diagnostics, document
+completion testing and coherence measurements with PMI are also
+supported.  This is also the first multicore non-parametric topic
+model distribution.  The package consists in a main command-line tool
+and a set of support utilities. The documentation includes a user's
+guide with a mini tutorial.
+\end{abstract}
+
+\begin{keywords}
+  topic model, hierarchical Pitman-Yor process, non-parametric Bayesian model,
+  Gibbs sampling
+\end{keywords}
+
+\section{Introduction}
+Topic models are a variant of non-negative matrix factorisation developed
+as a Bayesian variant of probabilistic latent semantic analysis.  Early models
+used a simple symmetric Dirichlet prior for columns of the
+document-topic component and rows of the topic-word component, but
+researchers soon realised non-symmetric priors, at least, were needed
+to improve modelling performance.  Using a Dirichlet process as a prior
+for columns of the document-topic component was proposed by
+\cite{TehJorBea2006}, and Teh distributed a relatively robust Gibbs
+sampler \cite{TehNBMM21}.  Over the subsequent decade many different
+research efforts have presented different algorithms including
+samplers, approximate fitting and variational methods.
+
+\section{The {\tt hca} System}
+
+\section{Using the System}
+
+
+\acks{Some parts of the software were co-authored by, and benefited greatly
+  from discussions with Lan Du and Swapnil Mishra.  The software was developed at NICTA Canberra and Monash University. }
+
+% Manual newpage inserted to improve layout of sample file - not
+% needed in general before appendices/bibliography.
+
+\newpage
+
+\appendix
+\section*{Appendix A.}
+\label{app:theorem}
+
+
+In this appendix we prove the following theorem from
+Section~6.2:
+
+\bibliography{sample}
+
+\end{document}
