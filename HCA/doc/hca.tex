@@ -61,15 +61,54 @@ Topic models are a variant of non-negative matrix factorisation developed
 as a Bayesian variant of probabilistic latent semantic analysis.  Early models
 used a simple symmetric Dirichlet prior for columns of the
 document-topic component and rows of the topic-word component, but
-researchers soon realised non-symmetric priors, at least, were needed
-to improve modelling performance.  Using a Dirichlet process as a prior
+researchers soon realised non-symmetric priors could
+improve modelling performance.  Using a Dirichlet process as a prior
 for columns of the document-topic component was proposed by
 \cite{TehJorBea2006}, and Teh distributed a relatively robust Gibbs
-sampler \cite{TehNBMM21}.  Over the subsequent decade many different
-research efforts have presented different algorithms including
-samplers, approximate fitting and variational methods.
+sampler for the task \cite{TehNBMM21}.
 
-\section{The {\tt hca} System}
+Over the subsequent decade many different
+research efforts have presented different algorithms including Gibbs
+samplers, approximate fitting and variational methods.
+\cite{Sato:2010} have also placed a Pitman-Yor process as a prior
+for the rows of the topic-word component.
+\cite{Doyle:2009} have modelled rows of the topic-word component using
+a Dirichlet Compound multinomial, rather than a multinomial,
+in order to introduce ``burstiness,'' whereby some words in
+a document are encouraged to appear multiple times (in a ``burst'').
+This tends to produce models with less topics,
+and dramatically improves perplexity.
+While there are numerous other improvements made to vanilla topic
+modelling, these are the ones we reproduce in our tool {\tt hca}.
+The hyperparameters for the nonparametric models are also
+fit by default using adaptive rejection sampling by
+\cite{gilks1992adaptive}.
+
+\section{The {\tt hca} Commandline Tool}
+
+The {\tt hca} tool is implemented as a Unix style command line tool
+with multiple options for different tasks including
+specifying a variety of different non-parametric topic models,
+training and testing models,
+reporting diagnostics, initialising and controlling fitting of
+hyperparameters, restarts and checkpointing.
+These options are all documented in a standard Unix style man page with
+duplicate PDF version.  Moreover, any examples of using the tool
+are given at the end of the man page.
+
+The tool itself is implemented in C.  A multicore version
+can be compiled which uses threads and atomic operations to
+keep data consistent. This gets, for instance, about 5 times speed-up
+with 8 cores, and uses little memory duplication so can work with
+quite data sets (gigabytes of text).  The code is self-contained,
+requiring no library dependencies.  Routines for tasks such as
+adaptive rejection sampling, and Gamma variable sampling,
+have been included from existing open source libraries.
+Compilation has been successful on Mac OSX and a variety of Unicies,
+and single-core compilation has been done under Cygwin.
+
+Some utilities available with the tool are coded in Perl.
+However, these are not essential for operation.
 
 \section{Using the System}
 
@@ -77,19 +116,6 @@ samplers, approximate fitting and variational methods.
 \acks{Some parts of the software were co-authored by, and benefited greatly
   from discussions with Lan Du and Swapnil Mishra.  The software was developed at NICTA Canberra and Monash University. }
 
-% Manual newpage inserted to improve layout of sample file - not
-% needed in general before appendices/bibliography.
-
-\newpage
-
-\appendix
-\section*{Appendix A.}
-\label{app:theorem}
-
-
-In this appendix we prove the following theorem from
-Section~6.2:
-
-\bibliography{sample}
+\bibliography{hca}
 
 \end{document}
