@@ -1082,8 +1082,9 @@ void pctl_update(int iter) {
       yap_message("%s=%lf", ddT[par].name, *ddT[par].ptr);
       start = 0;
     }
-  }  
-  if ( ddP.NGbeta ) {
+  }
+#ifdef EXPERIMENTAL3
+  if ( 0 && ddP.NGbeta ) {
     /*
      *   give NGbeta an average of 1
      */
@@ -1091,10 +1092,10 @@ void pctl_update(int iter) {
     double tot = 0;
     for (t=0; t<ddN.T; t++)
       tot += ddP.NGbeta[t];
-    tot /= ddN.T;
     for (t=0; t<ddN.T; t++)
       ddP.NGbeta[t] /= tot;
   }
+#endif
   yap_message("\n");
 }
 

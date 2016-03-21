@@ -50,6 +50,17 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 		       enum ScoreType score, int pmicount, int fullreport);
 void hca_displayclass(char *resstem);
 
+#ifdef EXPERIMENTAL3
+static void SHOWBETA() {
+  int t;
+  double btot = 0;	
+  for (t=0; t<ddN.T; t++)
+    btot += ddP.NGbeta[t];
+  yap_message("NGbeta sum (%lf+%lf+...) is %lf\n",
+	      ddP.NGbeta[0], ddP.NGbeta[1], btot);
+}
+#endif
+
 //==================================================
 // global variables
 //==================================================
@@ -208,7 +219,7 @@ static void usage() {
 	  "                  #  DIAG is one of 'class','like','query'\n"
 #else
 	  "                  #  DIAG is one of 'class','like'\n"
-#endif
+ #endif
 #endif
           "   -o SC[,count]  #  SC=score type, 'cost', 'count', 'idf', 'Q', 'phi'\n"
           "                  #     optionally add number of words to print\n"
@@ -1288,8 +1299,20 @@ int main(int argc, char* argv[])
     }
     if ( nosample==0 ) 
       pctl_sample(iter,procs);
-    if ( ddP.PYalpha==H_NG )
+    if ( ddP.PYalpha==H_NG ) {
+#ifdef EXPERIMENTAL3
+      // SHOWBETA();
+#endif
+      /*
+       *     reestimate UN and NGbeta
+       */
+      int ii;
+      for (ii=0; ii<ddN.D; ii++) {
+	if ( ddS.NdT[ii]==0 || ddS.UN[ii]==0 ) continue;
+	opt_UN(ii);
+      }
       NGscalestats(1);
+    }
 #ifdef EXPERIMENTAL2
     {
 	int Tmax_before = Tmax;

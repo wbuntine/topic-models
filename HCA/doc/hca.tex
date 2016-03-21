@@ -45,8 +45,8 @@ of hierarchical Pitman-Yor processes.  These are used for both the
 document-topic component and the topic-word component, and to model
 burstiness of words in topics.  Various diagnostics, document
 completion testing and coherence measurements with PMI are also
-supported.  This is also the first multicore non-parametric topic
-model distribution.  The package consists in a main command-line tool
+supported.  This is also the first efficient multicore non-parametric topic
+model to be distributed.  The package consists in a main command-line tool
 and a set of support utilities. The documentation includes a user's
 guide with a mini tutorial.
 \end{abstract}
@@ -57,64 +57,152 @@ guide with a mini tutorial.
 \end{keywords}
 
 \section{Introduction}
-Topic models are a variant of non-negative matrix factorisation developed
-as a Bayesian variant of probabilistic latent semantic analysis.  Early models
+Topic models are a form of non-negative matrix factorisation
+and some versions also correspond to normalised independent
+(multinomial) components.
+They were originally developed
+as a Bayesian variant of probabilistic latent semantic analysis.
+The early model, Latent Dirichlet Allocation (LDA),
 used a simple symmetric Dirichlet prior for columns of the
 document-topic component and rows of the topic-word component, but
 researchers soon realised non-symmetric priors could
-improve modelling performance.  Using a Dirichlet process as a prior
+improve modelling performance.  Using a Dirichlet process (DP) as a prior
 for columns of the document-topic component was proposed by
 \cite{TehJorBea2006}, and Teh distributed a relatively robust Gibbs
-sampler for the task \cite{TehNBMM21}.
+sampler for the task \cite{TehNBMM21}.  While this
+purportedly allows the
+model to ``pick'' the right number of topics, more importantly,
+it allows some topics to be rarer than others.
+In simple symmetric models, all topics are equally likely {\it apriori}.
 
-Over the subsequent decade many different
-research efforts have presented different algorithms including Gibbs
+Over the subsequent decade many
+research efforts have attempted to improve on Teh's algorithm,
+using methods including collapsed Gibbs
 samplers, approximate fitting and variational methods.
-\cite{Sato:2010} have also placed a Pitman-Yor process as a prior
+Others have developed alternative extensions to LDA.
+\cite{Sato:2010} have also placed a Pitman-Yor process (PYP) as a prior
 for the rows of the topic-word component.
+The common prior acts like a ``background'' topic: it alleviates the need
+for non-topical words (like stop words)
+to be modelled by a single topic because they are
+shared across all topics.
 \cite{Doyle:2009} have modelled rows of the topic-word component using
 a Dirichlet Compound multinomial, rather than a multinomial,
 in order to introduce ``burstiness,'' whereby some words in
 a document are encouraged to appear multiple times (in a ``burst'').
 This tends to produce models with less topics,
 and dramatically improves perplexity.
+We implement this with a PYP, yielding a small factor overhead
+in space and time for our standard collapsed Gibbs sampler.
+
 While there are numerous other improvements made to vanilla topic
-modelling, these are the ones we reproduce in our tool {\tt hca}.
-The hyperparameters for the nonparametric models are also
-fit by default using adaptive rejection sampling by
-\cite{gilks1992adaptive}.
+modelling,
+for instance using an Indian buffet process on both
+component matrices to sparsify them, from \cite{archambeau2015latent},
+these above are the ones we reproduce in our tool {\tt hca}:
+\begin{itemize}
+\item
+  DPs and PYPs on the document-topic component and the topic-word component,
+\item
+  burstiness via an additional document specific PYP on
+  topic-word component, and
+\item
+  hyperparameter sampling (for the nonparametric models)
+  by default using adaptive rejection sampling of
+  \cite{gilks1992adaptive}.
+\end{itemize}
+Results using the tool were presented at KDD 2014 by
+\cite{buntinemishra14}.
+The implementation uses the table indicator sampling method of
+\cite{chen2011sampling} which is a collapsed version of
+Teh's sampler but requires just a small factor in
+space and time overhead over the traditional
+collapsed sampler for LDA of \cite{griffiths2004finding}.
+Most importantly, it uses no dynamic memory like the Chinese restaurant
+samplers.
 
 \section{The {\tt hca} Commandline Tool}
 
-The {\tt hca} tool is implemented as a Unix style command line tool
-with multiple options for different tasks including
+The {\tt hca} tool is distributed on the MPL~2.0 license
+and is implemented as a Unix style command line tool
+with multiple options for tasks including
 specifying a variety of different non-parametric topic models,
 training and testing models,
 reporting diagnostics, initialising and controlling fitting of
 hyperparameters, restarts and checkpointing.
 These options are all documented in a standard Unix style man page with
-duplicate PDF version.  Moreover, any examples of using the tool
+duplicate PDF version.  Moreover, further examples of using the tool
 are given at the end of the man page.
 
 The tool itself is implemented in C.  A multicore version
-can be compiled which uses threads and atomic operations to
-keep data consistent. This gets, for instance, about 5 times speed-up
+can be compiled which uses threads and atomic operations available in C11
+to keep data consistent. This gets, for instance, about 5 times speed-up
 with 8 cores, and uses little memory duplication so can work with
-quite data sets (gigabytes of text).  The code is self-contained,
-requiring no library dependencies.  Routines for tasks such as
+quite large data sets (gigabytes of text).
+In our experience, however, it does not work well with more cores.
+The code is self-contained, with no library dependencies.
+Source code for tasks such as
 adaptive rejection sampling, and Gamma variable sampling,
-have been included from existing open source libraries.
-Compilation has been successful on Mac OSX and a variety of Unicies,
+have been included from existing open source libraries
+to eliminate dependencies.
+Compilation and testing has been successful on Mac OSX and a variety of Unices,
 and single-core compilation has been done under Cygwin.
 
-Some utilities available with the tool are coded in Perl.
-However, these are not essential for operation.
+While the development repository is in Github\footnote{{\tt https://github.com/wbuntine/topic-models} and {\tt https://github.com/wbuntine/libstb}},
+the best way to obtain the code is via MLOSS\footnote{\tt http://www.mloss.org/software/view/527/} because this combines the two components.
 
 \section{Using the System}
 
+While the tool accepts many different data formats, the
+most common is a format sometimes referred to as the LDA-C format.
+This is a sparse matrix format where each line represents a document,
+and the line contains a list of ``index:count'' pairs giving the
+non-zero entries of the document by word matrix.  An example dataset
+(``ch.ldac'' and its companion ``ch.tokens'' listing the words
+corresponding to the indices) is included in the release.
+This is composed of 400 news articles about church, ``bagged up''
+as a data product from \cite{Lewis:2004}.
+A typical sequence of commands is:
+\begin{verbatim}
+   hca -v -C200 -K40 -q6 data/ch /tmp/C1
+   hca -v -v -V -r0 -C0 -orat,10 -e data/ch /tmp/C1
+\end{verbatim}
+The first line builds a 40-topic model with 300 Gibbs cycles
+using the default configuration
+for {\tt hca}, run on 6 cores in 12 seconds.
+The default configuration has a DP on the document-word component,
+a PYP on the topic-word component,
+both with a GEM at their root, and does no burstiness modelling.
+The second lines reports on the learnt model and parameters
+giving the top ten words per topic.
+For instance, the PYP on the topic-word
+component settled on a discount of 0.31 and concentration of 209,
+and the DP on the document-word component settled on a concentration of 0.8.
+The three most populous topics have significant words that show the
+era of the articles (1986-1987):
+\begin{verbatim}
+   teresa,missionaries,nirmala,calcutta,nursing,respirator
+   diana,parker,bowles,camilla,charles,divorce
+   appendix,crucitti,tumour,parkinson,trembling,pope
+\end{verbatim}
+More examples of the system, for instance document completion
+testing \cite{Buntine09},
+and MCMC estimates of the component matrices
+are given in the man page.
+Note several versions of document completion are implemented
+in the paper as different authors use them.
+
+\section{Related Software}
+
 
 \acks{Some parts of the software were co-authored by, and benefited greatly
-  from discussions with Lan Du and Swapnil Mishra.  The software was developed at NICTA Canberra and Monash University. }
+  from discussions with Dr.\ Lan Du and Swapnil Mishra.
+  The diagnostics were developed with consultation from Christopher Ball of
+  Metaheuristica.
+  The software was developed at NICTA Canberra and Monash University,
+  based on earlier infrastructure developed at
+  Helsinki Institute for Information Technology.
+}
 
 \bibliography{hca}
 

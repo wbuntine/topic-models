@@ -41,6 +41,7 @@
  *   they mostly don't work
  */
 // #define EXPERIMENTAL
+#define EXPERIMENTAL3
 
 /*
  *   Switch on to allow threading
