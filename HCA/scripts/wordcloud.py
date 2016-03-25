@@ -403,8 +403,6 @@ class WordCloud(object):
         freqs = []
         for word in words:
             aa = word.split(",")
-            if len(aa)!=3:
-                 raise ValueError("Text input in wrong format\n");
             freqs.append((aa[0],float(aa[1]),float(aa[2])))
         return freqs
 
