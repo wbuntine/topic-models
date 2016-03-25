@@ -50,9 +50,8 @@ T.L. Griffiths and M.~Steyvers.
 
 \bibitem[Lewis et~al.(2004)Lewis, Yang, Rose, and Li]{Lewis:2004}
 D.D. Lewis, Y.~Yang, T.G. Rose, and F.~Li.
-\newblock Rcv1: A new benchmark collection for text categorization research.
-\newblock \emph{J. Mach. Learn. Res.}, 5:\penalty0 361--397, December 2004.
-\newblock ISSN 1532-4435.
+\newblock {RCV1}: A new benchmark collection for text categorization research.
+\newblock \emph{J. Mach. Learn. Res.}, 5, December 2004.
 
 \bibitem[Sato and Nakagawa(2010)]{Sato:2010}
 I.~Sato and H.~Nakagawa.
