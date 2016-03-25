@@ -14,3 +14,8 @@ Sorted topics on output so now most frequent first.
 Made reports address -rphi restart.
 Setup -Apdp and -Bpdp so they could be used with restart and .alpha/.beta files
 Subtle bug in get_probs() when zerod topics
+
+-> 0.62
+
+Installed -Ang.
+Updated the man page.

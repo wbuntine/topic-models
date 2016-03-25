@@ -1,74 +1,67 @@
-\begin{thebibliography}{11}
-\providecommand{\natexlab}[1]{#1}
-\providecommand{\url}[1]{\texttt{#1}}
-\expandafter\ifx\csname urlstyle\endcsname\relax
-  \providecommand{\doi}[1]{doi: #1}\else
-  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+\begin{thebibliography}{}
 
-\bibitem[Archambeau et~al.(2015)Archambeau, Lakshminarayanan, and
-  Bouchard]{archambeau2015latent}
-C.~Archambeau, B.~Lakshminarayanan, and G.~Bouchard.
+\bibitem[Archambeau et~al., 2015]{archambeau2015latent}
+Archambeau, C., Lakshminarayanan, B., and Bouchard, G. (2015).
 \newblock Latent {IBP} compound {D}irichlet allocation.
-\newblock \emph{Pattern Analysis and Machine Intelligence, IEEE Transactions
-  on}, 37\penalty0 (2):\penalty0 321--333, 2015.
+\newblock {\em Pattern Analysis and Machine Intelligence, IEEE Transactions
+  on}, 37(2):321--333.
 
-\bibitem[Buntine(2009)]{Buntine09}
-W.~Buntine.
+\bibitem[Buntine, 2009]{Buntine09}
+Buntine, W. (2009).
 \newblock Estimating likelihoods for topic models.
-\newblock In \emph{Proceedings of the 1st Asian Conference on Machine
-  Learning}, Nanjing, China, 2009.
+\newblock In {\em Proceedings of the 1st Asian Conference on Machine Learning},
+  Nanjing, China.
 
-\bibitem[Buntine and Mishra(2014)]{buntinemishra14}
-W.L. Buntine and S.~Mishra.
+\bibitem[Buntine and Mishra, 2014]{buntinemishra14}
+Buntine, W. and Mishra, S. (2014).
 \newblock Experiments with non-parametric topic models.
-\newblock In \emph{20th ACM SIGKDD Conf.\ on Knowledge Discovery and Data
-  Mining}, page 881–890, 2014.
+\newblock In {\em 20th ACM SIGKDD Conf.\ on Knowledge Discovery and Data
+  Mining}, page 881–890.
 
-\bibitem[Chen et~al.(2011)Chen, Du, and Buntine]{chen2011sampling}
-C.~Chen, L.~Du, and W.~Buntine.
+\bibitem[Chen et~al., 2011]{chen2011sampling}
+Chen, C., Du, L., and Buntine, W. (2011).
 \newblock Sampling table configurations for the hierarchical
   {P}oisson-{D}irichlet process.
-\newblock In \emph{Machine Learning and Knowledge Discovery in Databases:
-  European Conference, ECML PKDD}, pages 296--311. Springer, 2011.
+\newblock In {\em Machine Learning and Knowledge Discovery in Databases:
+  European Conference, ECML PKDD}, pages 296--311. Springer.
 
-\bibitem[Doyle and Elkan(2009)]{Doyle:2009}
-G.~Doyle and C.~Elkan.
+\bibitem[Doyle and Elkan, 2009]{Doyle:2009}
+Doyle, G. and Elkan, C. (2009).
 \newblock Accounting for burstiness in topic models.
-\newblock In \emph{Proc.\ of the 26th Annual Int.\ Conf.\ on Machine Learning},
-  ICML '09, pages 281--288, 2009.
+\newblock In {\em Proc.\ of the 26th Annual Int.\ Conf.\ on Machine Learning},
+  ICML '09, pages 281--288.
 
-\bibitem[Gilks and Wild(1992)]{gilks1992adaptive}
-Walter~R Gilks and Pascal Wild.
+\bibitem[Gilks and Wild, 1992]{gilks1992adaptive}
+Gilks, W.~R. and Wild, P. (1992).
 \newblock Adaptive rejection sampling for {G}ibbs sampling.
-\newblock \emph{Applied Statistics}, pages 337--348, 1992.
+\newblock {\em Applied Statistics}, pages 337--348.
 
-\bibitem[Griffiths and Steyvers(2004)]{griffiths2004finding}
-T.L. Griffiths and M.~Steyvers.
+\bibitem[Griffiths and Steyvers, 2004]{griffiths2004finding}
+Griffiths, T. and Steyvers, M. (2004).
 \newblock Finding scientific topics.
-\newblock \emph{Proceedings of the National Academy of Sciences}, 101\penalty0
-  (suppl 1):\penalty0 5228--5235, 2004.
+\newblock {\em Proceedings of the National Academy of Sciences}, 101(suppl
+  1):5228--5235.
 
-\bibitem[Lewis et~al.(2004)Lewis, Yang, Rose, and Li]{Lewis:2004}
-D.D. Lewis, Y.~Yang, T.G. Rose, and F.~Li.
+\bibitem[Lewis et~al., 2004]{Lewis:2004}
+Lewis, D., Yang, Y., Rose, T., and Li, F. (2004).
 \newblock {RCV1}: A new benchmark collection for text categorization research.
-\newblock \emph{J. Mach. Learn. Res.}, 5, December 2004.
+\newblock {\em J. Mach. Learn. Res.}, 5.
 
-\bibitem[Sato and Nakagawa(2010)]{Sato:2010}
-I.~Sato and H.~Nakagawa.
+\bibitem[Sato and Nakagawa, 2010]{Sato:2010}
+Sato, I. and Nakagawa, H. (2010).
 \newblock Topic models with power-law using {P}itman-{Y}or process.
-\newblock In \emph{16th ACM SIGKDD Conf.\ on Knowledge Discovery and Data
-  Mining}, pages 673--682. ACM, 2010.
+\newblock In {\em 16th ACM SIGKDD Conf.\ on Knowledge Discovery and Data
+  Mining}, pages 673--682. ACM.
 
-\bibitem[Teh(2004)]{TehNBMM21}
-Y.~W. Teh.
+\bibitem[Teh, 2004]{TehNBMM21}
+Teh, Y.~W. (2004).
 \newblock Nonparametric {B}ayesian mixture models - release 2.1.
-\newblock \url{http://www.stats.ox.ac.uk/\~teh/software.html}, 2004.
+\newblock \url{http://www.stats.ox.ac.uk/\~teh/software.html}.
 \newblock MATLAB and C code [Online; accessed 18 {M}arch 2016].
 
-\bibitem[Teh et~al.(2006)Teh, Jordan, Beal, and Blei]{TehJorBea2006}
-Y.~W. Teh, M.~I. Jordan, M.~J. Beal, and D.~M. Blei.
+\bibitem[Teh et~al., 2006]{TehJorBea2006}
+Teh, Y.~W., Jordan, M.~I., Beal, M.~J., and Blei, D.~M. (2006).
 \newblock Hierarchical {D}irichlet processes.
-\newblock \emph{Journal of the ASA}, 101\penalty0 (476):\penalty0 1566--1581,
-  2006.
+\newblock {\em Journal of the ASA}, 101(476):1566--1581.
 
 \end{thebibliography}

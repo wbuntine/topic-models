@@ -4,7 +4,7 @@ HCA is research software that does various versions of non-parametric topic
 models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, all with/without 
 burstiness modelling.  Various diagnostics, ``document completion'' testing 
 and coherence measurements with PMI are also supported.  The code
-runs on multi-core (depending on your compiler) getting about 50% efficiency with 8 cores.
+runs on multi-core (depending on your compiler) getting about 60% efficiency with 8 cores.
 
 The project home page and more details about the theory behind the software 
 can be found in our KDD 2014 paper (Buntine and Mishra):
@@ -77,11 +77,11 @@ then quit.
 BUILD for MULTICORE
 ==================
 For multi-core/threading to work, we need to get atomic operations
-supported, which are part of the C++11 standard.
+supported, which are part of the C11 standard.
 
 Unfortunately, all recent C compilers seem to vary dramatically in 
 their implementation of atomic operations.   We have tested
-on Linux boxes only with GNU gcc 4.1.2, 4.4.7, 4.8.0 and 4.8.2.  
+on Linux boxes with GNU gcc 4.1.2, 4.4.7, 4.8.0, 4.8.2 and 5.2.1.  
 But we haven't fully tested 4.1.2.  For GCC versions between these,
 some version or the other should work, so probably just need
 to modify the conditional.
@@ -141,7 +141,6 @@ to figure them out!
 GETTING STARTED
 ===============
 Work through the examples in the documentation using the data in "data/"
-
 
 BUGS
 ====

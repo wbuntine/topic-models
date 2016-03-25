@@ -53,6 +53,16 @@ Routine used to strip first K words from a vocab.  Modifies following files:
 Note only works with sequential version of .txtbag.
 Be warned ...
 
+Routine to generate word clouds and graph.  Requires other code and
+only tested in Linux but should work on Mac OSX.
+1.  Make sure you have graphviz and ImageMagick installed.
+2.  Install Andreas Mueller's wordcloud in Python, for instance
+    using pip(3).
+3.  Replace his wordcloud.py library file with the one in this directory.
+    Just hope the versions match!
+4.  Then your are good.  Read the man page.  See example outputs at:
+       http://topicmodels.org/2016/03/25/visualising-a-topic-model/
+
 Others
 --------
 Some handy routines with a wee bit of documentation

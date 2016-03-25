@@ -567,6 +567,9 @@ The report is instigated by the
 \OptArg{-l}{sp} option.
 \item[\File{RepStem.tbyc}]  Optional confusion matrix printed when
 the \Opt{-X} option is used.
+\item[\File{RepStem.topcor}]
+File of correlations between topic.
+Created with the \File{RepStem.topset} file.
 \item[\File{RepStem.toplst}] A simple text report giving the top word indices
   for each topic.  If a hierarchical model in use, then the
 ``-1'' topic is for the base distribution of words.
@@ -574,7 +577,11 @@ Word indices are offset from 0.
 \item[\File{RepStem.toppmi}] A simple text report giving the top word indices
 and the associated mean PMI for the word.
 \item[\File{RepStem.topset}] Full diagnostic output for topics and their words
-instigated with a command sequence like ``-V -V -oidf,100''.
+  instigated with a command sequence like
+\begin{verbatim}
+   hca -r0 -C0 -v -V -V -oidf,100 DATA STEM
+\end{verbatim}
+The first few lines of the file are comment lines giving header information.
 \item[\File{RepStem.theta}] Estimated topic probabilities 
 for each training document
 written in a simple sparse form.  The class index
@@ -989,7 +996,8 @@ topic 9/1 words=germany,nazi,papers,territory,hitler,nobel,crimes,german,prize,c
 \end{verbatim}
 
 \noindent
-For more detail to the \File{RepStem.topset} file, use:
+For more detail to the \File{RepStem.topset} file and the
+\File{RepStem.topcor} file, use:
 \begin{verbatim}
    hca -v -v -r0 -e -V -V -oidf,100 -C0 data/ch c1
 \end{verbatim}
@@ -1303,7 +1311,7 @@ also of \Date.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{description}
-\item[Copyright] \copyright\ 2011-2015, Prof.~Wray Buntine, 
+\item[Copyright] \copyright\ 2011-2016, Prof.~Wray Buntine, 
   NICTA, Canberra, Australia (to 2013), and Monash
 University (from 2014),
      \Email{wray.buntine@monash.edu}.

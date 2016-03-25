@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sat Feb 13 11:01:18 AEDT 2016
+.\" Manual page created with latex2man on Fri Mar 25 21:53:38 AEDT 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -885,6 +885,11 @@ RepStem.tbyc
 the \fB\-X\fP
 option is used. 
 .TP
+RepStem.topcor
+ File of correlations between topic. 
+Created with the RepStem.topset
+file. 
+.TP
 RepStem.toplst
  A simple text report giving the top word indices 
 for each topic. If a hierarchical model in use, then the 
@@ -897,7 +902,11 @@ and the associated mean PMI for the word.
 .TP
 RepStem.topset
  Full diagnostic output for topics and their words 
-instigated with a command sequence like ``\-V \-V \-oidf,100\&''\&. 
+instigated with a command sequence like 
+.Vb
+   hca \-r0 \-C0 \-v \-V \-V \-oidf,100 DATA STEM
+.Ve
+The first few lines of the file are comment lines giving header information. 
 .TP
 RepStem.theta
  Estimated topic probabilities 
@@ -1442,6 +1451,8 @@ topic 9/1 words=germany,nazi,papers,territory,hitler,nobel,crimes,german,prize,c
 .Ve
 .PP
 For more detail to the RepStem.topset
+file and the 
+RepStem.topcor
 file, use: 
 .Vb
    hca \-v \-v \-r0 \-e \-V \-V \-oidf,100 \-C0 data/ch c1
@@ -1839,7 +1850,7 @@ also of 2016/02/13\&.
 .PP
 .TP
 Copyright 
-(C)2011\-2015, Prof. Wray Buntine, 
+(C)2011\-2016, Prof. Wray Buntine, 
 NICTA, Canberra, Australia (to 2013), and Monash 
 University (from 2014), 
 \fBwray.buntine@monash.edu\fP\&.

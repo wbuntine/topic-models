@@ -1,4 +1,5 @@
 \documentclass[twoside,11pt]{article}
+\usepackage{apalike}
 
 % Any additional packages needed should be included after jmlr2e.
 % Note that jmlr2e.sty includes epsfig, amssymb, natbib and graphicx,
@@ -8,53 +9,54 @@
 % natbib citation styles, see the natbib documentation, a copy of which
 % is archived at http://www.jmlr.org/format/natbib.pdf
 
-\usepackage{jmlr2e}
+%\usepackage{jmlr2e}
 
 % Definitions of handy macros can go here
 
 \newcommand{\dataset}{{\cal D}}
 \newcommand{\fracpartial}[2]{\frac{\partial #1}{\partial  #2}}
+\newcommand{\url}[1]{{\tt #1}}
 
 % Heading arguments are {volume}{year}{pages}{submitted}{published}{author-full-names}
 
-\jmlrheading{1}{2000}{1-48}{4/00}{10/00}{Wray Buntine}
+%\jmlrheading{1}{2000}{1-48}{4/00}{10/00}{Wray Buntine}
 
 % Short headings should be running head and authors last names
 
-\ShortHeadings{hca for Topic Models}{Buntine}
-\firstpageno{1}
+%\ShortHeadings{hca for Topic Models}{Buntine}
+%\firstpageno{1}
 
 \begin{document}
 
 \title{hca: Tool for Multicore Non-parametric Topic Models}
 
-\author{\name Wray Buntine \email wray.buntine@monash.edu \\
-       \addr Faculty of Information Technology \\
+\author{Wray Buntine, {\tt wray.buntine@monash.edu} \\
+       Faculty of Information Technology \\
        Monash University\\
        Clayton, VIC, 3800, Australia}
 
-\editor{Enid Blighton}
+%\editor{Enid Blighton}
 
 \maketitle
 
 \begin{abstract}%   <- trailing '%' for backward compatibility of .sty file
 This paper describes {\tt hca}, an open source command-line tool to
 train and test topic models.  The tool implements a variety of Gibbs
-samplers for non-parametric models using an efficient implementation
+samplers for non-parametric models using an efficient multicore
+implementation
 of hierarchical Pitman-Yor processes.  These are used for both the
 document-topic component and the topic-word component, and to model
 burstiness of words in topics.  Various diagnostics, document
 completion testing and coherence measurements with PMI are also
-supported.  This is also the first efficient multicore non-parametric topic
-model to be distributed.  The package consists in a main command-line tool
+supported.  The package consists of a main command-line tool
 and a set of support utilities. The documentation includes a user's
 guide with a mini tutorial.
 \end{abstract}
 
-\begin{keywords}
+\paragraph{Keywords:}
   topic model, hierarchical Pitman-Yor process, non-parametric Bayesian model,
   Gibbs sampling
-\end{keywords}
+%\end{keywords}
 
 \section{Introduction}
 Topic models are a form of non-negative matrix factorisation
@@ -73,7 +75,8 @@ sampler for the task \cite{TehNBMM21}.  While this
 purportedly allows the
 model to ``pick'' the right number of topics, more importantly,
 it allows some topics to be rarer than others.
-In simple symmetric models, all topics are equally likely {\it apriori}.
+In the simple symmetric model of LDA,
+all topics are assumed equally likely {\it apriori}.
 
 Over the subsequent decade many
 research efforts have attempted to improve on Teh's algorithm,
@@ -91,23 +94,24 @@ a Dirichlet Compound multinomial, rather than a multinomial,
 in order to introduce ``burstiness,'' whereby some words in
 a document are encouraged to appear multiple times (in a ``burst'').
 This tends to produce models with less topics,
-and dramatically improves perplexity.
-We implement this with a PYP, yielding a small factor overhead
-in space and time for our standard collapsed Gibbs sampler.
+and  improves perplexity.
+This is implemented with a PYP, yielding a small factor overhead
+in space and time over the standard collapsed Gibbs sampler.
 
 While there are numerous other improvements made to vanilla topic
 modelling,
 for instance using an Indian buffet process on both
 component matrices to sparsify them, from \cite{archambeau2015latent},
-these above are the ones we reproduce in our tool {\tt hca}:
+these above are the ones reproduced in the tool {\tt hca}:
 \begin{itemize}
 \item
-  DPs and PYPs on the document-topic component and the topic-word component,
+  DPs and PYPs on both
+  the document-topic component and the topic-word component,
 \item
   burstiness via an additional document specific PYP on
   topic-word component, and
 \item
-  hyperparameter sampling (for the nonparametric models)
+  hyperparameter sampling
   by default using adaptive rejection sampling of
   \cite{gilks1992adaptive}.
 \end{itemize}
@@ -118,6 +122,9 @@ The implementation uses the table indicator sampling method of
 Teh's sampler but requires just a small factor in
 space and time overhead over the traditional
 collapsed sampler for LDA of \cite{griffiths2004finding}.
+This collapses the sizes of the tables in the classic
+hierarchical Chinese restaurant samplers, leaving just the
+count of the number of tables.
 Most importantly, it uses no dynamic memory like the Chinese restaurant
 samplers.
 
@@ -139,7 +146,7 @@ can be compiled which uses threads and atomic operations available in C11
 to keep data consistent. This gets, for instance, about 5 times speed-up
 with 8 cores, and uses little memory duplication so can work with
 quite large data sets (gigabytes of text).
-In our experience, however, it does not work well with more cores.
+In our experience, however, it does not work well with more cores like 32.
 The code is self-contained, with no library dependencies.
 Source code for tasks such as
 adaptive rejection sampling, and Gamma variable sampling,
@@ -187,15 +194,23 @@ era of the articles (1986-1987):
 \end{verbatim}
 More examples of the system, for instance document completion
 testing \cite{Buntine09},
-and MCMC estimates of the component matrices
+MCMC estimates of the component matrices,
+and diagnostic reports of the generated 
 are given in the man page.
 Note several versions of document completion are implemented
 in the paper as different authors use them.
 
 \section{Related Software}
 
+A variety of software for HDP-LDA, which places a
+hierarchical DP on the document-topic component,
+were compared with {\tt hca} and reported in
+\cite{buntinemishra14}.
 
-\acks{Some parts of the software were co-authored by, and benefited greatly
+
+
+\section*{Acknowledgements}
+{Some parts of the software were co-authored by, and benefited greatly
   from discussions with Dr.\ Lan Du and Swapnil Mishra.
   The diagnostics were developed with consultation from Christopher Ball of
   Metaheuristica.
@@ -204,6 +219,7 @@ in the paper as different authors use them.
   Helsinki Institute for Information Technology.
 }
 
+\bibliographystyle{apalike}
 \bibliography{hca}
 
 \end{document}
