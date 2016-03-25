@@ -50,16 +50,6 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 		       enum ScoreType score, int pmicount, int fullreport);
 void hca_displayclass(char *resstem);
 
-#ifdef EXPERIMENTAL3
-static void SHOWBETA() {
-  int t;
-  double btot = 0;	
-  for (t=0; t<ddN.T; t++)
-    btot += ddP.NGbeta[t];
-  yap_message("NGbeta sum (%lf+%lf+...) is %lf\n",
-	      ddP.NGbeta[0], ddP.NGbeta[1], btot);
-}
-#endif
 
 //==================================================
 // global variables
@@ -1300,9 +1290,6 @@ int main(int argc, char* argv[])
     if ( nosample==0 ) 
       pctl_sample(iter,procs);
     if ( ddP.PYalpha==H_NG ) {
-#ifdef EXPERIMENTAL3
-      // SHOWBETA();
-#endif
       /*
        *     reestimate UN and NGbeta
        */

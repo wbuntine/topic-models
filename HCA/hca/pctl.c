@@ -1083,19 +1083,6 @@ void pctl_update(int iter) {
       start = 0;
     }
   }
-#ifdef EXPERIMENTAL3
-  if ( 0 && ddP.NGbeta ) {
-    /*
-     *   give NGbeta an average of 1
-     */
-    int t;
-    double tot = 0;
-    for (t=0; t<ddN.T; t++)
-      tot += ddP.NGbeta[t];
-    for (t=0; t<ddN.T; t++)
-      ddP.NGbeta[t] /= tot;
-  }
-#endif
   yap_message("\n");
 }
 
