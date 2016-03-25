@@ -8,8 +8,9 @@ modify the header for your particular Perl installation.
 The main scripts come with their own man page so use the 
 option "--man" to get the manpage:
 e.g.,   ./cooc2pmi.pl --man
+        perldoc ./cooc2pmi.pl 
 Though for this to work, you must have Perl's "pod2usage" 
-programme installed  and the appearance isn't great!
+and "perldoc" programmes installed.
 
 Generate PMI, NPMI or robust version of PMI from the output of
 of linkCoco (see DCA-Bags):

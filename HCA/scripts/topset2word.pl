@@ -1,4 +1,9 @@
 #!/usr/bin/perl
+#
+#   A man entry for this script is given at the end using POD.
+#   The script class the following commands:
+#        wordcloud_cli.py, convert, dot,
+
 use Getopt::Long;
 use Pod::Usage;
 use POSIX;
