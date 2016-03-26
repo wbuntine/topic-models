@@ -62,22 +62,6 @@ class IntegralOccupancyMap(object):
 
         self.integral[pos_x:, pos_y:] = partial_integral
 
-def rank_color_func(word=None, font_size=None, position=None, rank=1.0,
-                    orientation=None, font_path=None):
-    """Random hue color generation.
-
-    Default coloring method. This just picks a random hue with value 80% and
-    lumination 50%.
-
-    Parameters
-    ----------
-    word, font_size, position, orientation  : ignored.
-    rank : value between 0-1, giving shade
-
-    """
-    print("color_func: ",word,rank,"\n")
-    return "hsl(0, 80%%, 50%%)"
-
 def random_color_func(word=None, font_size=None, position=None, rank=None,
                       orientation=None, font_path=None, random_state=None):
     """Random hue color generation.
@@ -110,7 +94,7 @@ def get_single_color_func(color):
     old_r, old_g, old_b = ImageColor.getrgb(color)
     rgb_max = 255.
     h, s, v = colorsys.rgb_to_hsv(old_r/rgb_max, old_g/rgb_max, old_b/rgb_max)
-    def single_color_func(word=None, font_size=None, position=None,
+    def single_color_func(word=None, font_size=None, position=None, rank=None,
                           orientation=None, font_path=None, random_state=None):
         """Random color generation.
 
@@ -125,9 +109,7 @@ def get_single_color_func(color):
           If a random object is given, this is used for generating random numbers.
 
         """
-        if random_state is None:
-            random_state = Random()
-        r, g, b = colorsys.hsv_to_rgb(h, s, random_state.uniform(0.2, 1))
+        r, g, b = colorsys.hsv_to_rgb(h, s, (0.30 + 0.60*rank))
         return 'rgb({:.0f}, {:.0f}, {:.0f})'.format(r * rgb_max, g * rgb_max, b * rgb_max)
     return single_color_func
 
