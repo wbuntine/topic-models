@@ -68,7 +68,8 @@ The early model, Latent Dirichlet Allocation (LDA),
 used a simple symmetric Dirichlet prior for columns of the
 document-topic component and rows of the topic-word component, but
 researchers soon realised non-symmetric priors could
-improve modelling performance.  Using a Dirichlet process (DP) as a prior
+improve modelling performance \cite{wallach2009rethinking}.
+Using a Dirichlet process (DP) as a prior
 for columns of the document-topic component was proposed by
 \cite{TehJorBea2006}, and Teh distributed a relatively robust Gibbs
 sampler for the task \cite{TehNBMM21}.  While this
@@ -100,7 +101,7 @@ in space and time over the standard collapsed Gibbs sampler.
 
 While there are numerous other improvements made to vanilla topic
 modelling,
-for instance using an Indian buffet process on both
+for instance using an Indian buffet process (IBP) on both
 component matrices to sparsify them, from \cite{archambeau2015latent},
 these above are the ones reproduced in the tool {\tt hca}:
 \begin{itemize}
@@ -195,10 +196,9 @@ era of the articles (1986-1987):
 More examples of the system, for instance document completion
 testing \cite{Buntine09},
 MCMC estimates of the component matrices,
-and diagnostic reports of the generated 
-are given in the man page.
-Note several versions of document completion are implemented
-in the paper as different authors use them.
+and diagnostic reports of the generated topics
+are given in the document.
+
 
 \section{Related Software}
 
@@ -206,8 +206,82 @@ A variety of software for HDP-LDA, which places a
 hierarchical DP on the document-topic component,
 were compared with {\tt hca} and reported in
 \cite{buntinemishra14}.
+Not all software is distributed, so some comparisons
+were done by duplicating experiments.
+Performance can be evaluated in terms of
+test perplexity, and in terms of computational
+speed.  However, different authors make subtle
+distinctions in their evaluation of perplexity so
+comparisons are treacherous.
+For instance, for document completion one may
+hold out every 4-th word of a document or the
+final quarter of a document.  Since documents
+vary in topic across paragraphs, this difference can be
+significant.
+Moreover, some authors do a poor choice of
+hyperparameters, sometimes not fitting them,
+so reported results are not always
+significant.
 
+{\tt Mallet} \cite{McCallumMALLET} has a asymmetric-symmetric
+LDA mode that behaves like a truncated HDP-LDA approximation.
+This is significantly faster than all others, and also supports
+multicore.  
+However, it uses memory duplication with multicore so is not
+able to run on larger data sets. 
+Similarly, {\tt hca} is a factor faster than all others,
+except {\tt Mallet}, and it supports multicore but without
+significant memory overhead.
+It is much more efficient in memory, partly due
+to its implementation in C:  a factor of 3 compared to
+{\tt onlinehdp} \cite{WangPB:AISTATS11}, and a factor of 5 or so compared to
+{\tt HDP} \cite{TehNBMM21}.
+The variational approximation of \cite{Sato:2010} yields
+good performance in perplexity, comparable to {\tt HDP} and {\tt Mallet}.
+Of the HDP-LDA implementations, however, {\tt hca} was
+significantly the best in terms of perplexity.
 
+No other distributed implementations of topic modeling software
+perform well on nonparametric modelling of
+the topic-word component.
+An approximate implementation in {\tt Mallet} reported negative
+experiments \cite{wallach2009rethinking}.
+For {\tt hca}, nonparametric modelling of
+the topic-word component usually significantly improves
+perplexity, and the root topic has a beautiful interpretation
+as a background topic that picks up non-topical words.
+
+Note, \cite{archambeau2015latent} model sparsity with an
+IBP.  Their FTM models sparsity on the
+document-topic component,
+and their LIDA models sparsity in both document-topic and
+topic-word components.
+They report good results
+compared with Teh's {\tt HDP}, although they used a fixed
+setting for the concentration of the DP so it is
+not clear if the results would hold with proper fitting.
+Attempting to reproducing their results using
+{\tt hca} with the same data sets yields
+the following results for log of the test-set perplexity.
+
+\begin{tabular}{l|ll}
+Data & KOS & NIPS \\\hline
+FTM (3-par) & 7.266$\pm$0.009 & 6.883$\pm$0.008 \\
+LIDA & 7.257$\pm$0.010 & 6.795$\pm$0.007 \\\hline
+HPD-LDA ({\tt hca})& 7.253$\pm$0.003 & 6.792$\pm$0.002  \\
+NP-LDA  ({\tt hca})& 7.156$\pm$0.003 & 6.722$\pm$0.003
+\end{tabular}
+
+\noindent
+In these results, 
+NP-LDA has a DP on the document-topic component
+and a PYP on the topic-word component.
+
+In summary, in terms of shear speed and software support,
+{\tt Mallett} is a clear winner.  When high performance
+in terms of perplexity is required, and
+with a fully non-parametric implementation,
+{\tt hca} offers an alternative.
 
 \section*{Acknowledgements}
 {Some parts of the software were co-authored by, and benefited greatly

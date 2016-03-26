@@ -47,6 +47,11 @@ Lewis, D., Yang, Y., Rose, T., and Li, F. (2004).
 \newblock {RCV1}: A new benchmark collection for text categorization research.
 \newblock {\em J. Mach. Learn. Res.}, 5.
 
+\bibitem[McCallum, 2002]{McCallumMALLET}
+McCallum, A.~K. (2002).
+\newblock Mallet: A machine learning for language toolkit.
+\newblock http://mallet.cs.umass.edu.
+
 \bibitem[Sato and Nakagawa, 2010]{Sato:2010}
 Sato, I. and Nakagawa, H. (2010).
 \newblock Topic models with power-law using {P}itman-{Y}or process.
@@ -63,5 +68,16 @@ Teh, Y.~W. (2004).
 Teh, Y.~W., Jordan, M.~I., Beal, M.~J., and Blei, D.~M. (2006).
 \newblock Hierarchical {D}irichlet processes.
 \newblock {\em Journal of the ASA}, 101(476):1566--1581.
+
+\bibitem[Wallach et~al., 2009]{wallach2009rethinking}
+Wallach, H., Mimno, D., and McCallum, A. (2009).
+\newblock Rethinking {LDA}: Why priors matter.
+\newblock In {\em Advances in Neural Information Processing Systems 19}.
+
+\bibitem[Wang et~al., 2011]{WangPB:AISTATS11}
+Wang, C., Paisley, J., and Blei, D. (2011).
+\newblock Online variational inference for the hierarchical {D}irichlet
+  process.
+\newblock In {\em AISTATS '11}.
 
 \end{thebibliography}
