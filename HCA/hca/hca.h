@@ -28,7 +28,7 @@
 #include "stats.h"
 #include "srng.h"
 
-#define HCA_VERSION "0.61"
+#define HCA_VERSION "0.62"
 
 /* 
  *   when defined, stops introducing new topics into a 
