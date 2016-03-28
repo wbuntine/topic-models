@@ -39,6 +39,8 @@ void data_alloc() {
     yap_quit("Only %d training examples\n", ddN.DT);
 
   ddD.NdT  = u16vec(ddN.D);
+  ddD.df = NULL;
+  ddD.n_df = 0;
   ddD.NdTcum=u32vec(ddN.D+1);
   if ( !ddD.NdT )
     yap_quit("Cannot allocate memory for vecs/matrices\n");
@@ -62,48 +64,108 @@ void data_vocab(char *stem) {
     free(wname);
 }
 
-int data_df(char *stem, uint32_t *dfvec) {
+/*
+ *   returns 0 if no file read;
+ *   quits on file format error;
+ *   otherwise fills dfvec[] and returns no.. docs used
+ */
+int data_df(char *stem) {
   char buf[1000];
-  char *wname = yap_makename(stem, ".srcpar");
+  char *wname;
   FILE *fp;
   int n_df;
   int i;
+  
+  if ( ddD.df )
+    return ddD.n_df;
+  ddD.df = u32vec(ddN.W);
+
   /*
    *  check .srcpar file exists
    */
+  wname = yap_makename(stem, ".srcpar");
   fp = fopen(wname,"r");
-  if ( !fp ) 
-    yap_quit("Parameter file '%s' doesn't exist\n", wname);
-  fclose(fp);
+  if ( fp ) { 
+    fclose(fp);
+    /*  it does so read dfdocs */
+    {
+      char *p = readsrcpar(stem,"dfdocs",50);
+      if ( p ) {
+	n_df = atoi(p);
+	free(p);
+      } else
+	n_df = ddN.DT;
+    }
+  } else {
+    /*  it does not, so set default */
+    n_df = ddN.DT;
+  }
   free(wname);
-  /*  read dfdocs */
-  {
-    char *p = readsrcpar(stem,"dfdocs",50);
-    if ( p ) {
-      n_df = atoi(p);
-      free(p);
-    } else
-      n_df = ddN.D;
-  }
-  /*  read dfs */
-  wname = yap_makename(stem, ".words");
+  
+  /*  
+   *  first try read dfs from "stem.words"
+   */
+  wname = yap_makename(stem, ".df");
   fp = fopen(wname ,"r"); 
-  if ( !fp ) 
-    yap_sysquit( "Cannot open file '%s' for read\n", wname);
-  for (i = 0; i < ddN.W; i++) {
-    int sl;
-    unsigned df;
-    if ( fgets(&buf[0],sizeof(buf)-1,fp)==NULL )
-      yap_sysquit("Cannot read line %d from '%s'\n", i+1, wname);
-    sl = strlen(&buf[0]);
-    if ( ! iscntrl(buf[sl-1]) )
-      /*   line too long  */
-      yap_quit("Cannot parse line %d from '%s', too long\n", i, wname);
-    if ( sscanf(&buf[0],"%*u %*s %*x %*u %u ", &df) != 1 )
-      yap_quit("Cannot parse line %d from '%s', no df\n", i, wname);
-    dfvec[i] = df;
+  if ( fp ) {
+    for (i = 0; i < ddN.W; i++) {
+      int sl;
+      unsigned df;
+      if ( fgets(&buf[0],sizeof(buf)-1,fp)==NULL )
+        yap_sysquit("Cannot read line %d from '%s'\n", i+1, wname);
+      sl = strlen(&buf[0]);
+      if ( ! iscntrl(buf[sl-1]) )
+        /*   line too long  */
+        yap_quit("Cannot parse line %d from '%s', too long\n", i, wname);
+      if ( sscanf(&buf[0],"%u", &df) != 1 )
+        yap_quit("Cannot parse line %d from '%s', no df\n", i, wname);
+      ddD.df[i] = df;
+    }
+    fclose(fp);
+  } else {
+    /*  
+     *  second try read dfs from "stem.df" 
+     */
+    free(wname);
+    wname = yap_makename(stem, ".words");
+    fp = fopen(wname ,"r"); 
+    if ( fp ) { 
+      for (i = 0; i < ddN.W; i++) {
+	int sl;
+	unsigned df;
+	if ( fgets(&buf[0],sizeof(buf)-1,fp)==NULL )
+	  yap_sysquit("Cannot read line %d from '%s'\n", i+1, wname);
+	sl = strlen(&buf[0]);
+	if ( ! iscntrl(buf[sl-1]) )
+	  /*   line too long  */
+	  yap_quit("Cannot parse line %d from '%s', too long\n", i, wname);
+	if ( sscanf(&buf[0],"%*u %*s %*x %*u %u ", &df) != 1 )
+	  yap_quit("Cannot parse line %d from '%s', no df\n", i, wname);
+	ddD.df[i] = df;
+      }
+      fclose(fp);
+    } else {
+      uint32_t *flag = u32vec(ddN.W);
+      /* 
+       *   else compute from training data
+       */
+      for (i = 0; i < ddN.DT; i++) {
+	int l;
+	for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) {
+	  int w = ddD.w[l];
+	  if ( flag[w]==0 ) {
+	    ddD.df[w] ++;
+	    flag[w]++;
+	  }
+	}
+	// second pass to zero flag[]
+	for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) {
+	  flag[ddD.w[l]]=0;
+	}
+      }
+      free(flag);
+    }
   }
-  fclose(fp);
   free(wname);
   return n_df;
 }
@@ -146,6 +208,8 @@ void data_free() {
 	free_vocab(ddN.tokens);
   if ( ddD.c )
     free(ddD.c);
+  if ( ddD.df )
+    free(ddD.df);
 }
 
 int data_docsize() {

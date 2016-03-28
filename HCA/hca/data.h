@@ -57,7 +57,7 @@ void data_alloc();
 int data_docsize();
 void data_vocab(char *stem);
 void data_class(char *stem);
-int data_df(char *stem, uint32_t *df);
+int data_df(char *stem);
 
 void data_report(int ITER, int seed);
 void data_checkpoint(char *resstem, char *stem, int ITER);

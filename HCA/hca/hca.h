@@ -81,6 +81,9 @@ void gibbs_query(char *stem, int K, char *qname, int dots, int procs,
 
 void print_maxz(char *fname);
 
+void predict_topk(char *resstem, int topk);
+
+
 //==================================================
 // global variables
 //==================================================

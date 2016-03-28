@@ -222,6 +222,8 @@ static void usage() {
 	  "                  #     use -rtheta to make run faster\n"
           "                  #     use scale optionally (e.g., 0.1, scales log prob) \n"
 #endif
+	  "   -R k           #  do top-k predictions based on training data\n"
+	  "                  #     must have a loaded phi and theta matrix\n"
           "   -t traindocs   #  train documents, at start, default all-test\n"
           "   -T testdocs    #  test documents, at end, default 0\n"
 	  "   -T TESTSTEM    #  or stem for a data file of same kind\n"
@@ -310,6 +312,7 @@ void *testing_p(void *pargs)
   return NULL;
 }
 
+#ifdef EXPERIMENTAL
 static float distH(float *p1, float *p2, int N) {
   int n;
   float tot = 0;
@@ -320,6 +323,7 @@ static float distH(float *p1, float *p2, int N) {
   tot /= N;
   return tot;
 }
+#endif
 
 /*==========================================
  * main
@@ -337,6 +341,7 @@ int main(int argc, char* argv[])
   char *stem;
   char *resstem;
   int displaycount = 10;
+  int predict = 0;
   int pmicount = 10;
   char *betafile = NULL;
   char *alphafile = NULL;
@@ -711,7 +716,7 @@ int main(int argc, char* argv[])
 	yap_quit("Need a valid 'r' argument\n");
       break;
     case 'R':
-      if ( !optarg || sscanf(optarg,"%d",&procs)!=1 )
+      if ( sscanf(optarg,"%d",&predict)!=1 )
 	yap_quit("Need a valid 'R' argument\n");
       break;
     case 's':
@@ -1123,6 +1128,15 @@ int main(int argc, char* argv[])
     goto FINISH;
   }
 #endif
+  if ( predict ) {
+    if ( ddP.phi==NULL )
+      yap_quit("Need to load a phi matrix when using '-R'\n");
+    if ( ddP.theta==NULL )
+      yap_quit("Need to load a theta matrix when using '-R'\n");
+    predict_topk(resstem,predict);
+    nosave= 1;
+    goto FINISH;
+  }
 
   if ( restart && ITER ) 
       yap_message("Initial log_2(perp)=%.4lf\n", likelihood() * (showlike?1:-M_LOG2E/ddN.NT));

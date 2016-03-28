@@ -23,8 +23,8 @@ export PWD
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
 # MYDEBUG=-pg -DNDEBUG -ffast-math -DHAVE_INLINE
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
-# MYDEBUG=-g
+# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE # -DH_THREADS
+MYDEBUG=-g
 CPPFLAGS :=  -I$(PWD)/util/ -I$(STB_HOME)/lib/ $(MYDEBUG)
 CFLAGS = -Wall
 LDFLAGS := -L$(PWD)/util -L$(STB_HOME)/lib

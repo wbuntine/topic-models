@@ -599,8 +599,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
       yap_quit("Cannot allocate termindk in hca_displaytopics()\n");
   }
 
-  ddD.df = malloc(sizeof(*ddD.df)*ddN.W);
-  ddD.n_df = data_df(stem,ddD.df);
+  
+  data_df(stem);
+
 #ifdef KL
   for (w=0; w<ddN.W; w++)
     dfvec[w] = ddD.df[w];

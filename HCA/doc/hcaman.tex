@@ -508,6 +508,8 @@ formats and is specified with the \Opt{-f} option.
 \item[\File{DataStem.class}] Class index for each document, one per line.  
 Optional file used with some reports instigated by
 \Opt{-X} or \OptArg{-L}{class} options.
+\item[\File{DataStem.df}] Document frequency per word.  Each line is the
+integer df for the correspnding word, matching \File{DataStem.tokens}.
 \item[\File{DataStem.dit}+\File{DataStem.wit}] Simple document index and word index files, both indices offset by 1, one index per line.  
 Words in the collection are listed by document.  The \File{DataStem.dit} file
 gives the document index, and the corresponding line in \File{DataStem.wit}

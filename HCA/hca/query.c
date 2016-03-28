@@ -133,9 +133,6 @@ static int bubble(int K, int *topind, float *score, float newscore) {
   return newind;
 }
 
-static int n_df;
-static uint32_t *df = NULL;
-
 /*
  *  copied from Wikipedia page Okapi_BM25
  */
@@ -148,7 +145,7 @@ static double bm25(int d, int *found, uint32_t *wi, int nw,  float *ws) {
   assert(nw>0);
   assert(d>=0 && d<ddN.DT);
   for (j=0; j<nw; j++) {
-    double score = log ((n_df - df[wi[j]] + 0.5)/(df[wi[j]] + 0.5));
+    double score = log ((ddD.n_df - ddD.df[wi[j]] + 0.5)/(ddD.df[wi[j]] + 0.5));
     score *= found[j] * (k1+1);
     score /= (found[j]  + k1*(1 - b + b*ddD.NdT[d]/avgdl));
     ws[j] = score;
@@ -880,10 +877,7 @@ void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs,
   /*
    *  load df
    */
-  df = calloc(ddN.W,sizeof(df[0]));
-  if ( !df ) 
-    yap_quit("Cannot allocate memory in gibbs_query()\n");
-  n_df = data_df(stem, df);
+  data_df(stem);
   
   QT_write(qdname, topQ, &Qtop);
   QT_terms(stem, qtname, topQ, &Qtop);
@@ -891,7 +885,6 @@ void gibbs_query(char *stem, int topQ, char *queryfile, int dots, int procs,
   /*
    *  clean up
    */
-  free(df);
   free(qdname);
   free(qtname);
   QT_free(&Qtop);
