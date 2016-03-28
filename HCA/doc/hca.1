@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Mon Mar 28 15:45:42 AEDT 2016
+.\" Manual page created with latex2man on Mon Mar 28 17:08:35 AEDT 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -54,12 +54,14 @@ including simple HDP\-LDA.
 The model selected has three parts: 
 .TP
 alpha: 
-this is the prior on topic vector (theta) for each document. 
+this is the prior on topic vector (theta)
+for each document. 
 LDA has a simple symmetric Dirichlet with parameter alpha 
 and the vector has dimension T (the number of topics). 
 .TP
 beta: 
-this is the prior on word vector (phi) for each topic. 
+this is the prior on word vector (phi)
+for each topic. 
 LDA has a simple symmetric Dirichlet with parameter beta 
 and the vector has dimension W (the number of words). 
 .TP
@@ -143,8 +145,10 @@ topic proportions and
 phi
 is a vector for each topic representing the 
 word proportions. The task of the system is to estimate these. 
-The vector theta and its various priors and parameters is the Alpha side 
-and the vector phi and its various priors and parameters is the Beta side. 
+The vector theta
+and its various priors and parameters is the Alpha side 
+and the vector phi
+and its various priors and parameters is the Beta side. 
 All the scalar parameters can be set using the 
 \fB\-S\fP\fIvar=value\fP
 option 
@@ -155,7 +159,7 @@ using adaptive rejection sampling.
 .PP
 .TP
 {\-A}{value[,file 
-}] Use a symmetric Dirichlet prior on theta 
+}] Use a symmetric Dirichlet prior on theta
 using this value
 (a float/real) for each dimension. The value must be a positive float. With the optional file
 argument, the file 
@@ -183,16 +187,19 @@ is the average document length in the training set.
 }] This other version of the 
 \fB\-A\fP
 option changes the Alpha side 
-Dirichlet on theta to a Pitman\-Yor process, thus 
+Dirichlet on theta
+to a Pitman\-Yor process, thus 
 allowing estimation of hierarchical prior. 
-It defines a distribution on theta and its prior mean (a vector) 
+It defines a distribution on theta
+and its prior mean (a vector) 
 alpha
 of type
 as follows: 
 .RS
 .TP
 hdp 
-theta is modelled with a Dirichlet Process 
+theta
+is modelled with a Dirichlet Process 
 with mean alpha
 and concentration b,
 and alpha is modelled with a symmetric Dirichlet with concentration 
@@ -204,7 +211,8 @@ mean of the Dirichlet over alpha\&.
 By default the mean is a uniform vector. 
 .TP
 hpdd 
-theta is modelled with a Pitman\-Yor Process 
+theta
+is modelled with a Pitman\-Yor Process 
 with mean alpha,
 discount a
 and concentration b,
@@ -216,7 +224,8 @@ The file
 optional argument is ignored. 
 .TP
 pdp 
-theta is modelled with a Pitman\-Yor Process 
+theta
+is modelled with a Pitman\-Yor Process 
 with mean alpha,
 discount a
 and concentration b,
@@ -232,7 +241,7 @@ then it specifies alpha\&.
 .TP
 {\-A}{ng} 
 The instigates the \fInormalised Gamma\fP
-prior on theta. 
+prior on theta\&.
 Each topic now has its own independent gamma distribution, 
 Gamma(NGalpha,NGbeta),
 and these are normalised to get the topic probabilities. There are 2*T
@@ -285,7 +294,8 @@ option.
 .RS
 .TP
 hdp 
-phi is modelled with a Dirichlet Process 
+phi
+is modelled with a Dirichlet Process 
 with mean beta
 and concentration bw
 and 
@@ -298,7 +308,8 @@ to the reserved word ``data\&''
 uses the observed word frequencies as the mean. 
 .TP
 hpdd 
-phi is modelled with a Pitman\-Yor Process 
+phi
+is modelled with a Pitman\-Yor Process 
 with mean beta,
 discount aw
 and concentration bw,
@@ -309,7 +320,8 @@ and concentration bw0\&.
 This is the default. 
 .TP
 pdp 
-phi is modelled with a Pitman\-Yor Process 
+phi
+is modelled with a Pitman\-Yor Process 
 with mean beta,
 discount aw
 and concentration bw,
@@ -334,35 +346,39 @@ can be one of:
 .TP
 a 
 discount parameter for the non\-parametric distribution 
-on the theta, topic distribution per document. 
+on the theta,
+topic distribution per document. 
 .TP
 b 
 concentration parameter for the non\-parametric distribution 
-on theta, the topic distribution per document. 
+on theta,
+the topic distribution per document. 
 .TP
 a0 
 discount parameter for the non\-parametric distribution 
-on alpha, the prior for theta. 
+on alpha, the prior for theta\&.
 .TP
 b0 
 concentration parameter for the non\-parametric distribution 
-on alpha, the prior for theta. 
+on alpha, the prior for theta\&.
 .TP
 aw 
 discount parameter for the non\-parametric distribution 
-on phi, word distribution per topic. 
+on phi,
+word distribution per topic. 
 .TP
 bw 
 concentration parameter for the non\-parametric distribution 
-on phi, word distribution per topic. 
+on phi,
+word distribution per topic. 
 .TP
 aw0 
 discount parameter for the non\-parametric distribution 
-on beta, prior for phi. 
+on beta, prior for phi\&.
 .TP
 bw0 
 concentration parameter for the non\-parametric distribution 
-on beta, prior for phi. 
+on beta, prior for phi\&.
 .TP
 ad 
 discount parameter for burstiness. 
@@ -540,7 +556,7 @@ it is held out.
 .TP
 doc 
 every arg\-th
-word is held out in estimating the latent variables (like theta) 
+word is held out in estimating the latent variables (like theta)
 for the document and used instead for testing of perplexity. 
 That is, words at document positions arg\-1,
 2*arg\-1,
@@ -602,11 +618,13 @@ How often to do the standard diagnostic reports
 (default is every 5\-th cycle). 
 .TP
 sparse 
-Estimate topic sparsity in the theta matrix for the 
+Estimate topic sparsity in the theta
+matrix for the 
 words given in DataStem.smap\&.
 If DataStem.smap
 is not there then this defaults to all words. 
-Note, the default can be quite wasteful for multicore, is it duplicates the theta matrix 
+Note, the default can be quite wasteful for multicore, is it duplicates the theta
+matrix 
 for each thread, so only do for small data sets. 
 Results placed in RepStem.smap\&.
 The report gives ``topic/weight\&'' for topics including the word. 
@@ -684,7 +702,8 @@ rank by fraction of the total occurrences of
 this word that are in this topic. 
 .TP
 phi: 
-rank by computed phi value (if loaded). 
+rank by computed phi
+value (if loaded). 
 .TP
 rat: 
 rank by ratio with the beta prior 
@@ -733,7 +752,17 @@ will report only after the cycle finishes.
  submit list queries given in the file, and return nres
 results for each. Must use the \fB\-r\fP\fIphi\fP
 option with 
-a pre\-estimated phi matrix (for efficiency). 
+a pre\-estimated phi
+matrix (for efficiency). 
+.TP
+\fB\-R\fP\fItopk\fP
+ Do a prediction of the next topk
+items to be included in the document, 
+for each document in the training set. Must have Phi
+and 
+Theta
+loaded. 
+Output to DataStem.topk\&.
 .TP
 \fB\-t\fP\fIsize\fP
  Specify size of training set. It takes the 
@@ -788,7 +817,8 @@ options.
 .TP
 DataStem.df
  Document frequency per word. Each line is the 
-integer df for the correspnding word, matching DataStem.tokens\&.
+integer df for the corresponding word, matching DataStem.tokens\&.
+If not present will recompute from training data. 
 .TP
 DataStem.dit+DataStem.wit
  Simple document index and word index files, both indices offset by 1, one index per line. 
@@ -849,7 +879,8 @@ RepStem.beta
 using the \fB\-u\fP
 option, this saves 
 the value, for possible use in a restart. 
-Otherwise, if the phi matrix is being estimated 
+Otherwise, if the phi
+matrix is being estimated 
 with the \fB\-lphi\fP
 option 
 and the beta vector is not fixed, then this will contain 
@@ -893,6 +924,9 @@ RepStem.topcor
  File of correlations between topic. 
 Created with the RepStem.topset
 file. 
+.TP
+RepStem.topk
+ File of topk predictions, one text line per training document. 
 .TP
 RepStem.toplst
  A simple text report giving the top word indices 
@@ -1194,21 +1228,25 @@ Replace the word ``dir\&'' with a float to get specific values
 initialised. 
 .TP
 {\-B0.001} : 
-this is HDP\-LDA using a Dirichlet prior for phi 
+this is HDP\-LDA using a Dirichlet prior for phi
 (word probability vector), 
 and a default non\-parametric prior (HPDD) for 
-theta (topic probability vector). 
+theta
+(topic probability vector). 
 .TP
 default:
  default is full non\-parametric topic modelling \fIwithout\fP
 burstiness, 
 we call NP\-LDA, 
-both priors for theta and phi use the 
+both priors for theta
+and phi
+use the 
 default non\-parametric prior (HPDD). 
 .TP
 {\-Ang} : 
 this uses a normalised Gamma for the 
-prior for theta, which means different dimensions 
+prior for theta,
+which means different dimensions 
 have both mean and variance fit, 
 we call NG\-LDA. 
 Phi has the 
@@ -1217,7 +1255,9 @@ default non\-parametric prior (HPDD).
 {\-Sbdk=100} : 
 full non\-parametric topic modelling \fIwith burstiness\fP,
 bursty NP\-LDA, 
-both priors for theta and phi use the 
+both priors for theta
+and phi
+use the 
 default non\-parametric prior (HPDD). 
 .PP
 .SS DIAGNOSTIC REPORTS
@@ -1446,7 +1486,7 @@ topic 9/1 words=germany,nazi,papers,territory,hitler,crimes,chancellor,sentence,
 .Ve
 Here are some sample topic lists with words 
 using ratio ranking, ``\fB\-o\fP\fIrat\fP\&'',
-which does not work with plain Dirichlet priors on phi: 
+which does not work with plain Dirichlet priors on phi:
 .Vb
 Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
 topic 5/0 words=bernardin,miami,chicago,concert,fans,pop,designer,music,killing,video
@@ -1496,7 +1536,8 @@ starting at the 1st.
 .TP
 ``\-ltheta,2,1,0.001\&'': 
 sample probabilities per document 
-(theta) every 2nd cycle 
+(theta)
+every 2nd cycle 
 starting at the 1st. 
 Only report probabilities above 0.001. 
 .TP
@@ -1754,15 +1795,18 @@ This first example runs standard HDP\-LDA for 1000 cycles on 4 cores, fitting
 all hyper\-parameters. 
 Check points are done every 100 cycles, and at that stage 
 a test is done using document completion where every 3/4 words 
-are done to train a theta for the test document and the remaining 1/4 
+are done to train a theta
+for the test document and the remaining 1/4 
 are used to compute perplexity. 
 The testing runs 40 Gibbs cycles with a burnin of 10 cycles. 
 Basic diagnostics are reported. 
 After the 1000 cycles, a restart then runs Gibbs for 
-200 cycles and theta, phi and alpha are estimated at that stage. 
+200 cycles and theta,
+phi
+and alpha are estimated at that stage. 
 Finally, a full diagnostic report is done 
 (without holdout testing, though) to report on 
-the words in the topics using the estimated phi. 
+the words in the topics using the estimated phi\&.
 .Vb
 hca \-Bdir \-K$K \-C1000 \-v \-q4 \-c100 \-T$T \-Llike,40,10 \-hdoc,4 $DATA $STEM
 hca \-r0 \-v \-C200 \-ltheta,5,1 \-lphi,5,1 \-lalpha,5,1 \-q4 \-T$T $DATA $STEM 

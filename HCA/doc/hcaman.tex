@@ -46,10 +46,10 @@ non-parametric topic models
 including simple HDP-LDA.
 The model selected has three parts:
 \begin{Description}[alpha]
-\item[alpha:] this is the prior on topic vector (theta) for each document.
+\item[alpha:] this is the prior on topic vector (\texttt{theta}) for each document.
 LDA has a simple symmetric Dirichlet with parameter alpha
 and the vector has dimension $T$ (the number of topics).
-\item[beta:] this is the prior on word vector  (phi) for each topic.
+\item[beta:] this is the prior on word vector  (\texttt{phi}) for each topic.
 LDA has a simple symmetric Dirichlet with parameter beta
 and the vector has dimension $W$ (the number of words).
 \item[burst:]  this is the burstiness component which has
@@ -119,8 +119,8 @@ For these, \texttt{theta} is a vector for each document representing the
 topic proportions and
  \texttt{phi} is a vector for each topic representing the
 word proportions.  The task of the system is to estimate these.
-The vector theta and its various priors and parameters is the Alpha side
-and the vector phi and its various priors and parameters is the Beta side.
+The vector \texttt{theta} and its various priors and parameters is the Alpha side
+and the vector \texttt{phi} and its various priors and parameters is the Beta side.
 All the scalar parameters can be set using the 
 \OptArg{-S}{var=value} option 
 and thereafter fixed using the \OptArg{-F}{var} option
@@ -128,7 +128,7 @@ or by default sampled
 using adaptive rejection sampling.
 
 \begin{Description}[\OptArg{-t}{transfile}]\setlength{\itemsep}{0cm}
-\item[{-A}{value[,file]}]  Use a symmetric Dirichlet prior on theta
+\item[{-A}{value[,file]}]  Use a symmetric Dirichlet prior on \texttt{theta}
 using this \texttt{value} (a float/real) for each dimension.  The value must be a positive float.  With the optional \texttt{file} argument, the file
 specifies the probability vector to use as the mean vector of the
 Dirichlet. The file is in text format representing  \texttt{T} 
@@ -143,13 +143,13 @@ in the Dirichlet parameter vector is \texttt{value}.
 \texttt{avelen} is the average document length in the training set.
 \item[{-A}{type[,file]}]  This other version of the
 \Opt{-A} option  changes the Alpha side 
-Dirichlet on theta to a Pitman-Yor process, thus
+Dirichlet on \texttt{theta} to a Pitman-Yor process, thus
 allowing estimation of hierarchical prior.
-It defines a distribution on theta and its prior mean (a vector) 
+It defines a distribution on \texttt{theta} and its prior mean (a vector) 
  \texttt{alpha} of \texttt{type} as follows:
 \begin{Description}[hpdd]
 \item[hdp] 
-theta is modelled with a Dirichlet Process 
+\texttt{theta} is modelled with a Dirichlet Process 
 with mean \texttt{alpha} and concentration \texttt{b},
 and alpha is modelled with a symmetric Dirichlet with concentration
 \texttt{b0}.
@@ -157,13 +157,13 @@ If the \texttt{file} optional argument is used
 then it specifies an input file giving the
 mean of the Dirichlet over \texttt{alpha}.
 By default the mean is a uniform vector.
-\item[hpdd] theta is modelled with a Pitman-Yor Process
+\item[hpdd] \texttt{theta} is modelled with a Pitman-Yor Process
 with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
 and alpha is modelled with a (truncated) GEM 
 with discount \texttt{a0} and concentration \texttt{b0}.
 This is the default.
 The \texttt{file} optional argument is ignored.
-\item[pdp] theta is modelled with a Pitman-Yor Process
+\item[pdp] \texttt{theta} is modelled with a Pitman-Yor Process
 with mean \texttt{alpha}, discount \texttt{a} and concentration \texttt{b},
 and the alpha vector is uniform.
 This is not hierarchical because alpha is constant.
@@ -171,7 +171,7 @@ If the \texttt{file} optional argument is used
 then it specifies \texttt{alpha}.
 \end{Description}
 \item[{-A}{ng}]
-  The instigates the \emph{normalised Gamma} prior on theta.
+  The instigates the \emph{normalised Gamma} prior on \texttt{theta}.
   Each topic now has its own independent gamma distribution,
 \texttt{Gamma(NGalpha,NGbeta)},
 and these are normalised to get the topic probabilities.  There are 2*\texttt{T}
@@ -208,7 +208,7 @@ similar to the \Opt{-A} option.
 Use a prior beta of \texttt{type}
 ``hdp'' ``hpdd'' or ``pdp''.  Similar to the \Opt{-A} option.
 \begin{Description}[hpdd]
-\item[hdp] phi is modelled with a Dirichlet Process
+\item[hdp] \texttt{phi} is modelled with a Dirichlet Process
 with mean \texttt{beta} and concentration \texttt{bw} and 
 beta is modelled with a Dirichlet with concentration \texttt{bw0}
 by default symmetric (a uniform mean)
@@ -216,13 +216,13 @@ or its mean can be set with the \texttt{file} optional argument above.
 Setting \texttt{file} to the reserved word ``data''
 uses the observed word frequencies as the mean.
 \item[hpdd] 
-phi is modelled with a Pitman-Yor Process
+\texttt{phi} is modelled with a Pitman-Yor Process
 with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
 and \texttt{beta} is modelled with a (truncated) GEM 
 and discount \texttt{aw0} and concentration \texttt{bw0}.
 This is the default.
 \item[pdp]
- phi is modelled with a Pitman-Yor Process
+ \texttt{phi} is modelled with a Pitman-Yor Process
 with mean \texttt{beta}, discount \texttt{aw} and concentration \texttt{bw},
 and beta is by default uniform,
 or its mean can be set with the \texttt{file} optional argument above.
@@ -234,21 +234,21 @@ This is not hierarchical because beta is constant.
 where \texttt{var} can be one of:
 \begin{Description}[bdk]
 \item[a] discount parameter for the non-parametric distribution
-  on the theta, topic distribution per document.
+  on the \texttt{theta}, topic distribution per document.
 \item[b] concentration parameter for the non-parametric distribution
-  on theta, the topic distribution per document.
+  on \texttt{theta}, the topic distribution per document.
 \item[a0] discount parameter for the non-parametric distribution
-  on alpha, the prior for theta.
+  on alpha, the prior for \texttt{theta}.
 \item[b0] concentration parameter for the non-parametric distribution
-  on alpha, the prior for theta.
+  on alpha, the prior for \texttt{theta}.
 \item[aw] discount parameter for the non-parametric distribution
-  on phi, word distribution per topic.
+  on \texttt{phi}, word distribution per topic.
 \item[bw] concentration parameter for the non-parametric distribution
-  on phi, word distribution per topic.
+  on \texttt{phi}, word distribution per topic.
 \item[aw0] discount parameter for the non-parametric distribution
-  on beta, prior for phi.
+  on beta, prior for \texttt{phi}.
 \item[bw0] concentration parameter for the non-parametric distribution
-  on beta, prior for phi.
+  on beta, prior for \texttt{phi}.
 \item[ad] discount parameter for burstiness.
 \item[bdk] concentration parameter for burstiness, a constant initially
      but subsequent sampling will allow a different value per topic.
@@ -359,7 +359,7 @@ word in the dictionary is held out in estimating
 and used for testing.  So if a word has dictionary index 
 \texttt{arg-1}, \texttt{2*arg-1}, \emph{etc.}, it is held out.
 \item[doc] every \texttt{arg}-th
-word is held out in estimating the latent variables (like theta)
+word is held out in estimating the latent variables (like \texttt{theta})
 for the document and used instead for testing of perplexity.
 That is, words at document positions \texttt{arg-1}, \texttt{2*arg-1}, 
 \emph{etc.}
@@ -398,10 +398,10 @@ though \texttt{aw} and \texttt{bw} will need to be set.
 How often to do the standard diagnostic reports
 (default is every 5-th cycle).
 \item[sparse] 
-Estimate topic sparsity in the theta matrix for the
+Estimate topic sparsity in the \texttt{theta} matrix for the
 words given in \File{DataStem.smap}.
 If \File{DataStem.smap} is not there then this defaults to all words.
-Note, the default can be quite wasteful for multicore, is it duplicates the theta matrix
+Note, the default can be quite wasteful for multicore, is it duplicates the \texttt{theta} matrix
 for each thread, so only do for small data sets.
 Results placed in \File{RepStem.smap}.
 The report gives ``topic/weight'' for topics including the word.
@@ -447,7 +447,7 @@ Methods are
 \item[count:] rank by count in topic.
 \item[idf:] rank by fraction of the total occurrences of
   this word  that are in this topic.
-\item[phi:] rank by computed phi value (if loaded).
+\item[phi:] rank by computed \texttt{phi} value (if loaded).
 \item[rat:] rank by ratio with the beta prior
   (``background topic'') produced by NP-LDA.
 \end{Description}
@@ -475,7 +475,12 @@ will report only after the cycle finishes.
 \item[\OptArg{-Q}{nres,file}]  
 submit list queries given in the file, and return \texttt{nres}
 results for each.  Must use the \OptArg{-r}{phi} option with
-a pre-estimated phi matrix (for efficiency).
+a pre-estimated \texttt{phi} matrix (for efficiency).
+\item[\OptArg{-R}{topk}] 
+Do a prediction of the next \texttt{topk} items to be included in the document,
+for each document in the training set.  Must have \texttt{Phi} and
+\texttt{Theta} loaded.
+Output to \File{DataStem.topk}.
 \item[\OptArg{-t}{size}]  Specify size of training set.  It takes the
 first \texttt{size} entries in the data set. Default is all the
 set minus the test data.
@@ -509,7 +514,8 @@ formats and is specified with the \Opt{-f} option.
 Optional file used with some reports instigated by
 \Opt{-X} or \OptArg{-L}{class} options.
 \item[\File{DataStem.df}] Document frequency per word.  Each line is the
-integer df for the correspnding word, matching \File{DataStem.tokens}.
+integer df for the corresponding word, matching \File{DataStem.tokens}.
+If not present will recompute from training data.
 \item[\File{DataStem.dit}+\File{DataStem.wit}] Simple document index and word index files, both indices offset by 1, one index per line.  
 Words in the collection are listed by document.  The \File{DataStem.dit} file
 gives the document index, and the corresponding line in \File{DataStem.wit}
@@ -547,7 +553,7 @@ the estimated value.
 \item[\File{RepStem.beta}]  If a constant beta vector is specified
 using the \Opt{-u} option, this saves
    the value, for possible use in a restart.
-Otherwise, if the phi matrix is being estimated 
+Otherwise, if the \texttt{phi} matrix is being estimated 
 with the \Opt{-lphi} option
 and the beta vector is not fixed, then this will contain
 the estimated value.
@@ -572,6 +578,8 @@ the \Opt{-X} option is used.
 \item[\File{RepStem.topcor}]
 File of correlations between topic.
 Created with the \File{RepStem.topset} file.
+\item[\File{RepStem.topk}]
+File of topk predictions, one text line per training document.
 \item[\File{RepStem.toplst}] A simple text report giving the top word indices
   for each topic.  If a hierarchical model in use, then the
 ``-1'' topic is for the base distribution of words.
@@ -783,18 +791,17 @@ off.
   for symmetric Dirichlet priors.
   Replace the word ``dir'' with a float to get specific values
   initialised.   
-\item[{-B0.001} :] this is HDP-LDA using a Dirichlet prior for phi
-   (word probability vector),
+\item[{-B0.001} :] this is HDP-LDA using a Dirichlet prior for \texttt{phi}   (word probability vector),
   and a default non-parametric prior (HPDD) for
-  theta (topic probability vector).
+  \texttt{theta} (topic probability vector).
 \item[\texttt{default}:]
   default is full non-parametric topic modelling \emph{without} burstiness,
   we call NP-LDA,
-  both priors for theta and phi use the
+  both priors for \texttt{theta} and \texttt{phi} use the
   default non-parametric prior (HPDD).
 \item[{-Ang} :]
   this uses a normalised Gamma for the
-  prior for theta, which means different dimensions
+  prior for \texttt{theta}, which means different dimensions
   have both mean and variance fit,
   we call NG-LDA.
   Phi has the
@@ -802,7 +809,7 @@ off.
 \item[{-Sbdk=100} :]
   full non-parametric topic modelling \emph{with burstiness},
   bursty NP-LDA,
-  both priors for theta and phi use the
+  both priors for \texttt{theta} and \texttt{phi} use the
   default non-parametric prior (HPDD).
 \end{description}
 
@@ -989,7 +996,7 @@ topic 9/1 words=germany,nazi,papers,territory,hitler,crimes,chancellor,sentence,
 \end{verbatim}
 Here are some sample topic lists with words
 using ratio ranking,  ``\OptArg{-o}{rat}'',
-which does not work with plain Dirichlet priors on phi:
+which does not work with plain Dirichlet priors on \texttt{phi}:
 \begin{verbatim}
 Topic 5/0 p=13.68% ws=37.0% ds=43.3% ew=732 ewp=424.9 ed=132.3 ...
 topic 5/0 words=bernardin,miami,chicago,concert,fans,pop,designer,music,killing,video
@@ -1028,7 +1035,7 @@ hca -v -r0 -e -lsparse,2,1 -ltheta,2,1,0.001 -C20 data/ch c1
 \item[``-lsparse,2,1'':] sample for sparsity every 2nd cycle
 starting at the 1st.
 \item[``-ltheta,2,1,0.001'':] sample probabilities per document
-(theta) every 2nd cycle
+(\texttt{theta}) every 2nd cycle
 starting at the 1st.
 Only report probabilities above 0.001.
 \item[``-C20'':] sampling done for 20 cycles.
@@ -1230,15 +1237,15 @@ This first example runs standard HDP-LDA for 1000 cycles on 4 cores, fitting
 all hyper-parameters.
 Check points are done every 100 cycles, and at that stage
 a test is done using document completion where every 3/4 words
-are done to train a theta for the test document and the remaining 1/4
+are done to train a \texttt{theta} for the test document and the remaining 1/4
 are used to compute perplexity.
 The testing runs 40 Gibbs cycles with a burnin of 10 cycles.
 Basic diagnostics are reported.
 After the 1000 cycles, a restart then runs Gibbs for
-200 cycles and theta, phi and alpha are estimated at that stage.
+200 cycles and \texttt{theta}, \texttt{phi} and alpha are estimated at that stage.
 Finally, a full diagnostic report is done
 (without holdout testing, though) to report on
-the words in the topics using the estimated phi.
+the words in the topics using the estimated \texttt{phi}.
 \begin{verbatim}
 hca -Bdir -K$K -C1000 -v -q4 -c100 -T$T -Llike,40,10 -hdoc,4 $DATA $STEM
 hca -r0 -v -C200 -ltheta,5,1 -lphi,5,1 -lalpha,5,1 -q4 -T$T $DATA $STEM 

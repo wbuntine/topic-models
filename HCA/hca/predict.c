@@ -35,14 +35,14 @@ void predict_topk(char *resstem, int topk) {
   
   uint32_t *uvec;  /* for sorting */
   int i,k,w;
-  fname = yap_makename(resstem,".predict");
+  fname = yap_makename(resstem,".topk");
   fp = fopen(fname,"w");
   if ( !fp ) {
     yap_sysquit("Cannot open '%s' for write\n", fname);
   }
   wvec = fvec(ddN.W);
   uvec = u32vec(ddN.W);
-  for (i=0; i<ddN.T; i++) {
+  for (i=0; i<ddN.DT; i++) {
     //  build word probs
     for (w=0; w<ddN.W; w++) 
       wvec[w] = 0;
