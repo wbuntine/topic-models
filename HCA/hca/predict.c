@@ -34,7 +34,7 @@ void predict_topk(char *resstem, int topk) {
   FILE *fp;
   
   uint32_t *uvec;  /* for sorting */
-  int i,k,w;
+  int i,k,w,l;
   fname = yap_makename(resstem,".topk");
   fp = fopen(fname,"w");
   if ( !fp ) {
@@ -51,6 +51,9 @@ void predict_topk(char *resstem, int topk) {
       for (w=0; w<ddN.W; w++)
 	wvec[w] += ww*ddP.phi[k][w];
     }
+    //  remove words already seen
+    for (l=ddD.NdTcum[i]; l<ddD.NdTcum[i+1]; l++) 
+      wvec[ddD.w[l]] = 0;
     //  sort
     for (w=0; w<ddN.W; w++) 
       uvec[w] = w;
@@ -58,6 +61,7 @@ void predict_topk(char *resstem, int topk) {
     //   print
     for (w=0; w<topk; w++)
       fprintf(fp, " %u", uvec[w]);
+      // fprintf(fp, " %u(%g)", uvec[w], wvec[uvec[w]]);
     fprintf(fp, "\n");
   }
   free(wvec);

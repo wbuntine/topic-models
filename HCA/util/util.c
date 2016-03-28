@@ -116,14 +116,14 @@ uint16_t **u16mat(int nr, int nc) //
   memallocd += nrc*sizeof(uint16_t) + nr*sizeof(uint16_t*);
   unsigned r;
   /*
-   *  nrc too big, can be 3Gb ina block,
+   *  nrc too big, can be 3Gb in a block,
    *  so we split into BBLOCK chunks
    */
   unsigned b, blockcnt, blocksize;
   if ( !x)
     yap_quit("cannot allocate uint16_t(mat) space of %ld\n", nr *sizeof(uint16_t*));
   blockcnt = (nrc-1)/BBLOCK + 1;
-  if ( blockcnt>=nr ) 
+  if ( nr>1 && blockcnt>=nr ) 
     yap_quit("cannot allocate uint16_t(mat) space of %d*%d=%ld uint16s, too many blocks=%u\n", 
 	     nr, nc, nrc, blockcnt);
   blocksize = (nr-1)/blockcnt + 1;

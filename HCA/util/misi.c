@@ -362,7 +362,10 @@ void dmi_init(D_DMi_t *ptr,
   for (i=0; i<D; i++) 
     if (  ptr->MI_max<ptr->MI[i] )
       ptr->MI_max = ptr->MI[i];
+  if (  ptr->MI_max )
+    yap_quit("No multis in documents, abandon bursty modelliing\n");
   ptr->MI_max = (ptr->MI_max+1)/2;
+  // assert(ptr->MI_max>0);
   /*
    *   make MI[] index start of ptr->multiind for this doc
    */
