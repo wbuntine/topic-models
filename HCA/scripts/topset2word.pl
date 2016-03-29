@@ -60,7 +60,7 @@ open(F,"<$STEM.topset");
     #  first check we have the right version of the file
     $_ = <F>;
     my @a = split();
-    if ( $a[0] ne "#topic" || $a[3] ne "prop" ) {
+    if ( $a[0] ne "#topic" || $a[3] ne "prop" || $a[6] ne "eff-words" ) {
 	print STDERR "Topic header line wrong in '$STEM.topset'\n";
 	exit(0);
     }
@@ -73,7 +73,8 @@ open(F,"<$STEM.topset");
     }
 }
 while ( ($_=<F>) ) {
-    if ( /^topic ([0-9]+) [0-9]+ ([0-9\.]+) / ) {
+    if ( /^topic ([0-9]+) [0-9]+ ([0-9\.]+) [0-9\.]+ [0-9\.]+ ([0-9\.]+)/ ) {
+	$efw[$1] = $3;
 	$prop[$1] = $2;
 	if ( $2>$maxprop ) {
 	    $maxprop = $2;
@@ -111,6 +112,22 @@ if ( ! $noimages ) {
     my $printtop = 0;
     print STDERR "Create images: ";
     mkdir($RES);
+    #  compute scales for efw
+    $maxefw = 0;
+    $minefw = 100000;
+    for (my $t=0; $t<$TOPICS; $t++) {
+	if ( $prop[$t]<$maxprop*$PROPFACT ) {
+	    next;
+	}
+	my $efw = $efw[$t];
+	if ( $efw>$maxefw ) {
+	    $maxefw = $efw;
+	}
+	if ( $efw<$minefw ) {
+	    $minefw = $efw;
+	}
+    }
+    #  now print
     for (my $t=0; $t<$TOPICS; $t++) {
 	if ( $prop[$t]<$maxprop*$PROPFACT ) {
 	    next;
@@ -126,7 +143,9 @@ if ( ! $noimages ) {
 	}
 	print F "\n";
 	close(F);
-	system("wordcloud_cli.py --text $RES.txt --imagefile $RES/$t.png")==0
+	my $efw = ($efw[$t]-$minefw) / ($maxefw-$minefw);
+	my $hue = int($efw*45);
+	system("wordcloud_cli.py --text $RES.txt --imagefile $RES/$t.png --background=hue=$hue")==0
 	    or die "Cannot find executable 'wordcloud_cli.py'\n";
 	my $pp = &refact($prop[$t]/$maxprop,$SIZEFACT);
 	# print "$t $prop[$t] $pp\n";
@@ -145,7 +164,8 @@ print STDERR "Create file\n";
 open(D,">$RES.dot");
 my $printtop = 0;
 my $label = $STEM;
-$label =~ s/[-\/\#]//g;
+#  remove dubious parts of label
+$label =~ s/[-\/\#\.]//g;
 print D "digraph $label {\nbgcolor=black\nrankdir=LR\nedge [dir=none]\n" .
     "splines=true\n";
 for (my $t=0; $t<$TOPICS; $t++) {

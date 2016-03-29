@@ -63,6 +63,7 @@ class IntegralOccupancyMap(object):
         self.integral[pos_x:, pos_y:] = partial_integral
 
 def random_color_func(word=None, font_size=None, position=None, rank=None,
+                      hue=0,
                       orientation=None, font_path=None, random_state=None):
     """Random hue color generation.
 
@@ -82,7 +83,7 @@ def random_color_func(word=None, font_size=None, position=None, rank=None,
         random_state = Random()
     # return "hsl(%d, 80%%, 50%%)" % random_state.randint(0, 255)
     # print("hsl(0, %d%%, 50%%)\n" % (30+60*rank))
-    return "hsl(0, 80%%, %d%%)" % (30+60*rank)
+    return "hsl(%d, 80%%, %d%%)" % (hue,(30+60*rank))
 
 def get_single_color_func(color):
     """Create a color function which returns a single hue and saturation with.
@@ -126,6 +127,9 @@ class WordCloud(object):
 
     width : int (default=400)
         Width of the canvas.
+
+    hue : int (default=0)
+        Hue for standard color map.
 
     height : int (default=200)
         Height of the canvas.
@@ -196,7 +200,7 @@ class WordCloud(object):
     scaling heuristic.
     """
 
-    def __init__(self, font_path=None, width=400, height=200, margin=2,
+    def __init__(self, font_path=None, width=400, hue=20, height=200, margin=2,
                  ranks_only=None, prefer_horizontal=0.9, mask=None, scale=1,
                  color_func=random_color_func, max_words=200, min_font_size=4,
                  stopwords=None, random_state=None, background_color='black',
@@ -205,6 +209,14 @@ class WordCloud(object):
             stopwords = STOPWORDS
         if font_path is None:
             font_path = FONT_PATH
+        if background_color.startswith('hue='):
+            hue = background_color
+            hue = re.sub("hue=","",hue)
+            hue = int(hue)
+            background_color = re.sub("hue=[0-9]+","",background_color)
+            background_color = re.sub("^,","",background_color)
+            if background_color is '':
+                background_color = 'black'
         self.font_path = font_path
         self.width = width
         self.height = height
@@ -212,6 +224,7 @@ class WordCloud(object):
         self.prefer_horizontal = prefer_horizontal
         self.mask = mask
         self.scale = scale
+        self.hue = hue
         self.color_func = color_func
         self.max_words = max_words
         self.stopwords = stopwords
@@ -352,7 +365,7 @@ class WordCloud(object):
                                           position=(x, y),
                                           orientation=orientation,
                                           random_state=random_state,
-                                          rank=rank,
+                                          rank=rank, hue=self.hue,
                                           font_path=self.font_path))
             # recompute integral image
             if self.mask is None:
@@ -406,7 +419,7 @@ class WordCloud(object):
 
         Alias to generate_from_text.
 
-        Calls process_text and generate_from_frequencies.
+        Calls generate_from_frequencies.
 
         Returns
         -------
