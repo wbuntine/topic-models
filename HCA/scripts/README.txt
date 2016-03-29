@@ -75,3 +75,5 @@ but no self-contained man entries.
     drep.pl
     msx2ms.pl
     dtm2tca.pl
+    prldac.pl  - does precision-recall calcs for test data based on predictions fromm hca
+    trim.pl    - converts output of "hca -v -v -V" topic report to handy form
