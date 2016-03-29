@@ -56,11 +56,12 @@ Be warned ...
 
 Routine to generate word clouds and graph.  Requires other code and
 only tested in Linux but should work on Mac OSX.
-1.  Make sure you have graphviz and ImageMagick installed.
+1.  Make sure you have graphviz installed.
 2.  Install Andreas Mueller's wordcloud in Python, for instance
     using pip(3).
-3.  Replace his wordcloud.py library file with the one in this directory.
+3.  Replace his "wordcloud.py" library file with the one in this directory.
     Just hope the versions match!
+4.  Copy "topset2word.pl" from this directory into your path.
 4.  Then your are good.  Read the man page.  See example outputs at:
        http://topicmodels.org/2016/03/25/visualising-a-topic-model/
 

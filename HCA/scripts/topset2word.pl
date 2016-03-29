@@ -2,7 +2,7 @@
 #
 #   A man entry for this script is given at the end using POD.
 #   The script class the following commands:
-#        wordcloud_cli.py, convert, dot,
+#        wordcloud_cli.py,  dot,
 
 use Getopt::Long;
 use Pod::Usage;
@@ -12,6 +12,13 @@ $TOPICS = 0;
 
 $noimages = 0;
 
+#   hue for background topic
+$BGHUE = 200;
+#  max. hue for other topics (0,...,MAX)
+$MAXHUE = 45;
+#  image dims
+$IMAGEWIDTH = 400;
+$IMAGEHEIGHT = 200;
 #  only record topcor values over this
 $CCMIN = 0.04;
 #  allow ($CCFACT * #topics) arcs 
@@ -27,6 +34,7 @@ $EDGEWEIGHT = 1;
 $DOT = "";
 $LANG = "svg";
 
+$COMMAND = join(" ",@ARGV);
 GetOptions(
     'man'       => sub {pod2usage(-exitstatus => 0, -verbose => 2)},
     'maxwidth=i' => \$MAXWIDTH,
@@ -72,15 +80,18 @@ open(F,"<$STEM.topset");
 	exit(0);
     }
 }
+$minbgprop = 10000;
 while ( ($_=<F>) ) {
-    if ( /^topic ([0-9]+) [0-9]+ ([0-9\.]+) [0-9\.]+ [0-9\.]+ ([0-9\.]+)/ ) {
-	$efw[$1] = $3;
-	$prop[$1] = $2;
-	if ( $2>$maxprop ) {
-	    $maxprop = $2;
+    if ( /^topic ([\-0-9]+) [\-0-9]+ ([0-9\.]+) [0-9\.]+ [0-9\.]+ ([0-9\.]+)/ ) {
+	if ( $1>=0 ) {
+	    $efw[$1] = $3;
+	    $prop[$1] = $2;
+	    if ( $2>$maxprop ) {
+		$maxprop = $2;
+	    }
 	}
     }  
-    if ( /^word ([0-9]+) / ) {
+    if ( /^word ([\-0-9]+) / ) {
 	chomp();
 	$topic = $1;
 	@s = split(/ /, $_);
@@ -91,14 +102,27 @@ while ( ($_=<F>) ) {
 	    #   assumes $s[3] is rank
 	    next;
 	}
-	$cnt = ($s[4]);	
-	$df = $s[7];
-	$rank = $cnt / ($df + 0.001);
+	$cnt = int($s[4]);	
 	$cnt = sqrt($cnt);
-	$data[$topic]{$s[9]} = "$cnt,$df,$rank";
-	# print "$s[9] $cnt,$df,$rank\n";
-	if ( $rank>$maxrank[$topic] ) {
-	    $maxrank[$topic] = $rank;
+	if ( $topic>=0 ) {
+	    $df = $s[7];
+	    $rank = $cnt / ($df + 0.001);
+	    $data[$topic]{$s[9]} = "$cnt,$df,$rank";
+	    # print "$s[9] $cnt,$df,$rank\n";
+	    if ( $rank>$maxrank[$topic] ) {
+		$maxrank[$topic] = $rank;
+	    }
+	    if ( !defined($minrank[$topic]) || $rank<$minrank[$topic] ) {
+		$minrank[$topic] = $rank;
+	    }
+	} else {
+	    $databg{$s[9]} = "$cnt,$s[5]";
+	    if ( $s[5]>$maxbgprop ) {
+		$maxbgprop = $s[5];
+	    }	
+	    if ( $s[5]<$minbgprop ) {
+		$minbgprop = $s[5];
+	    }	
 	}
 	if ( $topic>=$TOPICS ) {
 	    $TOPICS = $topic+1;
@@ -127,7 +151,7 @@ if ( ! $noimages ) {
 	    $minefw = $efw;
 	}
     }
-    #  now print
+    #  now print topics
     for (my $t=0; $t<$TOPICS; $t++) {
 	if ( $prop[$t]<$maxprop*$PROPFACT ) {
 	    next;
@@ -143,18 +167,34 @@ if ( ! $noimages ) {
 	}
 	print F "\n";
 	close(F);
+	#   compute hue
 	my $efw = ($efw[$t]-$minefw) / ($maxefw-$minefw);
-	my $hue = int($efw*45);
-	system("wordcloud_cli.py --text $RES.txt --imagefile $RES/$t.png --background=hue=$hue")==0
-	    or die "Cannot find executable 'wordcloud_cli.py'\n";
+	my $hue = int($efw*$MAXHUE);
+	#  get image dimensions
 	my $pp = &refact($prop[$t]/$maxprop,$SIZEFACT);
 	# print "$t $prop[$t] $pp\n";
-	my $S1 = int((400 * $pp) / ($SIZEFACT+2));
-	my $S2 = int((200 * $pp) / ($SIZEFACT+2));
-	system("convert $RES/$t.png -resize ${S1}x${S2} $RES/$t.png")==0
-	    or die "Cannot find executable 'convert'\n";
+	my $S1 = int(($IMAGEWIDTH * $pp) / ($SIZEFACT+2));
+	my $S2 = int(($IMAGEHEIGHT * $pp) / ($SIZEFACT+2));
+	#  run
+	system("wordcloud_cli.py --text $RES.txt --imagefile $RES/$t.png --background=hue=$hue --width=$S1 --height=$S2")==0
+	    or die "Failure of executable 'wordcloud_cli.py'\n";
 	print STDERR " $t";
 	unlink("$RES.txt");
+    }
+    if ( %databg ) {
+	#  yes, there is a background topic
+	open(F,">$RES.txt");
+	foreach my $k ( keys(%databg) ) {
+	    my ($cnt,$rank) = split(/,/, $databg{$k});
+	    $rank = ($rank - $minbgprop) / $maxbgprop;
+	    print F " $k,$cnt,$rank";
+	}
+	print F "\n";
+	close(F);
+	system("wordcloud_cli.py --text $RES.txt --imagefile $RES/BG.png --background=hue=$BGHUE --width=$IMAGEWIDTH --height=$IMAGEHEIGHT")==0
+	    or die "Failure of executable 'wordcloud_cli.py'\n";
+	unlink("$RES.txt");
+	print STDERR " BG";
     }
     print STDERR "\n";
     print STDERR "Printed $printtop topics\n";
@@ -166,6 +206,7 @@ my $printtop = 0;
 my $label = $STEM;
 #  remove dubious parts of label
 $label =~ s/[-\/\#\.]//g;
+print D "// Graph generated using \"$COMMAND\"\n";
 print D "digraph $label {\nbgcolor=black\nrankdir=LR\nedge [dir=none]\n" .
     "splines=true\n";
 for (my $t=0; $t<$TOPICS; $t++) {
@@ -175,6 +216,9 @@ for (my $t=0; $t<$TOPICS; $t++) {
     $printtop++;
     $intop[$t]++;
     print D "n$t [image=\"$RES/$t.png\"]\n";
+}
+if ( %databg ) {
+    print D "n$t [image=\"$RES/BG.png\"]\n";
 }
 
 #read topic correlations
@@ -290,10 +334,7 @@ Also, change the number of links with "--ccfact".
 
 Needs 
 I<graphviz> installed to run 
-I<dot> command
-and 
-I<ImageMagick> installed to run
-I<convert> command.
+I<dot> command.
 Also, uses a specially  modified version of
 I<wordcloud.py> that must replace the same in
 Andreas Mueller's
