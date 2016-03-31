@@ -204,7 +204,7 @@ if ( ! $noimages ) {
 	    $rank = ($rank - $minbgprop) / $maxbgprop;
 	    #  message to wordcloud.py
 	    #     word,text-size-factor,text-whiteness-factor
-	    print F " $k,$rank,$cnt";
+	    print F " $k,$cnt,0";
 	}
 	print F "\n";
 	close(F);
