@@ -241,8 +241,8 @@ good performance in perplexity, comparable to {\tt HDP} and {\tt Mallet}.
 Of the HDP-LDA implementations, however, {\tt hca} was
 significantly the best in terms of perplexity.
 
-No other distributed implementations of topic modeling software
-perform well on nonparametric modelling of
+Most distributed implementations of topic modeling software
+perform poorly in nonparametric modelling of
 the topic-word component.
 An approximate implementation in {\tt Mallet} reported negative
 experiments \cite{wallach2009rethinking}.
@@ -250,6 +250,19 @@ For {\tt hca}, nonparametric modelling of
 the topic-word component usually significantly improves
 perplexity, and the root topic has a beautiful interpretation
 as a background topic that picks up non-topical words.
+
+Many large scale implementations of LDA have been developed,
+scaling to billions of documents.
+A well known example is YahooLDA\footnote{See \tt https://github.com/sudar/Yahoo\_LDA}, and indeed LDA is considered a test case for large scale distributed machine
+learning \cite{LiAnd14}.  Techniques have been developed
+to scale simpler non-parametric methods \cite{LiAhmed14},
+such as HDP-LDA, but these are not yet generally available.
+Moreover, with billions of documents, it is not clear if high-fidelity
+topic models, produced by Bayesian non-parametric method, would be useful.
+Almost certainly one would build models where the numbers of topics
+are small relative to what statistically could be supported.
+This places learning in the ``large sample'' situation where one should
+best ignore Bayesian methods and focus on the optimisation problem.
 
 Note, \cite{archambeau2015latent} model sparsity with an
 IBP.  Their FTM models sparsity on the
@@ -277,11 +290,13 @@ In these results,
 NP-LDA has a DP on the document-topic component
 and a PYP on the topic-word component.
 
-In summary, in terms of shear speed and software support,
+In summary, in terms of shear speed and software support for
+desktop use,
 {\tt Mallett} is a clear winner.  When high performance
 in terms of perplexity is required, and
 with a fully non-parametric implementation,
-{\tt hca} offers an alternative.
+{\tt hca} offers an alternative,
+although the use of the IBP is an important development to follow.
 
 \section*{Acknowledgements}
 {Some parts of the software were co-authored by, and benefited greatly

@@ -47,6 +47,18 @@ Lewis, D., Yang, Y., Rose, T., and Li, F. (2004).
 \newblock {RCV1}: A new benchmark collection for text categorization research.
 \newblock {\em J. Mach. Learn. Res.}, 5.
 
+\bibitem[Li et~al., 2014a]{LiAhmed14}
+Li, A., Ahmed, A., Ravi, S., and Smola, A. (2014a).
+\newblock Reducing the sampling complexity of topic models.
+\newblock In {\em ACM Conference on Knowledge Discovery and Data Mining (KDD)}.
+
+\bibitem[Li et~al., 2014b]{LiAnd14}
+Li, M., Anderson, D., Park, J., Smola, A., Ahmed, A., Josifovski, V., Long, J.,
+  Shekita, E., and Su, B.-Y. (2014b).
+\newblock Scaling distributed machine learning with the parameter server.
+\newblock In {\em Operating Systems Design and Implementation (OSDI)}, pages
+  583--598.
+
 \bibitem[McCallum, 2002]{McCallumMALLET}
 McCallum, A.~K. (2002).
 \newblock Mallet: A machine learning for language toolkit.
