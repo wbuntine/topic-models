@@ -112,6 +112,9 @@ while ( ($_=<F>) ) {
 	    if ( $rank>$maxrank[$topic] ) {
 		$maxrank[$topic] = $rank;
 	    }
+	    if ( $cnt>$maxcnt[$topic] ) {
+		$maxcnt[$topic] = $cnt;
+	    }
 	    if ( !defined($minrank[$topic]) || $rank<$minrank[$topic] ) {
 		$minrank[$topic] = $rank;
 	    }
@@ -123,6 +126,10 @@ while ( ($_=<F>) ) {
 	    if ( $s[5]<$minbgprop ) {
 		$minbgprop = $s[5];
 	    }	
+            if ( $cnt<$maxbgcnt ) {
+                $maxbgcnt = $cnt;
+            }
+
 	}
 	if ( $topic>=$TOPICS ) {
 	    $TOPICS = $topic+1;
@@ -162,8 +169,11 @@ if ( ! $noimages ) {
 	my $href = $data[$t];
 	foreach my $k ( keys(%$href) ) {
 	    my ($cnt,$df,$rank) = split(/,/, $data[$t]{$k});
-	    $rank = $rank / ($maxrank[$t] + 0.01);
-	    print F " $k,$cnt,$rank";
+	    $rank = $rank / ($maxrank[$t] + 0.0001);
+	    $cnt = $cnt / ($maxcnt[$t] + 0.0001);
+	    #  message to wordcloud.py
+	    #     word,text-size-factor,text-whiteness-factor
+	    print F " $k,$rank,$cnt";
 	}
 	print F "\n";
 	close(F);
@@ -186,8 +196,15 @@ if ( ! $noimages ) {
 	open(F,">$RES.txt");
 	foreach my $k ( keys(%databg) ) {
 	    my ($cnt,$rank) = split(/,/, $databg{$k});
+	    if ( $maxbgcnt == 0 ) {
+		$cnt = 1;
+	    } else {
+		$cnt = $cnt / ($maxbgcnt + 0.0001);
+	    }
 	    $rank = ($rank - $minbgprop) / $maxbgprop;
-	    print F " $k,$cnt,$rank";
+	    #  message to wordcloud.py
+	    #     word,text-size-factor,text-whiteness-factor
+	    print F " $k,$rank,$cnt";
 	}
 	print F "\n";
 	close(F);
