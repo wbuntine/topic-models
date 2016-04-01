@@ -282,7 +282,7 @@ void phi_update() {
       vec[w] = (ddG.phi_cnt*vec[w] + val) / (ddG.phi_cnt+1);
     }
 #ifndef NDEBUG
-    if ( t<ddN.T && abs(totvec-1.0)>0.02 )  {
+    if ( t<ddN.T && fabs(totvec-1.0)>0.02 )  {
       double bwptot = 0;
       assert(ddP.PYbeta==H_HPDD) ;
       yap_message("Word vector for topic %d doesn't normalise (%g)\n",
