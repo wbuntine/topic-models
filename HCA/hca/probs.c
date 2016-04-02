@@ -68,9 +68,13 @@ int get_probs(double *vp) {
   double tot = 0;
   if ( ddP.PYalpha==H_NG ) {
     for (t=0; t<ddN.T; t++) {
+#ifdef NG_SCALESTATS
       double pralphat =  
 	(ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
       tot += vp[t] = pralphat/ddP.NGbeta[t];
+#else
+      tot += vp[t] = ddP.NGalpha[t]/ddP.NGbeta[t];
+#endif
     }
     for (t=0; t<ddN.T; t++) 
       vp[t] /= tot;

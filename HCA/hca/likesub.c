@@ -137,6 +137,7 @@ void doctableindicatorprob(int d, int t, int Ttot,
   *uzero = e0 * (nn-tt+1)/(nn+1);
 }
 
+#ifdef NG_SCALESTATS
 /*
  *    prob. the NG table indicator is increased, but not forced
  */
@@ -155,6 +156,7 @@ void NGtableindicatorprob(int d, int t, int Ttot,
     * (tt+1)/(nn+1) / (ddS.UN[d]+ddP.NGbeta[t]);
   *uzero = e0 * (nn-tt+1)/(nn+1) / (ddS.UN[d]+ddP.NGbeta[t]);
 }
+#endif
 
 /*
  *    the word table indicator is increased, but not forced
@@ -246,6 +248,7 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
     else
 #endif
+#ifdef NG_SCALESTATS
       {
 	double p, uone, uzero;
 	if ( ddS.Tdt[d][t]==0 ) {
@@ -262,6 +265,9 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 	*tip = uone/(uone + uzero);
 	return p;
       }
+#else
+    ????
+#endif
   }
   return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);
 }
@@ -281,9 +287,13 @@ double topicprob(int d, int t, int Ttot) {
     if ( M_docsparse(d,t)==0 )
       return 0;
 #endif
+#ifdef NG_SCALESTATS
     alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
     return ((double)ddS.Ndt[d][t]+alphaprt)
       / (ddS.UN[d]+ddP.NGbeta[t]);
+#else
+    ///
+#endif
   }
   if ( ddP.PYalpha==H_None ) 
     return ((double)ddS.Ndt[d][t]+ddP.alphapr[t])

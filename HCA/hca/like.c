@@ -63,9 +63,6 @@ double likelihood_NGalpha() {
     if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
     for (t=0; t<ddN.T; t++) {
       int n=ddS.Ndt[i][t];
-#ifdef NG_SPARSE
-      if (  M_docsparse(i,t)==0 ) continue;
-#endif
       if ( n==0 ) 
 	continue;
       likelihood += S_S(ddC.SX,n,ddS.Tdt[i][t])
@@ -86,10 +83,15 @@ double likelihood_NGalpha() {
      */
     for (i=0; i<ddN.DT; i++) {
       if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
+#ifdef NG_SPARSE
+      if (  M_docsparse(i,t)==0 ) continue;
+#endif
       scalestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
     }
+#ifdef NG_SCALESTATS
     //   rather devious to place an update here ...
     ddS.NGscalestats[t] = scalestats;
+#endif
     likelihood += pctl_ng_alphapriorZ();
     likelihood += lgamma(shapestats);
     likelihood -= shapestats * log(1.0/ddP.ngasc+scalestats);

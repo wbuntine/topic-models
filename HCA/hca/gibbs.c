@@ -209,8 +209,9 @@ double gibbs_lda(/*
   float *ttip = NULL;
   float *dtip = NULL;
   int logdocwarn = 0;
+#ifdef NG_SCALESTATS
   static double *NGscalestats_diff = NULL;
-
+#endif
   /*
    *   some of the latent variables are not sampled
    *   are kept in the testing version, uses enum GibbsType
@@ -231,6 +232,7 @@ double gibbs_lda(/*
       ddS.UN[did] = 0;
     return 0;
   }
+#ifdef NG_SCALESTATS
   if ( ddS.NGscalestats && NGscalestats_diff==NULL )
     NGscalestats_diff = malloc(ddN.T*sizeof(*NGscalestats_diff));
   if ( ddS.NGscalestats && did<ddN.DT ) {
@@ -239,11 +241,15 @@ double gibbs_lda(/*
      *   entry to prevent round-off error propagating
      */
     NGscalestats(0);
-    for (t=0; t<ddN.T; t++) 
+    for (t=0; t<ddN.T; t++) {
+#ifdef NG_SPARSE
+      if (  M_docsparse(i,t)==0 ) continue;
+#endif
       NGscalestats_diff[t] = 
 	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+    }
   }
-
+#endif
   if ( PCTL_BURSTY() ) {
     mi = ddM.MI[did];
     assert(ddM.multiind[mi]<ddM.dim_Mi);
@@ -398,18 +404,21 @@ double gibbs_lda(/*
        */
       if ( ddS.UN ) {
 	opt_UN(did);
+#ifdef NG_SCALESTATS
 	/*
 	 *    each time we change this UN, we have to update
 	 *    NGscalestats[]
 	 */
 	if ( did<ddN.DT ) {
-	  for (t=0; t<ddN.T; t++) 
+	  for (t=0; t<ddN.T; t++) {
 	    ddS.NGscalestats[t] =
 	      NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+	  }
 	}
-      }
+#endif
+      }	 
     }
-
+	    
     endword:
     if ( PCTL_BURSTY() && M_multi(i) ) {
       mi++;

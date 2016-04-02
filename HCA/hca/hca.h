@@ -36,6 +36,11 @@
  */
 // #define GIBBS_ZEROD
 
+/*
+ *   use the sampling version of H_NG, not the fitting version
+ */
+#define NG_SCALESTATS
+
 /* 
  *   Allow experimental stuff ... only for developers since
  *   they mostly don't work

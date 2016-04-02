@@ -63,11 +63,13 @@ typedef struct D_stats_s {
   uint32_t *TwT, TWT;  // TwT[w] = \sum_t Twt[w][t]; TWT = \sum_w TwT[w]
   uint32_t  TWTnz;  //  = \sum_w 1(TwT[w]>0)
   uint32_t *TWt;  //  TWt[t] = \sum_w Twt[w][t]; 
+#ifdef NG_SCALESTATS
   /*
    *    intermediate stats for NG model
    */
   double *NGscalestats;   // NGscalestats[k] = \sum_d log(1+UN[d]/NBgeta[k])
   int NGscalestats_recomp;
+#endif
 } D_stats_t;
 
 extern D_stats_t ddS;
@@ -76,10 +78,15 @@ extern D_DMi_t ddM;
 #define M_multi(l)  misi_multi(&ddM,l)
 
 #ifdef NG_SPARSE
+/*  randomize sparsity of zeroed topics */
 void hca_rand_sparse(int did, int k);
+/*  test if topic k is set */
 #define M_docsparse(i,k) (ddS.sparse[i][(k)/32U]  & (1U<<(((unsigned)k)%32U)))
+/*  set topic k */
 #define M_docsp_set(i,k) (ddS.sparse[i][(k)/32U] |= (1U<<(((unsigned)k)%32U)))
+/*  invert topic k */
 #define M_docsp_xor(i,k) (ddS.sparse[i][(k)/32U] ^= (1U<<(((unsigned)k)%32U)))
+/*  length of bit vectors for ddS.sparse[] */
 #define M_bitveclen()    (1 + (ddN.T-1)/32U)
 #endif
 

@@ -1312,7 +1312,9 @@ int main(int argc, char* argv[])
 	if ( ddS.NdT[ii]==0 || ddS.UN[ii]==0 ) continue;
 	opt_UN(ii);
       }
+#ifdef NG_SCALESTATS
       NGscalestats(1);
+#endif
     }
 #ifdef EXPERIMENTAL2
     {

@@ -112,7 +112,9 @@ void hca_alloc() {
   ddS.TwT = NULL;
   ddS.TWt = NULL;
   ddS.UN = NULL;
+#ifdef NG_SCALESTATS
   ddS.NGscalestats = NULL;
+#endif
 #ifdef NG_SPARSE
   ddS.sparse = NULL;
 #endif
@@ -138,7 +140,9 @@ void hca_alloc() {
       ddS.sparse[i] = ddS.sparse[i-1] + incr;
 #endif
     ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
+#ifdef NG_SCALESTATS
     ddS.NGscalestats = malloc(ddN.T*sizeof(*ddS.NGscalestats));
+#endif
   }
   ddS.NdT = u16vec(ddN.D);
   ddS.Ndt = u16mat(ddN.D,ddN.T);
@@ -155,7 +159,9 @@ void hca_free() {
   free(ddS.NWt);
   free(ddS.z);
   if ( ddS.UN )  free(ddS.UN);
+#ifdef NG_SCALESTATS
   if ( ddS.NGscalestats )  free(ddS.NGscalestats);
+#endif
 #ifdef NG_SPARSE
   if ( ddS.sparse ) {
     free(ddS.sparse[0]);
@@ -246,8 +252,13 @@ uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
 
 #ifdef NG_SPARSE
 // #define NG_ALWAYS
+/*
+ *   randomize the sparse bits for topic known to have
+ *   zero instances in the document
+ */
 void hca_rand_sparse(int did, int k) {
 #ifdef NG_ALWAYS
+  /*  unset sparsity for topic */
   if ( M_docsparse(did,k) ) {
     M_docsp_xor(did,k);
     ddS.sparseD[k]--;
@@ -426,8 +437,10 @@ void hca_reset_stats(char *resstem,
     memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
   if ( ddS.UN )
     memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
+#ifdef NG_SCALESTATS
   if ( ddS.NGscalestats )
     memset((void*)ddS.NGscalestats, 0, sizeof(ddS.NGscalestats[0])*ddN.T);
+#endif
   memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
   /*
    *  now reset table count stats
@@ -513,6 +526,7 @@ void hca_reset_stats(char *resstem,
 	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
       }
     }
+#ifdef NG_SCALESTATS
     {
       for (i=firstdoc; i<lastdoc; i++) {
 	if ( ddS.NdT[i]==0 ) continue;
@@ -522,9 +536,10 @@ void hca_reset_stats(char *resstem,
 	ddS.NGscalestats_recomp = 0;
       }
     }
+#endif
 #ifdef NG_SPARSE
     /*
-     *  now, deal with .sparse
+     *  now, deal with .sparse[][] and .sparseD[]
      */
     if ( restart ) {
       /*
@@ -546,10 +561,10 @@ void hca_reset_stats(char *resstem,
        * default on no restart is no sparsity
        */
       if ( ddS.sparse ) {
-	memset((void*)ddS.sparse[0], 255U, sizeof(ddS.sparse[0][0])*
+	memset((void*)ddS.sparse[0], 0U, sizeof(ddS.sparse[0][0])*
 	       ddN.D*M_bitveclen());
 	for (t=0; t<ddN.T; t++) 
-	  ddS.sparseD[t] = ddN.DTused;
+	  ddS.sparseD[t] = 0;
       }
     }
     if ( restart && readOK ) {
@@ -570,13 +585,16 @@ void hca_reset_stats(char *resstem,
        */
       memset((void*)ddS.sparse[0], 0, sizeof(ddS.sparse[0][0])*
 	     ddN.D*M_bitveclen());
-      for (i=0; i<ddN.DT && i<lastdoc; i++) {
-	if ( ddD.NdT[i]<ddP.mindocsize )
-	  continue;
-	for (t=0; t<ddN.T; t++) 
-	  if ( ddS.Ndt[i][t]>0 )
-	    M_docsp_set(i,t);
-      }
+    }
+    /*
+     *  ensure non-zero topics are not sparse
+     */
+    for (i=0; i<ddN.DT && i<lastdoc; i++) {
+      if ( ddD.NdT[i]<ddP.mindocsize )
+	continue;
+      for (t=0; t<ddN.T; t++) 
+	if ( ddS.Ndt[i][t]>0 )
+	  M_docsp_set(i,t);
     }
     /*
      *  fix up total vectors
@@ -781,6 +799,7 @@ void hca_correct_tdt(int reset)  {
   }
 }
 
+#ifdef NG_SCALESTATS
 /*
  *   occasionally recompute them
  */
@@ -798,3 +817,4 @@ void NGscalestats(int redo) {
     }
   }
 }
+#endif

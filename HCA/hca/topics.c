@@ -538,10 +538,15 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     /*
      *  provide an estimate of alpha
      */
-    for (k=0; k<ddN.T; k++)
-      ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
     ngalpha = dvec(ddN.T);
     get_probs(ngalpha);
+    for (k=0; k<ddN.T; k++) {
+#ifdef NG_SCALESTATS
+      ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
+#else
+      ddP.alphapr[k] = ngalpha[k];
+#endif
+    }
   }
 
   /*
