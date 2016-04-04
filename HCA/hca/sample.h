@@ -21,6 +21,9 @@ void sample_bdk(double *bdk, int k);
 void sample_ngasc(double *myng);
 void sample_ngash(double *myng);
 void sample_NGbeta(double *b, int k);
+#ifndef NG_SCALESTATS
+void sample_NGalpha(double *a, int k);
+#endif
 void sample_UN(int d);
 void opt_UN(int did);
 

@@ -81,7 +81,7 @@ typedef struct D_pars_s {
    *  normalised gamma stuff, also uses flag in PYalpha
    */
   double *NGbeta;         // beta vector for H_NG
-                          //  alpha stored in alphapr
+  double *NGalpha;        //  alpha vector
   double ngash, ngasc;    // shape and scale for Gamma prior of NG alpha
   double ngs0, ngs1;       // Beta priors for sparsity
 
@@ -181,7 +181,7 @@ typedef struct D_pars_s {
  */
 enum ParType { ParNone=0, ParA, ParB, ParA0, ParB0, 
 	       ParAW, ParBW, ParAW0, ParBW0, 
-               ParAD, ParBDK, ParNGBeta,
+               ParAD, ParBDK, ParNGBeta, ParNGAlpha,
 	       ParNGS0, ParNGS1, ParNGASH, ParNGASC,
 	       ParAlpha, ParBeta };
 typedef struct D_pctl_s {
@@ -231,5 +231,6 @@ double pctl_gammaprior(double x);
 
 double pctl_ng_alphapriorZ();
 double pctl_ng_alphaprior(double x);
+void pctl_ng_normbeta();
 
 #endif

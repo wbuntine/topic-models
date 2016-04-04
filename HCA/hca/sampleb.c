@@ -181,11 +181,12 @@ static double bw0terms_DP(double bw, void *mydata) {
   return val;
 }
 
+#ifndef NG_SCALESTATS
 static double ngaterms(double ak, void *mydata) {
   int j;
   int k = *((int *)mydata);
   /*   is this the right prior ??? */
-  double val = pctl_gammaprior(ak);
+  double val = pctl_ng_alphaprior(ak);
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
     if (  M_docsparse(j,k)==0 ) continue; 
@@ -212,8 +213,8 @@ static double ngbterms(double bk, void *mydata) {
     if (  M_docsparse(j,k)==0 ) continue; 
 #endif
     if ( ddS.UN[j]>0 ) {
-      val -= (ddP.NGalpha[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
-      val += ddP.NGalpha[k]*log(bk);
+      val -= (ddP.alphapr[k]+ddS.Ndt[j][k])*log(ddS.UN[j]+bk);
+      val += ddP.alphapr[k]*log(bk);
     }
   }
   myarms_evals++;
@@ -222,6 +223,7 @@ static double ngbterms(double bk, void *mydata) {
 #endif
   return val;
 }
+#endif
 #endif
 
 static double bwterms(double bw, void *mydata) {
@@ -319,6 +321,7 @@ void sample_bdk(double *b, int k) {
   myarmsMH(PYP_CONC_MIN, PYP_CONC_MAX, &bdkterms, &ps, &b[k], label, 1);
 }
 
+#ifndef NG_SCALESTATS
 void sample_NGalpha(double *a, int k) {
   char label[30];
   sprintf(&label[0],"NGalpha[%d]", k);
@@ -340,8 +343,11 @@ void sample_NGbeta(double *b, int k) {
     b[k] = PYP_CONC_MIN;
   if ( b[k]>PYP_CONC_MAX )
     b[k] = PYP_CONC_MAX;
+  pctl_ng_normbeta();
 }
-#else
+#endif
+#endif
+ 
 /*
  *  called from pctl_sample_thread() driver
  *  uses existing:
@@ -351,7 +357,11 @@ void sample_NGbeta(double *b, int k) {
   int j;
   double val = 0;
   int cnt = 0;
+#ifdef NG_SCALESTATS
   double alphak = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
+#else
+  double alphak = ddP.alphapr[k];
+#endif
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
     if (  M_docsparse(j,k)==0 ) continue; 
@@ -367,8 +377,9 @@ void sample_NGbeta(double *b, int k) {
     b[k] = PYP_CONC_MIN;
   if ( b[k]>PYP_CONC_MAX )
     b[k] = PYP_CONC_MAX;
+  pctl_ng_normbeta();
 }
-#endif
+
 
 /*
  *  this allows Dirichlet prior to be non-uniform,

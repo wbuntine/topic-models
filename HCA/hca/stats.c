@@ -251,12 +251,17 @@ uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
 }
 
 #ifdef NG_SPARSE
+/*
+ *   set this to make a topic always have zero prob. if
+ *   it can
+ */
 // #define NG_ALWAYS
 /*
  *   randomize the sparse bits for topic known to have
  *   zero instances in the document
  */
 void hca_rand_sparse(int did, int k) {
+  assert(ddS.Ndt[did][k]==0);
 #ifdef NG_ALWAYS
   /*  unset sparsity for topic */
   if ( M_docsparse(did,k) ) {
@@ -518,7 +523,7 @@ void hca_reset_stats(char *resstem,
       assert(ddP.NGbeta);
       for (t=0; t<ddN.T; t++) {
 	aveB += ddP.NGbeta[t];
-	totA += ddP.alphapr[t];
+	totA += ddP.NGalpha[t];
       }
       aveB /= ddN.T;
       for (i=firstdoc; i<lastdoc; i++) {
@@ -589,7 +594,8 @@ void hca_reset_stats(char *resstem,
     /*
      *  ensure non-zero topics are not sparse
      */
-    for (i=0; i<ddN.DT && i<lastdoc; i++) {
+    //WRAY    this was i<ddN.DT
+    for (i=0; i<ddN.D && i<lastdoc; i++) {
       if ( ddD.NdT[i]<ddP.mindocsize )
 	continue;
       for (t=0; t<ddN.T; t++) 
@@ -813,8 +819,8 @@ void NGscalestats(int redo) {
       for (t=0; t<ddN.T; t++) {
 	ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
       }
-      ddS.NGscalestats_recomp = 0;
     }
+    ddS.NGscalestats_recomp = 0;
   }
 }
 #endif

@@ -241,13 +241,6 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
     }
     return p;
   } else if ( ddP.PYalpha==H_NG ) {
-#ifdef NG_SPARSE
-    if ( M_docsparse(d,t)==0 )
-      return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
-	*  ((double)ddS.Ndt[d][t]+ddP.alphapr[t])
-	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
-    else
-#endif
 #ifdef NG_SCALESTATS
       {
 	double p, uone, uzero;
@@ -266,7 +259,16 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 	return p;
       }
 #else
-    ????
+#ifdef NG_SPARSE
+      if ( M_docsparse(d,t)==0 )
+	return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
+	  *  ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+	  / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+      else
+#endif
+	return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+	  / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+      
 #endif
   }
   return ((double)ddS.Ndt[d][t]+ddP.alphapr[t]);

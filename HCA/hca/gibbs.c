@@ -245,6 +245,7 @@ double gibbs_lda(/*
 #ifdef NG_SPARSE
       if (  M_docsparse(i,t)==0 ) continue;
 #endif
+      /*  WARNING:  this operation means cannot work with multicore */
       NGscalestats_diff[t] = 
 	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
     }

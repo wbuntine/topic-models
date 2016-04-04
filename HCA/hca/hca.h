@@ -18,7 +18,12 @@
 /*
  *  testing IBP with H_NG
  */
-//#define NG_SPARSE
+// #define NG_SPARSE
+
+/*
+ *  this is defined in "stats.h"
+ *  #define NG_SCALESTATS 
+ */
 
 #include <unistd.h>
 #include "lgamma.h" 
@@ -30,23 +35,6 @@
 
 #define HCA_VERSION "0.62"
 
-/* 
- *   when defined, stops introducing new topics into a 
- *   document after the first ... ???
- */
-// #define GIBBS_ZEROD
-
-/*
- *   use the sampling version of H_NG, not the fitting version
- */
-#define NG_SCALESTATS
-
-/* 
- *   Allow experimental stuff ... only for developers since
- *   they mostly don't work
- */
-// #define EXPERIMENTAL
-
 /*
  *   Switch on to allow threading
  *   if off some vestiges remain but wont call threads
@@ -54,6 +42,17 @@
  */
 // #define H_THREADS
 
+/* 
+ *   when defined, stops introducing new topics into a 
+ *   document after the first ... ???
+ */
+// #define GIBBS_ZEROD
+
+/* 
+ *   Allow experimental stuff ... only for developers since
+ *   they mostly don't work
+ */
+// #define EXPERIMENTAL
 /*
  *   when defined does tracking of changes to a single Nwt
  *   during sampling

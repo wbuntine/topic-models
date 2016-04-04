@@ -349,9 +349,9 @@ void sample_aw(double *myaw) {
   cache_update("aw");
 }
 
-
 /*************************************************/
 
+#ifdef NG_SCALESTATS
 static double ngashterms(double myng, void *mydata) {
   int t;
   double val;
@@ -425,10 +425,9 @@ void sample_ngasc(double *myng) {
   ddP.ngasc = *myng;
   cache_update("ngasc");
 }
-
+#endif
 
 /*****************************************************/
-
 
 static double UNterms(double myUN, void *mydata) {
   int d = *(int*)mydata;
@@ -439,18 +438,20 @@ static double UNterms(double myUN, void *mydata) {
 #ifdef NG_SPARSE
     if (  M_docsparse(d,k) )
 #endif
-      like -= (ddP.alphapr[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
+      like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
   return like;
 }
 
 void sample_UN(int d) {
+#ifdef NG_SCALESTATS
   int k;
   /*
    *   compute it in first pass,
    *   then use it inside awterms() and awterms_da()
    */
   for (k=0; k<ddN.T; k++)
-    ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
+    ddP.NGalpha[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
+#endif
   myarms(0.00001, ddN.NT,  &UNterms, (void*)&d, &ddS.UN[d], "UN");
 }
 
@@ -460,13 +461,18 @@ void opt_UN(int did) {
     int t;
     assert(ddS.UN);
     for (t=0; t<ddN.T; t++) {
+#ifdef NG_SCALESTATS
       double alphaprt;
+      alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
+      val += ((double)ddS.Ndt[did][t]+alphaprt)
+	  / (ddS.UN[did]+ddP.NGbeta[t]);
+#else
 #ifdef NG_SPARSE
       if (  M_docsparse(did,t) ) 
 #endif
-	alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
-	val += ((double)ddS.Ndt[did][t]+alphaprt)
+	val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
 	  / (ddS.UN[did]+ddP.NGbeta[t]);
+#endif
     }
     assert(val>0);
 #ifdef UN_SAMPLE

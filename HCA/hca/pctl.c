@@ -82,6 +82,9 @@ void pctl_init() {
   ddT[ParBW].name = "bw";
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
+#ifndef NG_SCALESTATS
+  ddT[ParNGAlpha].name = "NGalpha";
+#endif
   ddT[ParNGBeta].name = "NGbeta";  
   ddT[ParNGASH].name = "ngash";  
   ddT[ParNGASC].name = "ngasc";  
@@ -98,6 +101,9 @@ void pctl_init() {
   ddT[ParB0].ptr = &ddP.b0;
   ddT[ParBW0].ptr = &ddP.bw0;
   ddT[ParNGBeta].ptr = ddP.NGbeta;
+#ifndef NG_SCALESTATS
+  ddT[ParNGAlpha].ptr = ddP.NGalpha;
+#endif
   ddT[ParAlpha].ptr = &ddP.alphatot;
   ddT[ParBeta].ptr = &ddP.betatot;
   ddT[ParAD].ptr = &ddP.ad;
@@ -117,13 +123,23 @@ void pctl_init() {
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
   ddT[ParNGBeta].samplerk = &sample_NGbeta;
+#ifdef NG_SCALESTATS
   ddT[ParNGASC].sampler = &sample_ngasc;
   ddT[ParNGASH].sampler = &sample_ngash;
+#else
+  ddT[ParNGAlpha].samplerk = &sample_NGalpha;
+#endif
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
   ddT[ParNGS0].fix = 1;
   ddT[ParNGS1].fix = 1;
-
+#ifdef NG_SCALESTATS
+  ddT[ParNGAlpha].fix = 1;
+#else
+  ddT[ParNGASC].fix = 1;
+  ddT[ParNGASH].fix = 1;
+#endif
+  
   ddP.empirical = 0;
   ddP.alphatot = 0;
   ddP.alphac = 0;
@@ -132,6 +148,7 @@ void pctl_init() {
   ddP.ngash = NGASH;
   ddP.ngasc = NGASC;
   ddP.NGbeta = NULL;
+  ddP.NGalpha = NULL;
   ddP.alphapr = NULL;
   ddP.betapr = NULL;
   ddP.betac = 0;
@@ -152,8 +169,12 @@ void pctl_init() {
   ddT[ParAlpha].cycles = DIRCYCLES;
   ddT[ParBeta].cycles = DIRCYCLES;
   ddT[ParNGBeta].cycles = DIRCYCLES;
+#ifndef NG_SCALESTATS
+  ddT[ParNGAlpha].cycles = DIRCYCLES;
+#else
   ddT[ParNGASH].cycles = ACYCLES;
   ddT[ParNGASC].cycles = ACYCLES;
+#endif
   ddT[ParB].cycles = BCYCLES;
   ddT[ParBDK].cycles = BCYCLES;
   ddT[ParB0].cycles = BCYCLES;
@@ -165,8 +186,12 @@ void pctl_init() {
   ddT[ParAW].cycles = ACYCLES;
   ddT[ParAW0].cycles = ACYCLES;
   ddT[ParNGBeta].offset = 1;
+#ifdef NG_SCALESTATS
   ddT[ParNGASH].offset = 1;
   ddT[ParNGASC].offset = 0;
+#else
+  ddT[ParNGAlpha].offset = 1;
+#endif
   ddT[ParBeta].offset = 1;
   ddT[ParB0].offset = 1;
   ddT[ParBDK].offset = 0;
@@ -354,14 +379,12 @@ void pctl_read(char *resstem) {
     ddP.NGbeta = readfv("NGbeta", ddN.T);
     if ( !ddP.NGbeta ) 
       yap_quit("Cannot read 'NGbeta' in '%s.par'\n", resstem);
-    else {
-      /*  but normalise after  */
-      int t;
-      double tot = 0;   
-      for (t=0; t<ddN.T; t++) tot += ddP.NGbeta[t];
-      tot /= ddN.T;
-      for (t=0; t<ddN.T; t++) ddP.NGbeta[t] /= tot;
-    }
+    pctl_ng_normbeta();
+    //#ifndef NG_SCALESTATS
+    ddP.NGalpha = readfv("NGalpha", ddN.T);
+    if ( !ddP.NGalpha ) 
+      yap_quit("Cannot read 'NGalpha' in '%s.par'\n", resstem);
+    //#endif
   }
   ddP.bdk = readfv("bdk", ddN.T);
   if ( ddP.bdk!=NULL ) {
@@ -415,7 +438,7 @@ void pctl_dims() {
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
   }
-  if ( ddT[ParBDK].fix==0 || ddT[ParNGBeta].fix==0 ) { 
+  if ( ddT[ParBDK].fix==0 || ddT[ParNGBeta].fix==0 || ddT[ParNGAlpha].fix==0 ) { 
     /*
      *    set kbatch for sampling
      */
@@ -437,7 +460,13 @@ void pctl_dims() {
       int t;
       ddP.NGbeta = malloc(ddN.T*sizeof(*ddP.NGbeta));
       for (t=0; t<ddN.T; t++)
-        ddP.NGbeta[t] = 1.0/ddN.T;
+        ddP.NGbeta[t] = 1.0;
+    }
+    if ( !ddP.NGalpha ) {
+      int t;
+      ddP.NGalpha = malloc(ddN.T*sizeof(*ddP.NGalpha));
+      for (t=0; t<ddN.T; t++)
+        ddP.NGalpha[t] = 1.0/ddN.T;
     }
   }
   if ( ddP.PYalpha==H_None ) {
@@ -491,6 +520,9 @@ void pctl_dims() {
     ddP.Tinit = ddN.T;
   if ( ddP.NGbeta!=NULL) {
     ddT[ParNGBeta].ptr = ddP.NGbeta;
+  }
+  if ( ddP.NGalpha!=NULL) {
+    ddT[ParNGAlpha].ptr = ddP.NGalpha;
   }
 }
 
@@ -644,9 +676,13 @@ void pctl_fix(int ITER, int loadphi) {
   }
   if ( ddP.PYalpha!=H_NG ) {
     ddT[ParNGBeta].fix = 1;
+    ddT[ParNGAlpha].fix = 1;
     ddT[ParNGASH].fix = 1;
     ddT[ParNGASC].fix = 1;
   } else {
+#ifdef NG_SCALEALPHA
+    ddT[ParNGAlpha].fix = 1;
+#endif
     ddT[ParAlpha].fix = 1;
   }
   if ( ddP.PYalpha==H_None || ddP.PYalpha==H_NG ) {
@@ -909,7 +945,7 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
     if (  !ddT[p].fix && ddT[p].ptr
           && iter>ddT[p].start
 	  && iter%ddT[p].cycles==ddT[p].offset ) {
-      if ( p==ParBDK || p==ParNGBeta ) {
+      if ( p==ParBDK || p==ParNGBeta || p==ParNGAlpha ) {
         if ( index<ddP.kbatch) {
           *par = p;
           *k = (iter*ddP.kbatch/ddT[p].cycles+index)%ddN.T;
@@ -1061,12 +1097,14 @@ void pctl_samplereport() {
       yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
   }
   yap_message("\n");
-  if ( !ddT[ParBDK].fix || !ddT[ParNGBeta].fix  ) {
+  if ( !ddT[ParBDK].fix || !ddT[ParNGBeta].fix || !ddT[ParNGAlpha].fix  ) {
     yap_message("Sampling in batches of %d: ", ddP.kbatch);
     if (  !ddT[ParBDK].fix )
       yap_message(" %s,", ddT[ParBDK].name);
     if (  !ddT[ParNGBeta].fix )
       yap_message(" %s,", ddT[ParNGBeta].name);
+    if (  !ddT[ParNGAlpha].fix )
+      yap_message(" %s,", ddT[ParNGAlpha].name);
     yap_message("\n");
   } 
 }
@@ -1118,6 +1156,13 @@ void pctl_print(FILE *fp) {
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %6lg", ddT[ParNGBeta].ptr[t]);
     fprintf(fp, "\n");
+    if ( !ddT[ParNGAlpha].fix ) 
+      fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
+	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
+    fprintf(fp, "NGalpha =");
+    for (t=0; t<ddN.T; t++) 
+      fprintf(fp, " %6lg", ddP.NGalpha[t]);
+    fprintf(fp, "\n");
   } else if ( ddP.PYalpha ) {
     printpar(fp,ParA); printpar(fp,ParB);
     if ( ddP.PYalpha!=H_PDP ) {
@@ -1152,6 +1197,8 @@ void pctl_print(FILE *fp) {
 }
 
 void pctl_free() {
+  if ( ddP.NGalpha!=NULL )
+    free(ddP.NGalpha);
   if ( ddP.NGbeta!=NULL )
     free(ddP.NGbeta);
   if ( ddP.bdk!=NULL )
@@ -1179,8 +1226,20 @@ void pctl_free() {
 }
 
 double pctl_ng_alphapriorZ() {
-  return - ddP.ngash * log(ddP.ngasc) - lgamma(ddP.ngash);
+  return ddP.ngash * log(ddP.ngasc) + lgamma(ddP.ngash);
 }
 double pctl_ng_alphaprior(double x) {
-  return -x/ddP.ngasc + (ddP.ngash-1)*log(x) + pctl_ng_alphapriorZ();
+  return -x/ddP.ngasc + (ddP.ngash-1)*log(x) - pctl_ng_alphapriorZ();
+}
+/*  
+ *   normalise so NGbeta[] sums to ddN.T  
+ */
+void pctl_ng_normbeta() {
+  int t;
+  double tot = 0;   
+  for (t=0; t<ddN.T; t++)
+    tot += ddP.NGbeta[t];
+  tot /= ddN.T;
+  for (t=0; t<ddN.T; t++)
+    ddP.NGbeta[t] /= tot;
 }

@@ -63,14 +63,18 @@ double likelihood_NGalpha() {
     if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
     for (t=0; t<ddN.T; t++) {
       int n=ddS.Ndt[i][t];
+#ifdef NG_SCALESTATS
       if ( n==0 ) 
 	continue;
-#ifdef NG_SCALESTATS
       likelihood += S_S(ddC.SX,n,ddS.Tdt[i][t])
 	- n*log(ddP.NGbeta[t]+ddS.UN[i]);
 #else
       if ( n>0 )
         likelihood += gammadiff(n, ddP.NGalpha[t], 0.0);
+#ifdef NG_SPARSE
+      if ( n==0 && !M_docsparse(i,t) )
+	continue;
+#endif
       likelihood += ddP.NGalpha[t]*log(ddP.NGbeta[t])
         - (n+ddP.NGalpha[t])*log(ddP.NGbeta[t]+ddS.UN[i]);
 #endif
@@ -95,13 +99,12 @@ double likelihood_NGalpha() {
     }
     //   rather devious to place an update here ...
     ddS.NGscalestats[t] = scalestats;
-    likelihood += pctl_ng_alphapriorZ();
+    likelihood -= pctl_ng_alphapriorZ();
     likelihood += lgamma(shapestats);
     likelihood -= shapestats * log(1.0/ddP.ngasc+scalestats);
 #else
-    likelihood += ????lgamma(shapestats) - shapestats * log(1.0/ddP.ngasc);
     likelihood += pctl_gammaprior(ddP.NGbeta[t]);
-    likelihood += pctl_gammaprior(ddP.NGalpha[t]);
+    likelihood += pctl_ng_alphaprior(ddP.NGalpha[t]);
 #ifdef NG_SPARSE
     likelihood += lgamma(ddP.ngs0+ddN.DTused-ddS.sparseD[t])
       + lgamma(ddP.ngs1+ddS.sparseD[t]) - lgamma(ddP.ngs0+ddP.ngs1+ddN.DTused);

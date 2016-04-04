@@ -20,6 +20,16 @@
 #include "misi.h"
 
 /*
+ *   use the sampling version of H_NG, not the fitting version
+ */
+//#define NG_SCALESTATS 
+#ifdef NG_SCALESTATS
+#ifdef H_THREADS
+???? these two are incompatible!!
+#endif
+#endif
+
+/*
  *  all statistics used in the training algorithm
  */
 typedef struct D_stats_s {
@@ -34,8 +44,9 @@ typedef struct D_stats_s {
    */
   double *UN;
 #ifdef NG_SPARSE
-  uint32_t *sparseD;  //  count of non-sparse entries for topic
-  uint32_t **sparse;  //  bit vector giving if topic not zeroed
+  uint32_t *sparseD;  //  count of nonzero doc entries for topic
+  uint32_t **sparse;  //  bit vector giving if topic is used
+  // i.e.,  a 0 means topic must have 0 count
 #endif
   /*
    *  Basic topic data for simplest LDA model
@@ -78,13 +89,13 @@ extern D_DMi_t ddM;
 #define M_multi(l)  misi_multi(&ddM,l)
 
 #ifdef NG_SPARSE
-/*  randomize sparsity of zeroed topics */
+/*  randomize sparsity of topics */
 void hca_rand_sparse(int did, int k);
-/*  test if topic k is set */
+/*  test if topic k has sparsity (nonzero use) set */
 #define M_docsparse(i,k) (ddS.sparse[i][(k)/32U]  & (1U<<(((unsigned)k)%32U)))
-/*  set topic k */
+/*  set topic k sparsity (i.e,  topic can be nonzero for doc) */
 #define M_docsp_set(i,k) (ddS.sparse[i][(k)/32U] |= (1U<<(((unsigned)k)%32U)))
-/*  invert topic k */
+/*  invert topic k sparsity */
 #define M_docsp_xor(i,k) (ddS.sparse[i][(k)/32U] ^= (1U<<(((unsigned)k)%32U)))
 /*  length of bit vectors for ddS.sparse[] */
 #define M_bitveclen()    (1 + (ddN.T-1)/32U)

@@ -81,7 +81,7 @@ void check_sparse() {
 #ifndef NDEBUG
   int i,k;
   int cnt;
-  if ( !ddP.NGalpha )
+  if ( !ddP.NGbeta )
     return;
   for (k=0; k<ddN.T; k++) {
     cnt = 0;

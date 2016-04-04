@@ -108,6 +108,9 @@ static float *globalprop() {
       tot += vec[k] = uvec[k];
     free(uvec);
   } else if ( ddP.alphapr ) {
+    /*
+     *   this is rather poor, and should be rewritten
+     */
     for (k=0; k<ddN.T; k++) 
       tot += vec[k] = ddP.alphapr[k];
   }
@@ -541,11 +544,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     ngalpha = dvec(ddN.T);
     get_probs(ngalpha);
     for (k=0; k<ddN.T; k++) {
-#ifdef NG_SCALESTATS
-      ddP.alphapr[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
-#else
       ddP.alphapr[k] = ngalpha[k];
-#endif
     }
   }
 
@@ -808,8 +807,8 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	/*
 	 *   approx. as sqrt(var(lambda_k)/lambda-normaliser
 	 */
-	double ngvar = sqrt(ddP.alphapr[kk])
-	  * (ngalpha[kk]/ddP.alphapr[kk]);
+	double ngvar = sqrt(ddP.NGalpha[kk])
+	  * (ngalpha[kk]/ddP.NGalpha[kk]);
 	yap_message(" ng=%.4lf,%.4lf", 
 		    ngalpha[kk], ngvar/ngalpha[kk]);
 #ifdef NG_SPARSE
@@ -817,9 +816,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 #endif
 	if ( verbose>2 )
 	    yap_message(" ngl=%.4lf,%.4lf, nga=%.4lf,%.4lf", 
-		    ddP.alphapr[kk]/ddP.NGbeta[kk], 
-		    sqrt(ddP.alphapr[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk]),
-		    ddP.alphapr[kk], ddP.NGbeta[kk]); 
+		    ddP.NGalpha[kk]/ddP.NGbeta[kk], 
+		    sqrt(ddP.NGalpha[kk]/ddP.NGbeta[kk]/ddP.NGbeta[kk]),
+		    ddP.NGalpha[kk], ddP.NGbeta[kk]); 
       }
       if ( ddN.tokens )  
 	yap_message(" sl=%.2lf", sl); 
