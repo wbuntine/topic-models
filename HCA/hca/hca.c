@@ -1213,7 +1213,7 @@ int main(int argc, char* argv[])
     }
 #endif
 
-    // getting lp, Nd and clock
+    // getting diagnostics:  lp, Nd and clock
     for(pro = 0; pro < procs; pro++){
       thislp +=  parg[pro].thislp;
       thisNd +=  parg[pro].thisNd;
@@ -1239,7 +1239,7 @@ int main(int argc, char* argv[])
        *   now run sampler on test docs
        */  
       ddG.doprob = 1;
-      
+
       /*  a bit complex if no threads!  */
       doc = ddN.DT-1;
       for(pro = 0 ; pro < procs ; pro++){

@@ -594,8 +594,7 @@ void hca_reset_stats(char *resstem,
     /*
      *  ensure non-zero topics are not sparse
      */
-    //WRAY    this was i<ddN.DT
-    for (i=0; i<ddN.D && i<lastdoc; i++) {
+    for (i=0; i<ddN.DT && i<lastdoc; i++) {
       if ( ddD.NdT[i]<ddP.mindocsize )
 	continue;
       for (t=0; t<ddN.T; t++) 
@@ -746,6 +745,7 @@ void hca_correct_twt()  {
       ddS.TWTnz ++;
   }
 }
+
 void hca_correct_tdt(int reset)  {
   int d, t;
   
@@ -821,6 +821,38 @@ void NGscalestats(int redo) {
       }
     }
     ddS.NGscalestats_recomp = 0;
+  }
+}
+#endif
+
+#ifdef NG_SPARSE
+void hca_repair_docsp() {
+  int i, t;
+  if ( ddS.sparse==NULL )
+    return;
+  /*
+   *  ensure non-zero topics are not sparse
+   */
+  for (i=0; i<ddN.D; i++) {
+    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 )
+      continue;
+    for (t=0; t<ddN.T; t++) 
+      if ( ddS.Ndt[i][t]>0 )
+	M_docsp_set(i,t);
+  }
+  /*
+   *  fix up total vectors
+   */
+  for (t=0; t<ddN.T; t++) {
+    ddS.sparseD[t] = 0;
+  }
+  for (i=0; i<ddN.DT; i++) {
+    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 )
+      continue;
+    for (t=0; t<ddN.T; t++) {
+      if ( M_docsparse(i,t) )
+	ddS.sparseD[t]++;
+    }
   }
 }
 #endif

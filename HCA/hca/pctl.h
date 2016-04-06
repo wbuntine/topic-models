@@ -41,7 +41,7 @@
 /*
  *   pars for prior Beta()
  */
-#define NGS0 10.0
+#define NGS0 100.0
 #define NGS1 1.0
 
 /*

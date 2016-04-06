@@ -170,6 +170,12 @@ int add_doc(int d, enum GibbsType fix) {
        *   these words are for training
        */
       ddS.Ndt[d][t]++;
+#ifdef NG_SPARSE
+      if ( ddP.PYalpha==H_NG && ddS.Ndt[d][t]==1 &&
+	   M_docsparse(d,t)==0 ) {
+	M_docsp_set(d,t);
+      }
+#endif
       ddS.NdT[d]++;	
       if ( (ddP.bdk==NULL) || Z_issetr(ddS.z[i]) ) {
 	if ( ddP.phi==NULL ) {

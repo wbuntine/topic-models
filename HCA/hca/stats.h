@@ -22,7 +22,7 @@
 /*
  *   use the sampling version of H_NG, not the fitting version
  */
-//#define NG_SCALESTATS 
+// #define NG_SCALESTATS 
 #ifdef NG_SCALESTATS
 #ifdef H_THREADS
 ???? these two are incompatible!!
@@ -126,6 +126,7 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
 		enum GibbsType fix, int showlike, int nopar);
 void hca_correct_twt();
 void hca_correct_tdt(int reset);
+void hca_repair_docsp();
 
 uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic);
 

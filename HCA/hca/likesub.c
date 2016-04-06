@@ -262,8 +262,7 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 #ifdef NG_SPARSE
       if ( M_docsparse(d,t)==0 )
 	return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
-	  *  ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
-	  / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+	  *  ddP.NGalpha[t] / ((double)ddS.UN[d]+ddP.NGbeta[t]);
       else
 #endif
 	return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
@@ -284,17 +283,20 @@ double topicprob(int d, int t, int Ttot) {
     /*
      *  this isn't normalised
      */
-    double alphaprt;
-#ifdef NG_SPARSE
-    if ( M_docsparse(d,t)==0 )
-      return 0;
-#endif
 #ifdef NG_SCALESTATS
+    double alphaprt;
     alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
     return ((double)ddS.Ndt[d][t]+alphaprt)
       / (ddS.UN[d]+ddP.NGbeta[t]);
 #else
-    ///
+#ifdef NG_SPARSE
+    if ( ddS.Ndt[d][t]==0 )
+      return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused+ddP.ngs1+ddP.ngs0))
+	*  ddP.NGalpha[t] / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+    else
+#endif
+      return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
+	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);
 #endif
   }
   if ( ddP.PYalpha==H_None ) 
