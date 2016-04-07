@@ -490,59 +490,7 @@ void hca_reset_stats(char *resstem,
     int readOK = 0;
     char *restartfile;
     FILE *fpin;
-    /*
-     *  first, deal with .UN
-     */
-    if ( restart ) {
-      /*
-       *  check if file exists
-       */
-      restartfile = yap_makename(resstem, ".UN");
-      if ( firstdoc!=0 )
-	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
-      fpin = fopen(restartfile ,"r"); 
-      if ( !fpin ) {
-	readOK = 0;
-	yap_message("Cannot open file '%s', setting UN to default\n",
-		    restartfile);
-	free(restartfile);
-      } else {
-	fclose(fpin);
-	readOK = 1;
-      }
-    }
-    if ( restart && readOK ) {
-      read_dvec(restartfile, lastdoc, ddS.UN);
-      free(restartfile);
-    } else {
-      /*
-       *   no restart OR no ".UN" file to restart with
-       */
-      double aveB = 0;
-      double totA = 0;
-      assert(ddP.NGbeta);
-      for (t=0; t<ddN.T; t++) {
-	aveB += ddP.NGbeta[t];
-	totA += ddP.NGalpha[t];
-      }
-      aveB /= ddN.T;
-      for (i=firstdoc; i<lastdoc; i++) {
-	if ( ddS.NdT[i]==0 ) continue;
-	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
-      }
-    }
-#ifdef NG_SCALESTATS
-    {
-      for (i=firstdoc; i<lastdoc; i++) {
-	if ( ddS.NdT[i]==0 ) continue;
-	for (t=0; t<ddN.T; t++) {
-	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
-	}
-	ddS.NGscalestats_recomp = 0;
-      }
-    }
-#endif
-#ifdef NG_SPARSE
+ #ifdef NG_SPARSE
     /*
      *  now, deal with .sparse[][] and .sparseD[]
      */
@@ -613,6 +561,61 @@ void hca_reset_stats(char *resstem,
       for (t=0; t<ddN.T; t++) {
 	if ( M_docsparse(i,t) )
 	  ddS.sparseD[t]++;
+      }
+    }
+#endif
+   /*
+     *  deal with .UN
+     */
+    if ( restart ) {
+      /*
+       *  check if file exists
+       */
+      restartfile = yap_makename(resstem, ".UN");
+      if ( firstdoc!=0 )
+	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
+      fpin = fopen(restartfile ,"r"); 
+      if ( !fpin ) {
+	readOK = 0;
+	yap_message("Cannot open file '%s', setting UN to default\n",
+		    restartfile);
+	free(restartfile);
+      } else {
+	fclose(fpin);
+	readOK = 1;
+      }
+    }
+    if ( restart && readOK ) {
+      read_dvec(restartfile, lastdoc, ddS.UN);
+      free(restartfile);
+    } else {
+      /*
+       *   no restart OR no ".UN" file to restart with
+       */
+      double aveB = 0;
+      double totA = 0;
+      assert(ddP.NGbeta);
+      for (t=0; t<ddN.T; t++) {
+	aveB += ddP.NGbeta[t];
+	totA += ddP.NGalpha[t];
+      }
+      aveB /= ddN.T;
+      for (i=firstdoc; i<lastdoc; i++) {
+	if ( ddS.NdT[i]==0 ) continue;
+	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+      }
+    }
+#ifdef NG_SCALESTATS
+    {
+      for (i=firstdoc; i<lastdoc; i++) {
+	if ( ddS.NdT[i]==0 ) continue;
+	for (t=0; t<ddN.T; t++) {
+#ifdef NG_SPARSE
+	  if ( M_docsparse(i,t) )
+#endif
+	       ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
+	}
+	ddS.NGscalestats_recomp = 0;
       }
     }
 #endif
@@ -817,7 +820,10 @@ void NGscalestats(int redo) {
     for (i=0; i<ddN.DT; i++) {
       if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
       for (t=0; t<ddN.T; t++) {
-	ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
+#ifdef NG_SPARSE
+	if ( M_docsparse(i,t) )
+#endif
+	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
       }
     }
     ddS.NGscalestats_recomp = 0;
@@ -854,5 +860,8 @@ void hca_repair_docsp() {
 	ddS.sparseD[t]++;
     }
   }
+#ifdef NG_SCALESTATS
+  NGscalestats(1);
+#endif
 }
 #endif

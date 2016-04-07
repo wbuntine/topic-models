@@ -19,6 +19,7 @@
 #include <math.h>
 #include <assert.h>
 
+#include "hca.h"
 #include "pctl.h"
 #include "util.h"
 #include "yap.h"
@@ -82,9 +83,7 @@ void pctl_init() {
   ddT[ParBW].name = "bw";
   ddT[ParB0].name = "b0";
   ddT[ParBW0].name = "bw0";
-#ifndef NG_SCALESTATS
   ddT[ParNGAlpha].name = "NGalpha";
-#endif
   ddT[ParNGBeta].name = "NGbeta";  
   ddT[ParNGASH].name = "ngash";  
   ddT[ParNGASC].name = "ngasc";  

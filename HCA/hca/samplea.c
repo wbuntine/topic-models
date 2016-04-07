@@ -456,23 +456,22 @@ void sample_UN(int d) {
 }
 
 #define UN_SAMPLE
+/*
+ *  also updates NGalpha[] while at it
+ */
 void opt_UN(int did) {
     double val = 0;
     int t;
     assert(ddS.UN);
     for (t=0; t<ddN.T; t++) {
 #ifdef NG_SCALESTATS
-      double alphaprt;
-      alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
-      val += ((double)ddS.Ndt[did][t]+alphaprt)
-	  / (ddS.UN[did]+ddP.NGbeta[t]);
-#else
+      ddP.NGalpha[t] = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
+#endif
 #ifdef NG_SPARSE
       if (  M_docsparse(did,t) ) 
 #endif
 	val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
 	  / (ddS.UN[did]+ddP.NGbeta[t]);
-#endif
     }
     assert(val>0);
 #ifdef UN_SAMPLE

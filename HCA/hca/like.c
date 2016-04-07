@@ -95,7 +95,10 @@ double likelihood_NGalpha() {
      */
     for (i=0; i<ddN.DT; i++) {
       if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
-      scalestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
+#ifdef NG_SPARSE
+      if ( M_docsparse(i,t) )
+#endif
+	scalestats += log(1.0 + ddS.UN[i]/ddP.NGbeta[t]);
     }
     //   rather devious to place an update here ...
     ddS.NGscalestats[t] = scalestats;

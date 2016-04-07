@@ -71,15 +71,14 @@ int get_probs(double *vp) {
 #ifdef NG_SCALESTATS
       double pralphat =  
 	(ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
-      tot += vp[t] = pralphat/ddP.NGbeta[t];
+      vp[t] = pralphat/ddP.NGbeta[t];
 #else
+      vp[t] = ddP.NGalpha[t]/ddP.NGbeta[t];
+#endif
 #ifdef NG_SPARSE
-      tot += vp[t] = (ddP.ngs1+ddS.sparseD[t])/(ddP.ngs0+ddP.ngs1+ddN.DTused)
-	* (ddP.NGalpha[t]/ddP.NGbeta[t]);
-#else
-      tot += vp[t] = ddP.NGalpha[t]/ddP.NGbeta[t];
+      vp[t] *= (ddP.ngs1+ddS.sparseD[t])/(ddP.ngs0+ddP.ngs1+ddN.DTused);
 #endif
-#endif
+      tot += vp[t];
     }
     for (t=0; t<ddN.T; t++) 
       vp[t] /= tot;

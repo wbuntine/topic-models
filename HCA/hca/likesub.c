@@ -249,9 +249,17 @@ double topicfact(int d, int t, int Ttot, uint16_t *zerod, float *tip) {
 	   *   topic empty for this doc
 	   */
 	  *tip = 1.0;
-	  return (ddP.ngash + ddS.TDt[t]) /
-	    ( (1/ddP.ngasc + ddS.NGscalestats[t]) *
-	      ((double)ddS.UN[d]+ddP.NGbeta[t]) );
+#ifdef NG_SPARSE
+	  if ( M_docsparse(d,t)==0 )
+	    return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused-ddS.sparseD[t]+ddP.ngs0))
+	      * (ddP.ngash + ddS.TDt[t])
+	      / ( (1/ddP.ngasc + ddS.NGscalestats[t]) *
+		  ((double)ddS.UN[d]+ddP.NGbeta[t]) );
+	  else
+#endif
+	    return (ddP.ngash + ddS.TDt[t])
+	      / ( (1/ddP.ngasc + ddS.NGscalestats[t]) *
+		  ((double)ddS.UN[d]+ddP.NGbeta[t]) );
 	}      
 	NGtableindicatorprob(d, t, Ttot, &uone, &uzero);
 	p = uone + uzero;
@@ -286,14 +294,19 @@ double topicprob(int d, int t, int Ttot) {
 #ifdef NG_SCALESTATS
     double alphaprt;
     alphaprt = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
-    return ((double)ddS.Ndt[d][t]+alphaprt)
-      / (ddS.UN[d]+ddP.NGbeta[t]);
+#ifdef NG_SPARSE
+    if ( ddS.Ndt[d][t]==0 )
+      return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused+ddP.ngs1+ddP.ngs0))
+	*  alphaprt / ((double)ddS.UN[d]+ddP.NGbeta[t]);
+    else
+#endif
+      return ((double)ddS.Ndt[d][t]+alphaprt)
+	/ (ddS.UN[d]+ddP.NGbeta[t]);
 #else
 #ifdef NG_SPARSE
     if ( ddS.Ndt[d][t]==0 )
       return ((ddP.ngs1+ddS.sparseD[t])/(ddN.DTused+ddP.ngs1+ddP.ngs0))
 	*  ddP.NGalpha[t] / ((double)ddS.UN[d]+ddP.NGbeta[t]);
-    else
 #endif
       return ((double)ddS.Ndt[d][t]+ddP.NGalpha[t])
 	/ ((double)ddS.UN[d]+ddP.NGbeta[t]);

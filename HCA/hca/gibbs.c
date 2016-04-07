@@ -243,7 +243,9 @@ double gibbs_lda(/*
     NGscalestats(0);
     for (t=0; t<ddN.T; t++) {
 #ifdef NG_SPARSE
-      if (  M_docsparse(i,t)==0 ) continue;
+      if (  M_docsparse(did,t)==0 ) 
+	NGscalestats_diff[t] = ddS.NGscalestats[t];
+      else
 #endif
       /*  WARNING:  this operation means cannot work with multicore */
       NGscalestats_diff[t] = 
@@ -412,8 +414,13 @@ double gibbs_lda(/*
 	 */
 	if ( did<ddN.DT ) {
 	  for (t=0; t<ddN.T; t++) {
-	    ddS.NGscalestats[t] =
-	      NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
+#ifdef NG_SPARSE
+	    if ( M_docsparse(did,t)==0 ) 
+	      ddS.NGscalestats[t] = NGscalestats_diff[t];
+	    else
+#endif
+	      ddS.NGscalestats[t] =
+		NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
 	  }
 	}
 #endif
@@ -447,18 +454,6 @@ double gibbs_lda(/*
 	  ddG.tprob[did-ddN.DT][t] += topicprob(did,t,Td_);
     }
   }
-#ifdef NG_SPARSE
-  if ( ddP.PYalpha==H_NG ) {
-    /*
-     *   check and sample all the sparse bits,
-     *   not only those with ddS.Ndt[did][t]==0 can change
-     */
-    for (t=0; t<ddN.T; t++) {
-      if ( ddS.Ndt[did][t]==0 ) 
-	hca_rand_sparse(did, t);
-    }
-  }
-#endif
   return logdoc;
 }
 

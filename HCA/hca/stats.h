@@ -22,7 +22,7 @@
 /*
  *   use the sampling version of H_NG, not the fitting version
  */
-// #define NG_SCALESTATS 
+#define NG_SCALESTATS 
 #ifdef NG_SCALESTATS
 #ifdef H_THREADS
 ???? these two are incompatible!!
