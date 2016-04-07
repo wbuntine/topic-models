@@ -86,7 +86,7 @@ void check_sparse() {
   for (k=0; k<ddN.T; k++) {
     cnt = 0;
     for (i=0; i<ddN.DT; i++) {
-      if ( ddD.NdT[i]<ddP.mindocsize )
+      if ( ddD.NdT[i]<ddP.mindocsize || ddS.UN[i]==0 )
 	continue;
       if ( !M_docsparse(i,k) ) {
 	if ( ddS.Ndt[i][k]>0 )
@@ -95,7 +95,8 @@ void check_sparse() {
 	cnt++;
     }
     if ( cnt!=ddS.sparseD[k] )
-      yap_quit("ddS.sparseD[%d]!=actual in check_sparse()\n", k);
+      yap_quit("ddS.sparseD[%d]!=actual (%d!=%d) in check_sparse()\n",
+	       k, (int)ddS.sparseD[k], (int)cnt);
   }
 #endif
 }

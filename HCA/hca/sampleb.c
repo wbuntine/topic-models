@@ -322,7 +322,7 @@ void sample_bdk(double *b, int k) {
 }
 
 #ifndef NG_SCALESTATS
-void sample_NGalpha(double *a, int k) {
+void sample_NGalpha_byk(double *a, int k) {
   char label[30];
   sprintf(&label[0],"NGalpha[%d]", k);
   assert(a);

@@ -127,7 +127,7 @@ void pctl_init() {
   ddT[ParNGASC].sampler = &sample_ngasc;
   ddT[ParNGASH].sampler = &sample_ngash;
 #else
-  ddT[ParNGAlpha].samplerk = &sample_NGalpha;
+  ddT[ParNGAlpha].sampler = &sample_NGalpha;
 #endif
   ddT[ParAD].sampler = &sample_adk;
   ddT[ParBDK].samplerk = &sample_bdk;
@@ -438,7 +438,7 @@ void pctl_dims() {
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
   }
-  if ( ddT[ParBDK].fix==0 || ddT[ParNGBeta].fix==0 || ddT[ParNGAlpha].fix==0 ) { 
+  if ( ddT[ParBDK].fix==0 || ddT[ParNGBeta].fix==0 ) { 
     /*
      *    set kbatch for sampling
      */
@@ -945,7 +945,7 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
     if (  !ddT[p].fix && ddT[p].ptr
           && iter>ddT[p].start
 	  && iter%ddT[p].cycles==ddT[p].offset ) {
-      if ( p==ParBDK || p==ParNGBeta || p==ParNGAlpha ) {
+      if ( p==ParBDK || p==ParNGBeta ) {
         if ( index<ddP.kbatch) {
           *par = p;
           *k = (iter*ddP.kbatch/ddT[p].cycles+index)%ddN.T;

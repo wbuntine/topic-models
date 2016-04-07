@@ -577,7 +577,7 @@ void hca_reset_stats(char *resstem,
        *  now read sparse bitvectors
        */
       int size;
-      size = lastdoc*M_bitveclen();
+      size = ddN.D*M_bitveclen();
       if ( fread(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpin) 
 	   !=size )
 	yap_sysquit("Cannot read bitvector from '%s'\n", restartfile);

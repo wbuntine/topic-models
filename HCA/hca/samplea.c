@@ -484,3 +484,22 @@ void opt_UN(int did) {
 #endif
     assert(ddS.UN[did]>0);
 }
+
+#ifndef NG_SCALESTATS
+void sample_NGalpha(double *mynga) {
+  int i, k;
+  double *scalestats = dvec(ddN.T);
+  for (k=0; k<ddN.T; k++) 
+    scalestats[k] = 0;
+  for (i=0; i<ddN.DT; i++) {
+    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
+    for (k=0; k<ddN.T; k++)
+#ifdef NG_SPARSE
+      if ( M_docsparse(i,k) )
+#endif
+	scalestats[k] += log(1.0+ddS.UN[i]/ddP.NGbeta[k]);
+  }
+  for (k=0; k<ddN.T; k++)
+    ddP.NGalpha[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+scalestats[k]);
+}
+#endif

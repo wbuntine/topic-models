@@ -18,7 +18,7 @@
 /*
  *  testing IBP with H_NG
  */
-// #define NG_SPARSE
+#define NG_SPARSE
 
 /*
  *  this is defined in "stats.h"

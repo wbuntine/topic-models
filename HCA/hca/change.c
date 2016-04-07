@@ -171,8 +171,7 @@ int add_doc(int d, enum GibbsType fix) {
        */
       ddS.Ndt[d][t]++;
 #ifdef NG_SPARSE
-      if ( ddP.PYalpha==H_NG && ddS.Ndt[d][t]==1 &&
-	   M_docsparse(d,t)==0 ) {
+      if ( ddP.PYalpha==H_NG && ddS.Ndt[d][t]==1 && M_docsparse(d,t)==0 ) {
 	M_docsp_set(d,t);
       }
 #endif

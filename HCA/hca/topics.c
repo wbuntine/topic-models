@@ -1000,9 +1000,19 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 #ifdef NG_SPARSE
   if ( ddP.PYalpha==H_NG ) {
     double avesp = 0;
+    // hca_repair_docsp();
+    for (k=0; k<ddN.T; k++) {
+      avesp += gtvec[k];
+    }
+    // check gtvec[] sums to 1
+    assert(fabs(avesp-1.0)<0.00001);
+    avesp = 0;
     for (k=0; k<ddN.T; k++) {
         avesp += gtvec[k]*((float)ddS.sparseD[k])/ddN.DTused;
+	assert(ddS.sparseD[k]<=ddN.DTused);
     }
+    assert(avesp<=1.0);
+    assert(avesp>0.0);
     yap_message("IBP sparsity = %.2lf%%\n", 100*(1-avesp));
   }
 #endif
