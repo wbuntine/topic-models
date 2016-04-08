@@ -537,6 +537,9 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
     lowerQ = 1.0/ddN.T;
   }  
 
+  if ( ddS.TwT==NULL && ddP.phi==NULL && scoretype == ST_phirat ) 
+	yap_quit("Cannot use '-orat' option with this model/settings.\n");	
+
   if ( ddP.PYalpha==H_NG ) {
     /*
      *  provide an estimate of alpha
