@@ -250,37 +250,6 @@ uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic) {
   return mtx;
 }
 
-#ifdef NG_SPARSE
-/*
- *   set this to make a topic always have zero prob. if
- *   it can
- */
-// #define NG_ALWAYS
-/*
- *   randomize the sparse bits for topic known to have
- *   zero instances in the document
- */
-void hca_rand_sparse(int did, int k) {
-  assert(ddS.Ndt[did][k]==0);
-#ifdef NG_ALWAYS
-  /*  unset sparsity for topic */
-  if ( M_docsparse(did,k) ) {
-    M_docsp_xor(did,k);
-    ddS.sparseD[k]--;
-  }
-#else
-  if ( (ddN.DTused+ddP.ngs0+ddP.ngs1) * rng_unit(rngp) < (ddS.sparseD[k]+ddP.ngs1) ) {
-    if ( !M_docsparse(did,k) ) {
-      M_docsp_set(did,k);
-      ddS.sparseD[k]++;
-    }
-  } else if ( M_docsparse(did,k) ) {
-    M_docsp_xor(did,k);
-    ddS.sparseD[k]--;
-  }
-#endif
-}
-#endif
 
 /*
  *    randomise topics for docs in range

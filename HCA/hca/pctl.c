@@ -121,7 +121,7 @@ void pctl_init() {
   ddT[ParBW0].sampler = &sample_bw0;
   ddT[ParAlpha].sampler = &sample_alpha;
   ddT[ParBeta].sampler = &sample_beta;
-  ddT[ParNGBeta].samplerk = &sample_NGbeta;
+  ddT[ParNGBeta].sampler = &sample_NGbeta;
 #ifdef NG_SCALESTATS
   ddT[ParNGASC].sampler = &sample_ngasc;
   ddT[ParNGASH].sampler = &sample_ngash;
@@ -434,10 +434,15 @@ static double pctl_alpharange(double alphac) {
  *    called with pctl_fixbeta() at initialisation
  */
 void pctl_dims() {
+  enum ParType par;
   if ( ddP.bdk!=NULL) {
     ddT[ParBDK].ptr = ddP.bdk;
   }
-  if ( ddT[ParBDK].fix==0 || ddT[ParNGBeta].fix==0 ) { 
+  for (par=ParA; par<=ParBeta; par++) {
+    if (  ddT[par].samplerk!=NULL )
+      break;
+  }
+  if ( par<=ParBeta ) { 
     /*
      *    set kbatch for sampling
      */
@@ -944,7 +949,7 @@ int pctl_par_iter(int index, int iter, enum ParType *par, int *k) {
     if (  !ddT[p].fix && ddT[p].ptr
           && iter>ddT[p].start
 	  && iter%ddT[p].cycles==ddT[p].offset ) {
-      if ( p==ParBDK || p==ParNGBeta ) {
+      if ( ddT[p].samplerk!=NULL ) {
         if ( index<ddP.kbatch) {
           *par = p;
           *k = (iter*ddP.kbatch/ddT[p].cycles+index)%ddN.T;
@@ -1095,17 +1100,18 @@ void pctl_samplereport() {
     if (  !ddT[par].fix )
       yap_message(" %s(%d),", ddT[par].name, ddT[par].cycles);
   }
-  yap_message("\n");
-  if ( !ddT[ParBDK].fix || !ddT[ParNGBeta].fix || !ddT[ParNGAlpha].fix  ) {
-    yap_message("Sampling in batches of %d: ", ddP.kbatch);
-    if (  !ddT[ParBDK].fix )
-      yap_message(" %s,", ddT[ParBDK].name);
-    if (  !ddT[ParNGBeta].fix )
-      yap_message(" %s,", ddT[ParNGBeta].name);
-    if (  !ddT[ParNGAlpha].fix )
-      yap_message(" %s,", ddT[ParNGAlpha].name);
-    yap_message("\n");
+  for (par=ParA; par<=ParBeta; par++) {
+    if (  ddT[par].samplerk!=NULL ) {
+      yap_message("\nSampling in batches of %d: ", ddP.kbatch);
+      break;
+    }
+  }
+  for (; par<=ParBeta; par++) {
+    if (  ddT[par].samplerk!=NULL )
+      if (  !ddT[par].fix )
+	yap_message(" %s,", ddT[par].name);
   } 
+  yap_message("\n");
 }
 
 void pctl_update(int iter) {
@@ -1148,16 +1154,28 @@ void pctl_print(FILE *fp) {
     printpar(fp,ParNGS0); printpar(fp,ParNGS1);
 #endif
     printpar(fp,ParNGASH); printpar(fp,ParNGASC);
-    if ( !ddT[ParNGBeta].fix ) 
-      fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
-	      ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
+    if ( !ddT[ParNGBeta].fix ) {
+      if ( ddT[ParNGBeta].samplerk ) {
+	fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
+		ddT[ParNGBeta].name, ddT[ParNGBeta].cycles, ddP.kbatch);
+      } else {
+	fprintf(fp, "#  %s was sampled every %d major cycles\n", 
+		ddT[ParNGBeta].name, ddT[ParNGBeta].cycles);
+      }
+    }
     fprintf(fp, "NGbeta =");
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %6lg", ddT[ParNGBeta].ptr[t]);
     fprintf(fp, "\n");
-    if ( !ddT[ParNGAlpha].fix ) 
-      fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
-	      ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
+    if ( !ddT[ParNGAlpha].fix ) {
+      if ( ddT[ParNGAlpha].samplerk ) {
+	fprintf(fp, "#  %s was sampled every %d major cycles in batches of %d\n", 
+		ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles, ddP.kbatch);
+      } else {
+	fprintf(fp, "#  %s was sampled every %d major cycles\n", 
+		ddT[ParNGAlpha].name, ddT[ParNGAlpha].cycles);
+      }
+    }
     fprintf(fp, "NGalpha =");
     for (t=0; t<ddN.T; t++) 
       fprintf(fp, " %6lg", ddP.NGalpha[t]);

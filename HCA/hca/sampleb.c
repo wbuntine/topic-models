@@ -334,7 +334,7 @@ void sample_NGalpha_byk(double *a, int k) {
 }
 
 #ifdef NGB_ARMS
-void sample_NGbeta(double *b, int k) {
+void sample_NGbeta_byk(double *b, int k) {
   char label[30];
   sprintf(&label[0],"NGbeta[%d]", k);
   assert(b);
@@ -353,6 +353,45 @@ void sample_NGbeta(double *b, int k) {
  *  uses existing:
  *         ddS.NGscalestats[k], ddS.UN[.]
  */
+#define NGBETA_BYALL
+#ifdef NGBETA_BYALL
+void sample_NGbeta(double *b) {
+  int j, k;
+  double *val = dvec(ddN.T);
+  double *alpha = dvec(ddN.T);
+  uint32_t *cnt = u32vec(ddN.T);
+  for (k=0; k<ddN.T; k++) {
+#ifdef NG_SCALESTATS
+    alpha[k] = (ddP.ngash+ddS.TDt[k])/(1/ddP.ngasc+ddS.NGscalestats[k]);
+#else
+    alpha[k] = ddP.alphapr[k];
+#endif
+  }
+  for (j=0; j<ddN.DT; j++) {
+    if ( ddS.UN[j]>0 ) {
+      for (k=0; k<ddN.T; k++) {
+#ifdef NG_SPARSE
+	if (  M_docsparse(j,k)==0 ) continue; 
+#endif
+	cnt[k] ++;
+	val[k] += (alpha[k]+ddS.Ndt[j][k])/(ddS.UN[j]+b[k]);
+      }
+    }
+  }
+  for (k=0; k<ddN.T; k++) {
+    b[k] = rng_gamma(rngp, PYP_CONC_PSHAPE+cnt[k]*alpha[k])
+      / (1.0/PYP_CONC_PSCALE + val[k]);
+    if ( b[k]<PYP_CONC_MIN )
+      b[k] = PYP_CONC_MIN;
+    if ( b[k]>PYP_CONC_MAX )
+      b[k] = PYP_CONC_MAX;
+  }
+  pctl_ng_normbeta();
+  free(cnt);
+  free(val);
+  free(alpha);
+}
+#else
 void sample_NGbeta(double *b, int k) {
   int j;
   double val = 0;
@@ -364,7 +403,7 @@ void sample_NGbeta(double *b, int k) {
 #endif
   for (j=0; j<ddN.DT; j++) {
 #ifdef NG_SPARSE
-    if (  M_docsparse(j,k)==0 ) continue; 
+    if (  M_docsparse(j,k)==0 ) continue;
 #endif
     if ( ddS.UN[j]>0 ) {
       cnt ++;
@@ -379,7 +418,7 @@ void sample_NGbeta(double *b, int k) {
     b[k] = PYP_CONC_MAX;
   pctl_ng_normbeta();
 }
-
+#endif
 
 /*
  *  this allows Dirichlet prior to be non-uniform,

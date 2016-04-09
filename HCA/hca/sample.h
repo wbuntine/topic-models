@@ -20,7 +20,8 @@ void sample_bd(double *bd);
 void sample_bdk(double *bdk, int k);
 void sample_ngasc(double *myng);
 void sample_ngash(double *myng);
-void sample_NGbeta(double *b, int k);
+void sample_NGbeta_byk(double *b, int k);
+void sample_NGbeta(double *b);
 #ifndef NG_SCALESTATS
 void sample_NGalpha_byk(double *a, int k);
 void sample_NGalpha(double *mynga);

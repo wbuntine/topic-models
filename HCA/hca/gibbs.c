@@ -148,7 +148,7 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
   if ( ddP.PYalpha==H_NG && M_docsparse(did,t)==0 ) {
     assert(ddS.Ndt[did][t]==1);
     M_docsp_set(did,t);
-    ddS.sparseD[t]++;
+    atomic_incr(ddS.sparseD[t]);
   }
 #endif
   /*
