@@ -731,10 +731,16 @@ int main(int argc, char* argv[])
 			       &var[0], &vin)<2  )
 	  yap_quit("Need a valid 'S' argument\n");
 	par = findpar(var);
-	if ( par==ParNone || par==ParNGBeta )
-	  yap_quit("Illegal var for -S\n");
-	else if ( par==ParBDK ) {
+	if ( par==ParBDK ) {
 	  BDKval = vin;
+	} else if ( par==ParNone || ddT[par].samplerk )
+	  yap_quit("Illegal var for -S\n");
+	} else if ( par==ParAlpha ) {
+	   ddP.PYalpha = H_None;
+	   alphacin = vin;
+	} else if ( par==ParBeta ) {
+	   ddP.PYbeta = H_None;
+	   betacin = vin;
 	} else
 	  *(ddT[par].ptr) = vin;
       }   
@@ -896,6 +902,8 @@ int main(int argc, char* argv[])
   if ( !restart && ITER==0 )
     yap_quit("Zero iterations only allowed on restart\n");
 
+  if ( ddP.PYalpha!=H_NG && ddP.ngs0>0 )
+    yap_quit("Option '-Sngs0...' needs '-Ang'\n");
   if ( loadphi && ddP.phiiter>0 )
     yap_quit("Options '-l phi,...' and '-r phi' incompatible\n");
   if ( loadtheta && ddP.probiter>0 )
@@ -1374,9 +1382,7 @@ int main(int argc, char* argv[])
       else
 	yap_message(" %d", iter);
     }
-#ifdef NG_SPARSE
-    if ( ddP.PYalpha==H_NG ) check_sparse();
-#endif
+    if ( ddS.sparse ) check_sparse();
     
     if ( checkpoint>0 && iter>0 && iter%checkpoint==0 ) {
       data_checkpoint(resstem, stem, iter+1);

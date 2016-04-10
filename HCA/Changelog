@@ -19,3 +19,11 @@ Subtle bug in get_probs() when zerod topics
 
 Installed -Ang.
 Updated the man page.
+
+-> 0.63
+
+Improved -Ang using the non table-indicator version.
+Corrected and installed IBP with -Ang with standard install.
+Added some man entries for this.
+Cleaned up hca_reset_stats() and placed data correcting
+code into correct.c.

@@ -277,8 +277,7 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
       fname = yap_makename(resstem,".UN");
       write_dvec(fname, ddN.D, ddS.UN);
       free(fname);
-#ifdef NG_SPARSE
-      {
+      if ( ddS.sparse ) {
 	/*
 	 *    write as binary
 	 */
@@ -296,7 +295,6 @@ void data_checkpoint(char *resstem, char *stem, int ITER) {
 	fclose(fpout);
 	free(fname);
       }
-#endif
     }
 
     fname = yap_makename(resstem,".par");

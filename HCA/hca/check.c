@@ -76,12 +76,11 @@ void check_Ndt(int d) {
 #endif
 }
 
-#ifdef NG_SPARSE
 void check_sparse() {
 #ifndef NDEBUG
   int i,k;
   int cnt;
-  if ( !ddP.NGbeta )
+  if ( !ddP.NGbeta || !ddS.sparse )
     return;
   for (k=0; k<ddN.T; k++) {
     cnt = 0;
@@ -100,7 +99,6 @@ void check_sparse() {
   }
 #endif
 }
-#endif
 
 void check_TWT() {
 #ifndef NDEBUG

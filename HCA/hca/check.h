@@ -23,8 +23,6 @@ void check_Tw();
 void check_Nwt(int w, int val);
 void check_TWT();
 void check_TDT();
-#ifdef NG_SPARSE
 void check_sparse();
-#endif
 
 #endif

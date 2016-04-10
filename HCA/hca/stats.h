@@ -43,11 +43,9 @@ typedef struct D_stats_s {
    *    latent mass per doc for H_NG
    */
   double *UN;
-#ifdef NG_SPARSE
   uint32_t *sparseD;  //  count of nonzero doc entries for topic
   uint32_t **sparse;  //  bit vector giving if topic is used
   // i.e.,  a 0 means topic must have 0 count
-#endif
   /*
    *  Basic topic data for simplest LDA model
    *     we assume maximum number of words in single document
@@ -88,7 +86,6 @@ extern D_DMi_t ddM;
 
 #define M_multi(l)  misi_multi(&ddM,l)
 
-#ifdef NG_SPARSE
 /*  randomize sparsity of topics */
 void hca_rand_sparse(int did, int k);
 /*  test if topic k has sparsity (nonzero use) set */
@@ -99,7 +96,6 @@ void hca_rand_sparse(int did, int k);
 #define M_docsp_xor(i,k) (ddS.sparse[i][(k)/32U] ^= (1U<<(((unsigned)k)%32U)))
 /*  length of bit vectors for ddS.sparse[] */
 #define M_bitveclen()    (1 + (ddN.T-1)/32U)
-#endif
 
 double gibbs_lda(enum GibbsType fix, int Tmax, int doc, int words, float *p, D_MiSi_t *Dd, int incremental, int proc);
 

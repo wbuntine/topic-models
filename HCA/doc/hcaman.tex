@@ -14,7 +14,10 @@
 \begin{Name}{1}{hca}{Wray Buntine}{Data Analysis Tools}{hca}
 
   \Prog{hca} is research software
-that does various versions of non-parametric topic models using Gibbs sampling including LDA, HDP-LDA, NP-LDA, NG-LDA all with/without burstiness modelling.  Various diagnostics, ``document completion'' testing and coherence measurements with PMI are also supported. The code
+that does various versions of non-parametric topic models using Gibbs sampling including LDA, HDP-LDA, and NP-LDA all with/without burstiness modelling.  
+Another variant uses a normalised Gamma distribution on topics
+with/without an Indian buffet process (IBP) to switch off topics in documents.
+Various diagnostics, ``document completion'' testing and coherence measurements with PMI are also supported. The code
 runs on multi-core getting about 50\% efficiency with 8 cores.
 Be warned, however, that it is research code.
 Not all combinations of options behave as expected, not all
@@ -175,13 +178,18 @@ then it specifies \texttt{alpha}.
   Each topic now has its own independent gamma distribution,
 \texttt{Gamma(NGalpha,NGbeta)},
 and these are normalised to get the topic probabilities.  There are 2*\texttt{T}
-parameters now, the vector of alpha parameters for each topic and the
-vector of beta parameters for each topic.
+parameters now, the vector of alpha parameters for each topic,
+\texttt{NGalpha}, and the
+vector of beta parameters for each topic, \texttt{NGbeta}.
 This means each dimension has its own independent variance parameter,
 so both mean and variance are fit per dimension.
 By default these are sampled in batches 
 during standard hyper-parameter sampling.
 Do not use with burstiness as this has not been evaluated.
+Also, introduce Indian Buffet Process (IBP) priors on the topics
+by setting the \texttt{ngs0} parameter,
+for instance, \OptArg{-S}{ngs0=100}.
+By default the IBP priors are inactive.
 \item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
 The value must be a positive float.
@@ -252,6 +260,11 @@ where \texttt{var} can be one of:
 \item[ad] discount parameter for burstiness.
 \item[bdk] concentration parameter for burstiness, a constant initially
      but subsequent sampling will allow a different value per topic.
+\item[alpha] same as \OptArg{-A}{value}.
+\item[beta] same as \OptArg{-B}{value}.
+\item[ngs0] switch on IBP setting of topics in documents,
+  and set the Beta prior to be Beta(\texttt{ngs0},1).
+Only works when \OptArg{-A}{ng} is in use.
 \end{Description}
 \end{Description}
 
@@ -271,10 +284,11 @@ Start sampling \texttt{beta} of the symmetric Dirichlet for beta after
 \item[\OptArg{-F}{var}]
 Fix the variable \texttt{var} where
 it takes the value \textbf{alpha}, \textbf{beta} or one of the
-arguments to the \Opt{-S} option.
+arguments to the \Opt{-S} option
+(except \texttt{ngs0}).
 \item[\OptArg{-g}{var,batch}]
-The vector hyperparameters \texttt{bdk}, \texttt{NGalpha}
-and \texttt{NGbeta} are sampled in batches using a heuristic
+The vector hyperparameters \texttt{bdk}
+are sampled in batches using a heuristic
 batch size.   Set the batch size with
 \OptArg{-g}{bdk,10} or similar, though note they all share the same batchsize.
 \item[\OptArg{-G}{var,cycles,start}]
@@ -658,8 +672,10 @@ the LDA default.
 It is 1 for hdp, 2 for hpdd and 3 for pdp.
 Likewise for the \texttt{PYbeta} variable and the \Opt{-B} option.
 
-If the \OptArg{-A}{ng} option is used then vectores
-\texttt{NGalpha} and \texttt{NGbeta} are saved as well.
+If the \OptArg{-A}{ng} option is used then vectors
+\texttt{NGalpha} and \texttt{NGbeta} are saved as well,
+as well as settings for the Beta prior for the IBP,
+as \texttt{ngs0} and \texttt{ngs1}.
 
 \section{Examples}
 %%%%%%%%%%%%%%%%%%
@@ -1173,7 +1189,9 @@ The file \File{c1.theta} is written in a readable sparse form.
 
 \subsection{Burstiness}
 
-The burstiness version significantly improves everything.
+The burstiness version significantly improves perplexity and
+often times coherence of topics.  Though it is not tested with all options.
+
 Our best bet, currently, is to run
 with optimisation of the hyperparameters:
 \begin{verbatim}

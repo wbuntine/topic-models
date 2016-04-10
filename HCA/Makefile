@@ -23,8 +23,8 @@ export PWD
 #  WARNING:  threads and debugging code ('-g') don't mix because some of the
 #            asserts are shuffled around by the compiler
 # MYDEBUG=-pg -DNDEBUG -ffast-math -DHAVE_INLINE
-MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
-# MYDEBUG=-g
+# MYDEBUG=-O5 -DNDEBUG -ffast-math -DHAVE_INLINE -DH_THREADS
+MYDEBUG=-g
 CPPFLAGS :=  -I$(PWD)/util/ -I$(STB_HOME)/lib/ $(MYDEBUG)
 CFLAGS = -Wall
 LDFLAGS := -L$(PWD)/util -L$(STB_HOME)/lib
@@ -69,12 +69,14 @@ clean:  yes
 	cd util; ${MAKE} clean
 	cd hca; ${MAKE} clean
 	cd tca; ${MAKE} clean
+	cd doc; ${MAKE} clean
 
 distclean:
 	rm -f TAGS */TAGS
 	cd util; ${MAKE} distclean
 	cd hca; ${MAKE} distclean
 	cd tca; ${MAKE} distclean
+	cd doc; ${MAKE} clean
 
 etags:
 	etags  util/*.c util/*.h dca/*.h cca/*.h

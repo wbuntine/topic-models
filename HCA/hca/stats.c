@@ -29,6 +29,7 @@
 #include "diag.h"
 #include "pctl.h"
 #include "probs.h"
+#include "check.h"
 #include "pmi.h"
 #include "ehash.h"
 
@@ -115,9 +116,8 @@ void hca_alloc() {
 #ifdef NG_SCALESTATS
   ddS.NGscalestats = NULL;
 #endif
-#ifdef NG_SPARSE
   ddS.sparse = NULL;
-#endif
+  ddS.sparseD = NULL;
   if ( ddP.PYbeta && ddP.phi==NULL ) {
     ddS.Twt = u16mat(ddN.W,ddN.T);
     ddS.TwT = u32vec(ddN.W);
@@ -129,16 +129,16 @@ void hca_alloc() {
     ddS.Tlife = u32vec(ddN.T);
   }
   if ( ddP.PYalpha==H_NG ) {
-#ifdef NG_SPARSE
-    int i;
-    unsigned incr;
-    ddS.sparseD = malloc(ddN.T*sizeof(*ddS.sparse));
-    ddS.sparse = malloc(ddN.D*sizeof(*ddS.sparse));
-    incr = M_bitveclen();
-    ddS.sparse[0] = malloc(ddN.D*sizeof(**ddS.sparse)*incr);
-    for (i=1; i<ddN.D; i++)
-      ddS.sparse[i] = ddS.sparse[i-1] + incr;
-#endif
+    if ( ddP.ngs0 || ddP.ngs1 ) {
+      int i;
+      unsigned incr;
+      ddS.sparseD = malloc(ddN.T*sizeof(*ddS.sparse));
+      ddS.sparse = malloc(ddN.D*sizeof(*ddS.sparse));
+      incr = M_bitveclen();
+      ddS.sparse[0] = malloc(ddN.D*sizeof(**ddS.sparse)*incr);
+      for (i=1; i<ddN.D; i++)
+        ddS.sparse[i] = ddS.sparse[i-1] + incr;
+    }
     ddS.UN = malloc(ddN.D*sizeof(*ddS.UN));
 #ifdef NG_SCALESTATS
     ddS.NGscalestats = malloc(ddN.T*sizeof(*ddS.NGscalestats));
@@ -162,13 +162,11 @@ void hca_free() {
 #ifdef NG_SCALESTATS
   if ( ddS.NGscalestats )  free(ddS.NGscalestats);
 #endif
-#ifdef NG_SPARSE
   if ( ddS.sparse ) {
     free(ddS.sparse[0]);
     free(ddS.sparse);
     free(ddS.sparseD);
   }
-#endif
   if ( ddS.Nwt ) {
     free(ddS.Nwt[0]); free(ddS.Nwt);
   }
@@ -389,77 +387,11 @@ void hca_merge_stats(int k1, int k2,  uint16_t *Tdt,  uint16_t *Twt) {
   }
 }
 
-/*
- *    zero everything and rebuild entirely from z[] (both t and r)
- *    but only for training docs
- */
-void hca_reset_stats(char *resstem, 
-		     int restart,  // restarting, read stats from file
-		     int zero,     // just zero and return
-		     int firstdoc, 
-		     int lastdoc  // may be greater the ddN.DT, 
-		                  // so mod before use
-		     ) {
+static void hca_reset_sparse(char *resstem, int restart, int firstdoc, int lastdoc) {
+  int readOK = 0;
+  char *restartfile;
+  FILE *fpin;
   int i, t;
-  /*
-   *  reset data counts, N??, first,
-   */
-  memset((void*)ddS.NdT, 0, sizeof(ddS.NdT[0])*ddN.D);
-  memset((void*)ddS.NWt, 0, sizeof(ddS.NWt[0])*ddN.T);
-  for (i=0; i<ddN.D; i++)
-    /*   ddS.Ndt not allocated monolithically  */
-    memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
-  if ( ddS.UN )
-    memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
-#ifdef NG_SCALESTATS
-  if ( ddS.NGscalestats )
-    memset((void*)ddS.NGscalestats, 0, sizeof(ddS.NGscalestats[0])*ddN.T);
-#endif
-  memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
-  /*
-   *  now reset table count stats
-   */
-  if ( ddP.PYbeta && ddP.phi==NULL ) {
-    memset((void*)ddS.TwT, 0, sizeof(ddS.TwT[0])*ddN.W);
-    memset((void*)ddS.TWt, 0, sizeof(ddS.TWt[0])*ddN.T);
-    memset((void*)ddS.Twt[0], 0, sizeof(ddS.Twt[0][0])*ddN.W*ddN.T);
-  }
-  if ( ddP.PYalpha ) {
-    memset((void*)ddS.TDt, 0, sizeof(ddS.TDt[0])*ddN.T);
-    memset((void*)ddS.Tlife, 0, sizeof(ddS.Tlife[0])*ddN.T);
-    for (i=0; i<ddN.D; i++)
-      /*   ddS.Tdt not allocated monolithically  */
-      memset((void*)ddS.Tdt[i], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
-  }
-  ddS.TWT = 0;
-  ddS.TWTnz = 0;
-  ddS.TDT = 0;
-  ddS.TDTnz = 0;
-  if ( zero )
-    return;
-
-  /*
-   *  do data counts, N??, first,
-   */  
-  for (i=firstdoc; i<lastdoc; i++) {
-    int l;
-    int usei = (i+ddN.DT) % ddN.DT;
-    for (l=ddD.NdTcum[usei]; l<ddD.NdTcum[usei+1]; l++) {
-      t = Z_t(ddS.z[l]);
-      if ( ( ddP.bdk==NULL ) || Z_issetr(ddS.z[l]) ) {
-	ddS.Nwt[ddD.w[l]][t]++;
-	ddS.NWt[t]++;
-      }
-      ddS.Ndt[usei][t]++;
-      ddS.NdT[usei]++;
-    }
-  }
-
-  if ( ddS.UN ) {
-    int readOK = 0;
-    char *restartfile;
-    FILE *fpin;
- #ifdef NG_SPARSE
     /*
      *  now, deal with .sparse[][] and .sparseD[]
      */
@@ -492,7 +424,7 @@ void hca_reset_stats(char *resstem,
     if ( restart && readOK ) {
       /*
        *  now read sparse bitvectors
-       */
+         */
       int size;
       size = ddN.D*M_bitveclen();
       if ( fread(ddS.sparse[0], sizeof(ddS.sparse[0][0]), size, fpin) 
@@ -532,66 +464,124 @@ void hca_reset_stats(char *resstem,
 	  ddS.sparseD[t]++;
       }
     }
-#endif
-   /*
-     *  deal with .UN
+}
+
+static void hca_reset_UN(char *resstem, int restart, int firstdoc, int lastdoc) {
+  int readOK = 0;
+  char *restartfile;
+  FILE *fpin;
+  int i, t;
+  /*
+   *  deal with .UN
+   */
+  if ( restart ) {
+    /*
+     *  check if file exists
      */
-    if ( restart ) {
-      /*
-       *  check if file exists
-       */
-      restartfile = yap_makename(resstem, ".UN");
-      if ( firstdoc!=0 )
-	yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
-      fpin = fopen(restartfile ,"r"); 
-      if ( !fpin ) {
-	readOK = 0;
-	yap_message("Cannot open file '%s', setting UN to default\n",
-		    restartfile);
-	free(restartfile);
-      } else {
-	fclose(fpin);
-	readOK = 1;
-      }
-    }
-    if ( restart && readOK ) {
-      read_dvec(restartfile, lastdoc, ddS.UN);
+    restartfile = yap_makename(resstem, ".UN");
+    if ( firstdoc!=0 )
+      yap_quit("Cannot read '%s' from %d-th doc\n", restartfile, firstdoc);
+    fpin = fopen(restartfile ,"r"); 
+    if ( !fpin ) {
+      readOK = 0;
+      yap_message("Cannot open file '%s', setting UN to default\n",
+		  restartfile);
       free(restartfile);
     } else {
-      /*
-       *   no restart OR no ".UN" file to restart with
-       */
-      double aveB = 0;
-      double totA = 0;
-      assert(ddP.NGbeta);
-      for (t=0; t<ddN.T; t++) {
-	aveB += ddP.NGbeta[t];
-	totA += ddP.NGalpha[t];
-      }
-      aveB /= ddN.T;
-      for (i=firstdoc; i<lastdoc; i++) {
-	if ( ddS.NdT[i]==0 ) continue;
-	ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
-      }
+      fclose(fpin);
+      readOK = 1;
     }
-#ifdef NG_SCALESTATS
-    {
-      for (i=firstdoc; i<lastdoc; i++) {
-	if ( ddS.NdT[i]==0 ) continue;
-	for (t=0; t<ddN.T; t++) {
-#ifdef NG_SPARSE
-	  if ( M_docsparse(i,t) )
-#endif
-	       ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
-	}
-	ddS.NGscalestats_recomp = 0;
-      }
-    }
-#endif
   }
+  if ( restart && readOK ) {
+    read_dvec(restartfile, lastdoc, ddS.UN);
+    free(restartfile);
+  } else {
+    /*
+     *   no restart OR no ".UN" file to restart with
+     */
+    double aveB = 0;
+    double totA = 0;
+    assert(ddP.NGbeta);
+    for (t=0; t<ddN.T; t++) {
+      aveB += ddP.NGbeta[t];
+      totA += ddP.NGalpha[t];
+    }
+    aveB /= ddN.T;
+    for (i=firstdoc; i<lastdoc; i++) {
+      if ( ddS.NdT[i]==0 ) continue;
+      ddS.UN[i] = ddS.NdT[i]/(totA+1)*aveB;
+    }
+  }
+#ifdef NG_SCALESTATS
+  {
+    for (i=firstdoc; i<lastdoc; i++) {
+      if ( ddS.NdT[i]==0 ) continue;
+      for (t=0; t<ddN.T; t++) {
+	if ( !ddS.sparse || M_docsparse(i,t) )
+	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
+      }
+      ddS.NGscalestats_recomp = 0;
+    }
+  }
+#endif
+}
 
+static void hca_zero_N() {
+  int i;
+  /*
+   *  reset data counts
+   */
+  memset((void*)ddS.NdT, 0, sizeof(ddS.NdT[0])*ddN.D);
+  memset((void*)ddS.NWt, 0, sizeof(ddS.NWt[0])*ddN.T);
+  for (i=0; i<ddN.D; i++)
+    /*   ddS.Ndt not allocated monolithically  */
+    memset((void*)ddS.Ndt[i], 0, sizeof(ddS.Ndt[0][0])*ddN.T);
+  memset((void*)ddS.Nwt[0], 0, sizeof(ddS.Nwt[0][0])*ddN.W*ddN.T);
+}
+
+static void hca_zero_T() {
+  int i;
+  /*
+   *  reset table count stats
+   */
   if ( ddP.PYbeta && ddP.phi==NULL ) {
+    memset((void*)ddS.TwT, 0, sizeof(ddS.TwT[0])*ddN.W);
+    memset((void*)ddS.TWt, 0, sizeof(ddS.TWt[0])*ddN.T);
+    memset((void*)ddS.Twt[0], 0, sizeof(ddS.Twt[0][0])*ddN.W*ddN.T);
+  }
+  if ( ddP.PYalpha ) {
+    memset((void*)ddS.TDt, 0, sizeof(ddS.TDt[0])*ddN.T);
+    memset((void*)ddS.Tlife, 0, sizeof(ddS.Tlife[0])*ddN.T);
+    for (i=0; i<ddN.D; i++)
+      /*   ddS.Tdt not allocated monolithically  */
+      memset((void*)ddS.Tdt[i], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
+  }
+  ddS.TWT = 0;
+  ddS.TWTnz = 0;
+  ddS.TDT = 0;
+  ddS.TDTnz = 0;
+}
+
+static void hca_init_N(int firstdoc, int lastdoc) { 
+  int i;
+  for (i=firstdoc; i<lastdoc; i++) {
+    int t, l;
+    int usei = (i+ddN.DT) % ddN.DT;
+    for (l=ddD.NdTcum[usei]; l<ddD.NdTcum[usei+1]; l++) {
+      t = Z_t(ddS.z[l]);
+      if ( ( ddP.bdk==NULL ) || Z_issetr(ddS.z[l]) ) {
+	ddS.Nwt[ddD.w[l]][t]++;
+	ddS.NWt[t]++;
+      }
+      ddS.Ndt[usei][t]++;
+      ddS.NdT[usei]++;
+    }
+  }
+}
+
+static void hca_init_betaT(char *resstem, int restart) {
     int readOK = 0;
+    int i, t;
     if ( restart ) {
       char *fname = yap_makename(resstem,".twt");
       /*  check if file is readable */
@@ -637,11 +627,13 @@ void hca_reset_stats(char *resstem,
     for (t=0; t<ddN.T; t++) {
       ddS.TWT += ddS.TWt[t];
     }
-  }
-  if ( ddP.PYalpha  ) {
-    int readOK = 0;
-    if ( restart ) {
-      char *fname = yap_makename(resstem,".tdt");
+}
+
+static void hca_init_alphaT(char *resstem, int restart, int firstdoc, int lastdoc) {
+   int readOK = 0;
+   int i, t;
+   if ( restart ) {
+     char *fname = yap_makename(resstem,".tdt");
       /*  check if file is readable */
       if ( access(fname,R_OK)==0 ) {
 	read_u16sparse(ddN.DT,ddN.T,ddS.Tdt,fname);
@@ -686,151 +678,43 @@ void hca_reset_stats(char *resstem,
       if ( ddS.TDt[t]>0 )
         ddS.TDTnz++;
     }
-  }
 }
 
 /*
- *  ensure Twt satisfies constraints
+ *    zero everything and rebuild entirely from z[] (both t and r)
+ *    but only for training docs
  */
-void hca_correct_twt()  {
-  int w, t;
-  
-  if ( ddP.PYbeta==0 )
-    return;
-
-  ddS.TWT = ddS.TWTnz = 0;
-  memset((void*)ddS.TwT, 0, sizeof(ddS.TwT[0])*ddN.W);
-  memset((void*)ddS.TWt, 0, sizeof(ddS.TWt[0])*ddN.T);
-  for(t = 0; t < ddN.T; t++) {
-    for(w = 0; w < ddN.W; w++) {
-      if ( ddS.Twt[w][t]>ddS.Nwt[w][t] )
-	ddS.Twt[w][t] = ddS.Nwt[w][t];
-      if ( ddS.Twt[w][t]==0 && ddS.Nwt[w][t]>0 )
-	ddS.Twt[w][t] = 1;
-      ddS.TWt[t] += ddS.Twt[w][t];
-      ddS.TwT[w] += ddS.Twt[w][t];
-    }
-    ddS.TWT += ddS.TWt[t];
-  }
-  for(w = 0; w < ddN.W; w++) {
-    if ( ddS.TwT[w]>0 )
-      ddS.TWTnz ++;
-  }
-}
-
-void hca_correct_tdt(int reset)  {
-  int d, t;
-  
-  if ( ddP.PYalpha==0 )
-    return;
-
-#ifdef DEBUGTEST
-  if ( reset==0 ) {
-    uint16_t **Tdt = u16mat(ddN.D,ddN.T);
-    int i;
-    for (d = 0; d < ddN.DT; d++) {
-      for (i=ddD.NdTcum[d]; i<ddD.NdTcum[d+1]; i++) 
-	Tdt[d][Z_t(ddS.z[i])]++;
-      for (t = 0; t < ddN.T; t++) {
-	if ( ddS.Tdt[d][t]!=Tdt[d][t] )
-	  yap_message("Unequal Tdt totals for doc %d\n", d);
-      }
-    }
-    free(Tdt[0]); free(Tdt);
-  }
-#endif
-
-  /*
-   *  reset Tdt
-   */
-  if ( reset ) {
-    for (d=0; d<ddN.D; d++) {
-      int i;
-      /*   ddS.Tdt not allocated monolithically  */
-      memset((void*)ddS.Tdt[d], 0, sizeof(ddS.Tdt[0][0])*ddN.T);
-      for (i=ddD.NdTcum[d]; i<ddD.NdTcum[d+1]; i++) 
-	ddS.Tdt[d][Z_t(ddS.z[i])]++;
-    }
-  }
-  /*
-   *  correct derived stats
-   */
-  ddS.TDT = 0;
-  ddS.TDTnz = 0;
-  memset((void*)ddS.TDt, 0, sizeof(ddS.TDt[0])*ddN.T);
-  for (t = 0; t < ddN.T; t++) {
-    for (d = 0; d < ddN.D; d++) {
-      if ( reset==0 ) {
-	if ( ddS.Tdt[d][t]>ddS.Ndt[d][t] )
-	  ddS.Tdt[d][t] = ddS.Ndt[d][t];
-	if ( ddS.Tdt[d][t]==0 && ddS.Ndt[d][t]>0 )
-	  ddS.Tdt[d][t] = 1;
-      }
-      if ( d<ddN.DT ) 
-	ddS.TDt[t] += ddS.Tdt[d][t];
-    }
-    ddS.TDT += ddS.TDt[t];
-  }
-  for(t = 0; t < ddN.T; t++) {
-    if ( ddS.TDt[t]>0 )
-      ddS.TDTnz ++;
-  }
-}
-
+void hca_reset_stats(char *resstem, 
+		     int restart,  // restarting, read stats from file
+		     int zero,     // just zero and return
+		     int firstdoc, 
+		     int lastdoc  // may be greater the ddN.DT, 
+		                  // so mod before use
+		     ) {
+  if ( ddS.UN )
+    memset((void*)ddS.UN, 0, sizeof(ddS.UN[0])*ddN.D);
 #ifdef NG_SCALESTATS
-/*
- *   occasionally recompute them
- */
-void NGscalestats(int redo) {
-  if ( redo || ++ddS.NGscalestats_recomp>1000 ) {
-    int i, t;
-    for (t=0; t<ddN.T; t++) 
-      ddS.NGscalestats[t] = 0;
-    for (i=0; i<ddN.DT; i++) {
-      if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
-      for (t=0; t<ddN.T; t++) {
-#ifdef NG_SPARSE
-	if ( M_docsparse(i,t) )
+  if ( ddS.NGscalestats )
+    memset((void*)ddS.NGscalestats, 0, sizeof(ddS.NGscalestats[0])*ddN.T);
 #endif
-	  ddS.NGscalestats[t] += log(1.0+ddS.UN[i]/ddP.NGbeta[t]);
-      }
-    }
-    ddS.NGscalestats_recomp = 0;
-  }
-}
-#endif
+  hca_zero_N();
+  hca_zero_T();
 
-#ifdef NG_SPARSE
-void hca_repair_docsp() {
-  int i, t;
-  if ( ddS.sparse==NULL )
+  if ( zero )
     return;
-  /*
-   *  ensure non-zero topics are not sparse
-   */
-  for (i=0; i<ddN.D; i++) {
-    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 )
-      continue;
-    for (t=0; t<ddN.T; t++) 
-      if ( ddS.Ndt[i][t]>0 )
-	M_docsp_set(i,t);
+
+  hca_init_N(firstdoc, lastdoc);
+
+  if ( ddS.UN ) {
+    if ( ddS.sparse ) 
+      hca_reset_sparse(resstem, restart, firstdoc, lastdoc);
+    hca_reset_UN(resstem, restart, firstdoc, lastdoc);
   }
-  /*
-   *  fix up total vectors
-   */
-  for (t=0; t<ddN.T; t++) {
-    ddS.sparseD[t] = 0;
-  }
-  for (i=0; i<ddN.DT; i++) {
-    if ( ddS.NdT[i]==0 || ddS.UN[i]==0 )
-      continue;
-    for (t=0; t<ddN.T; t++) {
-      if ( M_docsparse(i,t) )
-	ddS.sparseD[t]++;
-    }
-  }
-#ifdef NG_SCALESTATS
-  NGscalestats(1);
-#endif
+
+  if ( ddP.PYbeta && ddP.phi==NULL ) 
+    hca_init_betaT(resstem, restart);
+
+  if ( ddP.PYalpha  ) 
+    hca_init_alphaT(resstem, restart, firstdoc, lastdoc);
 }
-#endif
+

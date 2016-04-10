@@ -142,8 +142,8 @@ void pctl_init() {
   ddP.empirical = 0;
   ddP.alphatot = 0;
   ddP.alphac = 0;
-  ddP.ngs0 = NGS0;
-  ddP.ngs1 = NGS1;
+  ddP.ngs0 = 0;
+  ddP.ngs1 = 0;
   ddP.ngash = NGASH;
   ddP.ngasc = NGASC;
   ddP.NGbeta = NULL;
@@ -369,10 +369,8 @@ void pctl_read(char *resstem) {
      */
     //  WRAY  still have to read alpha ???
     ddP.apar = 0;
-#ifdef NG_SPARSE
     ddP.ngs0 = readf("ngs0");
     ddP.ngs1 = readf("ngs1");
-#endif
     ddP.ngash = readf("ngash");
     ddP.ngasc = readf("ngasc");
     ddP.NGbeta = readfv("NGbeta", ddN.T);
@@ -688,6 +686,10 @@ void pctl_fix(int ITER, int loadphi) {
     ddT[ParNGAlpha].fix = 1;
 #endif
     ddT[ParAlpha].fix = 1;
+    if ( ddP.ngs0==0 && ddP.ngs1>0 )
+	ddP.ngs0 = NGS0;
+    if ( ddP.ngs1==0 && ddP.ngs0>0 )
+	ddP.ngs1 = NGS1;
   }
   if ( ddP.PYalpha==H_None || ddP.PYalpha==H_NG ) {
     ddT[ParA].fix = 1;
@@ -898,10 +900,10 @@ void pctl_report() {
     yap_message("# alpha proportions read from file\n");
   if ( ddP.PYalpha ) {
     if ( ddP.PYalpha==H_NG ) {
-#ifdef NG_SPARSE
-      yap_message("ngs0  = %lf\n", ddP.ngs0);
-      yap_message("ngs1  = %lf\n", ddP.ngs1);
-#endif
+      if ( ddP.ngs0 ) {
+          yap_message("ngs0  = %lf\n", ddP.ngs0);
+          yap_message("ngs1  = %lf\n", ddP.ngs1);
+      }
       yap_message("ngash = %lf\n", ddP.ngash);
       yap_message("ngasc = %lf\n", ddP.ngasc);
     } else {
@@ -1150,9 +1152,9 @@ void pctl_print(FILE *fp) {
   fprintf(fp, "PYalpha  = %d\n", (int)ddP.PYalpha);
   if ( ddP.PYalpha==H_NG ) {
     int t;
-#ifdef NG_SPARSE
-    printpar(fp,ParNGS0); printpar(fp,ParNGS1);
-#endif
+    if ( ddP.ngs0 ) {
+        printpar(fp,ParNGS0); printpar(fp,ParNGS1);
+    }
     printpar(fp,ParNGASH); printpar(fp,ParNGASC);
     if ( !ddT[ParNGBeta].fix ) {
       if ( ddT[ParNGBeta].samplerk ) {

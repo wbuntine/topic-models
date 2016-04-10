@@ -170,11 +170,9 @@ int add_doc(int d, enum GibbsType fix) {
        *   these words are for training
        */
       ddS.Ndt[d][t]++;
-#ifdef NG_SPARSE
-      if ( ddP.PYalpha==H_NG && ddS.Ndt[d][t]==1 && M_docsparse(d,t)==0 ) {
+      if ( ddS.sparse && ddS.Ndt[d][t]==1 && M_docsparse(d,t)==0 ) {
 	M_docsp_set(d,t);
       }
-#endif
       ddS.NdT[d]++;	
       if ( (ddP.bdk==NULL) || Z_issetr(ddS.z[i]) ) {
 	if ( ddP.phi==NULL ) {
@@ -247,7 +245,6 @@ uint16_t comp_Td(int did) {
   return Td_;
 }
 
-#ifdef NG_SPARSE
 /*
  *   set this to make a topic always have zero prob. if
  *   it can
@@ -263,18 +260,17 @@ void hca_rand_sparse(int did, int k) {
   /*  unset sparsity for topic */
   if ( M_docsparse(did,k) ) {
     M_docsp_xor(did,k);
-    atomic_decr(ddS.sparseD[k]);
+    if ( did<ddN.DT ) atomic_decr(ddS.sparseD[k]);
   }
 #else
   if ( (ddN.DTused+ddP.ngs0+ddP.ngs1) * rng_unit(rngp) < (ddS.sparseD[k]+ddP.ngs1) ) {
     if ( !M_docsparse(did,k) ) {
       M_docsp_set(did,k);
-      atomic_incr(ddS.sparseD[k]);
+      if ( did<ddN.DT ) atomic_incr(ddS.sparseD[k]);
     }
   } else if ( M_docsparse(did,k) ) {
     M_docsp_xor(did,k);
-    atomic_decr(ddS.sparseD[k]);
+    if ( did<ddN.DT ) atomic_decr(ddS.sparseD[k]);
   }
 #endif
 }
-#endif

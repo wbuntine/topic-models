@@ -96,11 +96,9 @@ int remove_topic(int i, int did, int wid, int t, int mi, int *Td_,
   ddS.NdT[did]--;
   assert(ddS.Ndt[did][t]>0);
   ddS.Ndt[did][t]--;
-#ifdef NG_SPARSE
-  if ( ddP.PYalpha==H_NG && ddS.Ndt[did][t]==0 ) {
+  if ( ddS.sparse && ddS.Ndt[did][t]==0 ) {
     hca_rand_sparse(did, t);
   }
-#endif
   if ( ud ) {
     /*
      *    subtract affect of table indicator for topic PYP
@@ -144,13 +142,11 @@ void update_topic(int i, int did, int wid, int t, int mi, int *Td_,
   /*
    *   dealing with H_NG and sparsity
    */
-#ifdef NG_SPARSE
-  if ( ddP.PYalpha==H_NG && M_docsparse(did,t)==0 ) {
+  if ( ddS.sparse && M_docsparse(did,t)==0 ) {
     assert(ddS.Ndt[did][t]==1);
-    M_docsp_set(did,t);
-    atomic_incr(ddS.sparseD[t]);
+    M_docsp_set(did,t); 
+    if ( did<ddN.DT) atomic_incr(ddS.sparseD[t]);
   }
-#endif
   /*
    *   figure out reassigning table id
    */
@@ -242,11 +238,9 @@ double gibbs_lda(/*
      */
     NGscalestats(0);
     for (t=0; t<ddN.T; t++) {
-#ifdef NG_SPARSE
-      if (  M_docsparse(did,t)==0 ) 
+      if ( ddS.sparse && M_docsparse(did,t)==0 ) 
 	NGscalestats_diff[t] = ddS.NGscalestats[t];
       else
-#endif
       /*  WARNING:  this operation means cannot work with multicore */
       NGscalestats_diff[t] = 
 	ddS.NGscalestats[t] - log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
@@ -414,11 +408,9 @@ double gibbs_lda(/*
 	 */
 	if ( did<ddN.DT ) {
 	  for (t=0; t<ddN.T; t++) {
-#ifdef NG_SPARSE
-	    if ( M_docsparse(did,t)==0 ) 
+	    if ( ddS.sparse && M_docsparse(did,t)==0 ) 
 	      ddS.NGscalestats[t] = NGscalestats_diff[t];
 	    else
-#endif
 	      ddS.NGscalestats[t] =
 		NGscalestats_diff[t] + log(1.0+ddS.UN[did]/ddP.NGbeta[t]);
 	  }

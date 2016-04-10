@@ -75,9 +75,8 @@ int get_probs(double *vp) {
 #else
       vp[t] = ddP.NGalpha[t]/ddP.NGbeta[t];
 #endif
-#ifdef NG_SPARSE
-      vp[t] *= (ddP.ngs1+ddS.sparseD[t])/(ddP.ngs0+ddP.ngs1+ddN.DTused);
-#endif
+      if ( ddS.sparse )
+          vp[t] *= (ddP.ngs1+ddS.sparseD[t])/(ddP.ngs0+ddP.ngs1+ddN.DTused);
       tot += vp[t];
     }
     for (t=0; t<ddN.T; t++) 

@@ -16,11 +16,6 @@
 #define __HCA_H
 
 /*
- *  testing IBP with H_NG
- */
-#define NG_SPARSE
-
-/*
  *  this is defined in "stats.h"
  *  #define NG_SCALESTATS 
  */
@@ -33,7 +28,7 @@
 #include "stats.h"
 #include "srng.h"
 
-#define HCA_VERSION "0.62"
+#define HCA_VERSION "0.63"
 
 /*
  *   Switch on to allow threading

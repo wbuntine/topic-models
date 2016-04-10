@@ -435,9 +435,7 @@ static double UNterms(double myUN, void *mydata) {
   double like = 0;
   like = (ddS.NdT[d]-1) * log(myUN);
   for (k=0; k<ddN.T; k++)
-#ifdef NG_SPARSE
-    if (  M_docsparse(d,k) )
-#endif
+    if (  !ddS.sparse || M_docsparse(d,k) )
       like -= (ddP.NGalpha[k]+ddS.Ndt[d][k])*log(ddS.UN[d]+ddP.NGbeta[k]);
   return like;
 }
@@ -467,9 +465,7 @@ void opt_UN(int did) {
 #ifdef NG_SCALESTATS
       ddP.NGalpha[t] = (ddP.ngash+ddS.TDt[t])/(1/ddP.ngasc+ddS.NGscalestats[t]);
 #endif
-#ifdef NG_SPARSE
-      if (  M_docsparse(did,t) ) 
-#endif
+      if (  !ddS.sparse || M_docsparse(did,t) ) 
 	val += ((double)ddS.Ndt[did][t]+ddP.NGalpha[t])
 	  / (ddS.UN[did]+ddP.NGbeta[t]);
     }
@@ -493,9 +489,7 @@ void sample_NGalpha(double *mynga) {
   for (i=0; i<ddN.DT; i++) {
     if ( ddS.NdT[i]==0 || ddS.UN[i]==0 ) continue;
     for (k=0; k<ddN.T; k++)
-#ifdef NG_SPARSE
-      if ( M_docsparse(i,k) )
-#endif
+      if ( !ddS.sparse || M_docsparse(i,k) )
 	scalestats[k] += log(1.0+ddS.UN[i]/ddP.NGbeta[k]);
   }
   for (k=0; k<ddN.T; k++)
