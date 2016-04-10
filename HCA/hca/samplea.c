@@ -410,7 +410,7 @@ void sample_ngash(double *myng) {
   last_val = 0;
   last_like = 0;
 #endif
-  NGscalestats(1);
+  correct_NGscalestats(1);
   myarms(PYP_CONC_MIN, PYP_CONC_MAX, &ngashterms, NULL, myng, "ngash");
   ddP.ngash = *myng;
   cache_update("ngash");
@@ -420,7 +420,7 @@ void sample_ngasc(double *myng) {
   last_val = 0;
   last_like = 0;
 #endif
-  NGscalestats(1);
+  correct_NGscalestats(1);
   myarmsMH(0.01, 100, &ngascterms, NULL, myng, "ngasc", 1);
   ddP.ngasc = *myng;
   cache_update("ngasc");

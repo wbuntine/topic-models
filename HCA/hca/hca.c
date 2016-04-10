@@ -733,7 +733,7 @@ int main(int argc, char* argv[])
 	par = findpar(var);
 	if ( par==ParBDK ) {
 	  BDKval = vin;
-	} else if ( par==ParNone || ddT[par].samplerk )
+	} else if ( par==ParNone || ddT[par].samplerk ) {
 	  yap_quit("Illegal var for -S\n");
 	} else if ( par==ParAlpha ) {
 	   ddP.PYalpha = H_None;
@@ -1081,7 +1081,7 @@ int main(int argc, char* argv[])
    
    if ( score==ST_phi && ddP.phi==NULL && ddS.phi==NULL ) 
      yap_quit("Option '-o phi' needs a loaded phi matrix\n");
-   if ( score==ST_phirat && ddP.phi==NULL && (ddP.PYbeta==H_None) ) 
+   if ( score==ST_phirat && (ddP.PYbeta==H_None) ) 
      yap_quit("Option '-o rat' needs a PYP for beta or a loaded phi matrix\n");
 
    /*
@@ -1229,7 +1229,7 @@ int main(int argc, char* argv[])
     }
 #if defined(H_THREADS)
     if ( procs>1 )
-      hca_correct_twt();
+      correct_twt();
 #endif
 
     if ( ddG.docode ) {
@@ -1321,7 +1321,7 @@ int main(int argc, char* argv[])
 	opt_UN(ii);
       }
 #ifdef NG_SCALESTATS
-      NGscalestats(1);
+      correct_NGscalestats(1);
 #endif
     }
 #ifdef EXPERIMENTAL2

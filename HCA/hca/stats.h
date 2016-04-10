@@ -120,9 +120,6 @@ void hca_merge_stats(int k1, int k2,  uint16_t *Tdt,  uint16_t *Twt);
 void hca_write_z(char *resstem);
 void hca_report(char *resstem, char *stem, int ITER, int procs,
 		enum GibbsType fix, int showlike, int nopar);
-void hca_correct_twt();
-void hca_correct_tdt(int reset);
-void hca_repair_docsp();
 
 uint32_t **hca_dfmtx(uint32_t *words, int n_words, int topic);
 
@@ -149,7 +146,14 @@ double topicprob(int d, int t, int Ttot);
 double topicnorm(int d);
 double docfact(D_MiSi_t *dD, int t, int i, int mi, double pK, float *dip);
 double docprob(D_MiSi_t *dD, int t, int i, int mi, double pw);
-void NGscalestats(int redo);
+
+/*
+ *  in correct.c 
+*/
+void correct_twt();
+void correct_tdt(int reset);
+void correct_docsp();
+void correct_NGscalestats(int redo);
 
 #include "change.h"
 

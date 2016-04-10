@@ -651,7 +651,7 @@ void like_merge(float minprop, double scale, int best) {
       merge_init_Twt(k1, k2, &Mb);	       
     //  WRAY:  need to checkk what this does, it it why change?
     hca_merge_stats(k1, k2, Ma.Tdt, Mb.Twt);
-    // hca_correct_tdt(0);
+    // correct_tdt(0);
     if ( ddP.PYalpha ) 
       merge_free_Tdt(&Ma);
     if ( ddP.PYbeta ) 

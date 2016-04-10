@@ -1001,7 +1001,7 @@ void hca_displaytopics(char *stem, char *resstem, int topword,
 	      100.0*underused/(double)ddN.T);
   if ( ddS.sparse && ddP.PYalpha==H_NG ) {
     double avesp = 0;
-    // hca_repair_docsp();
+    // correct_docsp();
     for (k=0; k<ddN.T; k++) {
       avesp += gtvec[k];
     }

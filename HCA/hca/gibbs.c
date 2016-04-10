@@ -236,7 +236,7 @@ double gibbs_lda(/*
      *   we save the NGscalestats[] minus the current
      *   entry to prevent round-off error propagating
      */
-    NGscalestats(0);
+    correct_NGscalestats(0);
     for (t=0; t<ddN.T; t++) {
       if ( ddS.sparse && M_docsparse(did,t)==0 ) 
 	NGscalestats_diff[t] = ddS.NGscalestats[t];
