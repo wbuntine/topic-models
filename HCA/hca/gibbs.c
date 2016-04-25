@@ -400,6 +400,10 @@ double gibbs_lda(/*
        *  if every time, then we should keep incremental stats!
        */
       if ( ddS.UN ) {
+#if 0
+	//  handy to test if frequent updates of U really help!
+        if ( i%32==0 || i==EndWord-1 )
+#endif
 	opt_UN(did);
 #ifdef NG_SCALESTATS
 	/*

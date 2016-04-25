@@ -281,7 +281,7 @@ double likelihood_PYbeta() {
       if ( nn>0 ) {
         Tw_ += tt;
 	likelihood += S_S(ddC.SY,nn,tt);
-#if 1
+#ifndef NDEBUG
 	if ( !finite(likelihood) || isinf(likelihood) || isnan(likelihood)  ) 
 	  yap_quit("Like=%lf:  Nwt[%d][%d]=%d  Twt[i][t]=%d S.M=%d S.N=%d\n",
 		   likelihood,

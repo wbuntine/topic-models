@@ -73,7 +73,7 @@ void cache_init(int maxM, int maxW) {
 #ifdef H_THREADS
                       S_THREADS|
 #endif
-                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+                      S_ASYMPT | S_STABLE|S_UVTABLE|S_FLOAT);
       if ( ddP.apar==0 ) 
         ddC.SX = ddC.S0;
       if ( ddP.awpar==0 )
@@ -96,7 +96,7 @@ void cache_init(int maxM, int maxW) {
 #ifdef H_THREADS
  		    S_THREADS|
 #endif
-		    S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+		    S_STABLE|S_UVTABLE|S_FLOAT| S_ASYMPT);
     S_tag(ddC.SD,"SD, doc PYP");
     if ( verbose ) S_report(ddC.SX,NULL);
   }
@@ -111,7 +111,7 @@ void cache_init(int maxM, int maxW) {
 #ifdef H_THREADS
                       S_THREADS|
 #endif
-                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+                      S_STABLE|S_UVTABLE|S_FLOAT| S_ASYMPT);
       S_tag(ddC.SX,"SA, docXtopic PYP");
       if ( verbose ) S_report(ddC.SX,NULL);
     }
@@ -131,7 +131,7 @@ void cache_init(int maxM, int maxW) {
 #ifdef H_THREADS
                       S_THREADS|
 #endif
-                      S_STABLE|S_UVTABLE|S_FLOAT| S_QUITONBOUND);
+                      S_STABLE|S_UVTABLE|S_FLOAT| S_ASYMPT);
       S_tag(ddC.SY,"SB, topicXword PYP");
       if ( verbose ) S_report(ddC.SY,NULL);
     }
