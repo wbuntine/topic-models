@@ -354,8 +354,8 @@ int main(int argc, char* argv[])
   int checkpoint = 0;
   int restart_offset=0;
   int restart = 0;
-  int maxNwt = 10000;
-  int maxT = 1000;
+  int maxNwt = 30000;
+  int maxT = 5000;
   double BDKval = 0;
   enum ScoreType score=ST_idf;
   
