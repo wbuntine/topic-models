@@ -26,4 +26,6 @@ Improved -Ang using the non table-indicator version.
 Corrected and installed IBP with -Ang with standard install.
 Added some man entries for this.
 Cleaned up hca_reset_stats() and placed data correcting
-code into correct.c.
+   code into correct.c
+Added an asymptotic approximation to S tables that automatically
+   kicks in once the tables are overran.

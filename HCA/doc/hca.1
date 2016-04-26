@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Sun Apr 10 16:56:38 AEST 2016
+.\" Manual page created with latex2man on Monday 25 April  21:18:24 AEST 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -259,8 +259,16 @@ during standard hyper\-parameter sampling.
 Do not use with burstiness as this has not been evaluated. 
 Also, introduce Indian Buffet Process (IBP) priors on the topics 
 by setting the ngs0
+parameter or the 
+ngs1
 parameter, 
-for instance, \fB\-S\fP\fIngs0=100\fP\&.
+for instance, ``\fB\-S\fP\fIngs0=1000\fP
+\fB\-S\fP\fIngs0=10\fP\&''
+means a Beta(ngs0,ngs1)
+prior is used for the probability 
+of a topic not being sparse. 
+That is, a higher ngs0
+increases sparsity. 
 By default the IBP priors are inactive. 
 .TP
 {\-B}{value[,file 
@@ -408,6 +416,10 @@ switch on IBP setting of topics in documents,
 and set the Beta prior to be Beta(ngs0,1).
 Only works when \fB\-A\fP\fIng\fP
 is in use. 
+.TP
+ngs1 
+modify the second argument of the 
+Beta prior to get Beta(ngs0,ngs1).
 .RE
 .RS
 .PP
@@ -1857,6 +1869,30 @@ hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T \-Sbdk=100 $DATA $STEM/n
 hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T \-Sbdk=100 \-Sad=0.5 \-Fad $DATA $STEM/npba
 hca \-N60000,3000 \-K$K \-C2000 \-q4 \-v \-hdoc,4 \-T$T $DATA $STEM/np 
 .Ve
+.PP
+The third example uses the normalised gamma model for topics along with 
+sparsity using a Beta(1000,20)
+prior. 
+The second command prints a report. 
+.Vb
+hca \-K$K \-C500 \-q4 \-v \-Ang \-Sngs0=1000 \-Sngs1=20 $DATA $STEM/nng
+hca \-r0 \-C0 \-v \-v \-V \-e $DATA $STEM/nng
+.Ve
+The report will give topic details, which includes the usual stats line 
+per topic, 
+which towards the end has an entry like 
+``ng=0.0754,1.7225,0.4785.\&'' 
+This says the mean probability for this topic is 
+0.0755, the variance multiplier (increase over a standard 
+Dirichlet\&'s variance) is 1.72, 
+and topics are sparse in documents with probability 0.4785. 
+The higher the variance multiplier, the more specialised 
+the topic is (i.e., it tends to be higher sometimes and other 
+times lower than average). 
+The actual alpha
+and beta
+vectors for the Gamma distributions 
+are printed in the file RepStem.par\&.
 .PP
 .SH ERRORS
 

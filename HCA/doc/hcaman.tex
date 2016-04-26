@@ -187,8 +187,12 @@ By default these are sampled in batches
 during standard hyper-parameter sampling.
 Do not use with burstiness as this has not been evaluated.
 Also, introduce Indian Buffet Process (IBP) priors on the topics
-by setting the \texttt{ngs0} parameter,
-for instance, \OptArg{-S}{ngs0=100}.
+by setting the \texttt{ngs0} parameter or the
+\texttt{ngs1} parameter,
+for instance, ``\OptArg{-S}{ngs0=1000} \OptArg{-S}{ngs0=10}''
+means a Beta(\texttt{ngs0,ngs1}) prior is used for the probability
+of a topic not being sparse.
+That is, a higher \texttt{ngs0} increases sparsity.
 By default the IBP priors are inactive.
 \item[{-B}{value[,file]}]  Use a symmetric Dirichlet prior with
 this \texttt{value} for each dimension.
@@ -265,6 +269,8 @@ where \texttt{var} can be one of:
 \item[ngs0] switch on IBP setting of topics in documents,
   and set the Beta prior to be Beta(\texttt{ngs0},1).
 Only works when \OptArg{-A}{ng} is in use.
+\item[ngs1] modify the second argument of the
+     Beta prior to get Beta(\texttt{ngs0},\texttt{ngs1}).
 \end{Description}
 \end{Description}
 
@@ -926,6 +932,9 @@ normalised over topics; renormalise by documents for a given topic);
 \item[ng:] with the \OptArg{A}{ng} option, gives the expected topic probability computed by normalising the means of the topic gammas,
 and a measure of overdispersion given by
 the standard-deviation divided by the mean.
+If IBP sparsity modelling is instigated with \OptArg{S}{ngs0},
+then a third probability gives the
+proportion of this topic that is sparse.
 \item[p:] proportion of tokens tagged with this topic;
 \item[pd:] Hellinger distance to the (training) population word distribution;
 \item[t1:] documents with this topic as most common.
@@ -1286,6 +1295,28 @@ hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T -Sbdk=100 $DATA $STEM/npb
 hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T -Sbdk=100 -Sad=0.5 -Fad $DATA $STEM/npba
 hca -N60000,3000 -K$K -C2000 -q4 -v -hdoc,4 -T$T $DATA $STEM/np 
 \end{verbatim}
+
+The third example uses the normalised gamma model for topics along with
+sparsity using a Beta(\texttt{1000},\texttt{20}) prior.
+The second command prints a report.
+\begin{verbatim}
+hca -K$K -C500 -q4 -v -Ang -Sngs0=1000 -Sngs1=20 $DATA $STEM/nng
+hca -r0 -C0 -v -v -V -e $DATA $STEM/nng
+\end{verbatim}
+The report will give topic details, which includes the usual diagnostics line
+per topic discussed in the Diagnostics Report section,
+which towards the end has an entry like
+``ng=0.0754,1.7225,0.4785.''
+This says the mean probability for this topic is
+0.0755, the variance multiplier (increase over a standard
+Dirichlet's variance) is 1.72,
+and topics are sparse in documents with probability 0.4785.
+The higher the variance multiplier, the more specialised
+the topic is (i.e., it tends to be higher sometimes and other
+times lower than average).
+The actual \texttt{alpha} and \texttt{beta}
+vectors for the Gamma distributions
+are printed in the file \File{RepStem.par}.
 
 \section{Errors}
 
