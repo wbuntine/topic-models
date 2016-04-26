@@ -1,5 +1,5 @@
 '\" t
-.\" Manual page created with latex2man on Monday 25 April  21:18:24 AEST 2016
+.\" Manual page created with latex2man on Tuesday 26 April  13:32:48 AEST 2016
 .\" NOTE: This file is generated, DO NOT EDIT.
 .de Vb
 .ft CW
@@ -1409,6 +1409,9 @@ with the \fBA\fP\fIng\fP
 option, gives the expected topic probability computed by normalising the means of the topic gammas, 
 and a measure of overdispersion given by 
 the standard\-deviation divided by the mean. 
+If IBP sparsity modelling is instigated with \fBS\fP\fIngs0\fP,
+then a third probability gives the 
+proportion of this topic that is sparse. 
 .TP
 p: 
 proportion of tokens tagged with this topic; 
@@ -1878,8 +1881,8 @@ The second command prints a report.
 hca \-K$K \-C500 \-q4 \-v \-Ang \-Sngs0=1000 \-Sngs1=20 $DATA $STEM/nng
 hca \-r0 \-C0 \-v \-v \-V \-e $DATA $STEM/nng
 .Ve
-The report will give topic details, which includes the usual stats line 
-per topic, 
+The report will give topic details, which includes the usual diagnostics line 
+per topic discussed in the Diagnostics Report section, 
 which towards the end has an entry like 
 ``ng=0.0754,1.7225,0.4785.\&'' 
 This says the mean probability for this topic is 
