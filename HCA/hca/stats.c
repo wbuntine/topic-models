@@ -68,11 +68,13 @@ void hca_report(char *resstem, char *stem, int ITER, int procs,
 #endif
       if ( ddP.mltiter>0 ) {
 	char *teststr = fix==GibbsHold?"Hold":"ML";
+        double perp;
 	logprob = lp_test_ML(procs, fix);
-	yap_message("log_2(test perp%s) = %lf\n", teststr, -M_LOG2E * logprob);
+	perp = exp(-logprob);
+	yap_message("log_2(test perp%s) = %lf (%lf)\n", teststr, -M_LOG2E * logprob, perp);
 	if ( fp )
-          fprintf(fp, "logperp%stest_%d = %lf\n", 
-                  teststr, ITER, -M_LOG2E * logprob);
+          fprintf(fp, "logperp%stest_%d = %lf (%lf)\n", 
+                  teststr, ITER, -M_LOG2E * logprob, perp);
       }
       if ( ddD.c && ddP.prditer>0 ) {
 	logprob = lp_test_Pred(resstem);

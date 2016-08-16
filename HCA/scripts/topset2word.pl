@@ -7,6 +7,7 @@
 use Getopt::Long;
 use Pod::Usage;
 use POSIX;
+use Number::FormatEng qw(:all);
 
 $TOPICS = 0;
 
@@ -17,8 +18,8 @@ $BGHUE = 200;
 #  max. hue for other topics (0,...,MAX)
 $MAXHUE = 45;
 #  image dims
-$IMAGEWIDTH = 400;
-$IMAGEHEIGHT = 200;
+$IMAGEWIDTH = 800;
+$IMAGEHEIGHT = 400;
 #  only record topcor values over this
 $CCMIN = 0.04;
 #  allow ($CCFACT * #topics) arcs 
@@ -33,6 +34,8 @@ $MAXWIDTH = 12;
 $EDGEWEIGHT = 1;
 $DOT = "";
 $LANG = "svg";
+$BGCOLOR="white";
+$ECOLOR="black";
 
 $COMMAND = join(" ",@ARGV);
 GetOptions(
@@ -43,6 +46,7 @@ GetOptions(
     'noimages!' => \$noimages,
     'lang=s' => \$LANG,
     'dot=s' => \$DOT,
+    'bgcolor=s' => \$BGCOLOR,
     'maxwords=i' => \$MAXWORDS,
     'sizefact=i' => \$SIZEFACT,
     'propfact=s' => \$PROPFACT,
@@ -171,9 +175,7 @@ if ( ! $noimages ) {
 	    my ($cnt,$df,$rank) = split(/,/, $data[$t]{$k});
 	    $rank = $rank / ($maxrank[$t] + 0.0001);
 	    $cnt = $cnt / ($maxcnt[$t] + 0.0001);
-	    #  message to wordcloud.py
-	    #     word,text-size-factor,text-whiteness-factor
-	    print F " $k,$rank,$cnt";
+	    print F " $k,$cnt,$rank";
 	}
 	print F "\n";
 	close(F);
@@ -202,9 +204,7 @@ if ( ! $noimages ) {
 		$cnt = $cnt / ($maxbgcnt + 0.0001);
 	    }
 	    $rank = ($rank - $minbgprop) / $maxbgprop;
-	    #  message to wordcloud.py
-	    #     word,text-size-factor,text-whiteness-factor
-	    print F " $k,$cnt,0";
+	    print F " $k,$cnt,$rank";
 	}
 	print F "\n";
 	close(F);
@@ -224,7 +224,7 @@ my $label = $STEM;
 #  remove dubious parts of label
 $label =~ s/[-\/\#\.]//g;
 print D "// Graph generated using \"$COMMAND\"\n";
-print D "digraph $label {\nbgcolor=black\nrankdir=LR\nedge [dir=none]\n" .
+print D "digraph $label {\nbgcolor=$BGCOLOR\nrankdir=LR\nedge [dir=none]\n" .
     "splines=true\n";
 for (my $t=0; $t<$TOPICS; $t++) {
     if ( $prop[$t]<$maxprop*$PROPFACT ) {
@@ -240,25 +240,39 @@ if ( %databg ) {
 
 #read topic correlations
 my @topcor;
-my @cor = ();
 my $cors = 0;
 my $maxcor = 0;
 open(C,"<$STEM.topcor") or die "no $STEM.topcor";
 while ( ($_=<C>) ) {
-    if ( /^([0-9]+) ([0-9]+) ([0-9\.]+)/ ) {
-	if ( $intop[$1] && $intop[$2] && $3>$CCMIN ) {
+    if ( /^([0-9]+) ([0-9]+) ([0-9\.\-e]+)/ ) {
+	if ( $intop[$1] && $intop[$2] ) {
+	    my $mf = &unformat_pref($3);
 	    $cors++;
-	    $topcor[$1][$2] = $topcor[$2][$1] = $3;
-	    push(@cor,$3);
+	    $topcor[$1][$2] += $mf;
+	    $topcor[$2][$1] += $mf;
+	    if ( $topcor[$2][$1]>$maxcor ) {
+		$maxcor = $topcor[$2][$1];
+	    }
 	}
     }
 }
 close(C);
+print STDERR "Read $cors entries from $STEM.topcor, max=$maxcor\n";
+$cors = 0;
+for (my $t=0; $t<$TOPICS; $t++) {
+    for (my $s=0; $s<$t; $s++) {
+	if ( $topcor[$t][$s]<$CCMIN ) {
+		$topcor[$t][$s] = 0;
+	} else {
+		push(@cor,$topcor[$t][$s]);
+		$cors++;
+	}
+    }
+}
 @cor = sort { $b <=> $a } @cor;
 $maxcor = $cor[0];
-print STDERR "Read $cors entries from $STEM.topcor, max=$maxcor\n";
 
-if ( $CCFACT * $printtop >= $#cor ) {
+if ( $CCFACT * $printtop >= $cors ) {
     # use all correlations
 } else {
     $CCMIN = $cor[int($CCFACT * $printtop)];
@@ -277,7 +291,7 @@ for (my $t=0; $t<$TOPICS; $t++) {
 	    # print STDERR "$t -> $s $topcor[$t][$s] $maxcor $width\n";
 	    $printcor++;
 	    my $ew = $width*$EDGEWEIGHT;
-	    print D "n$t -> n$s [color=white,penwidth=$width,weight=$ew]\n";
+	    print D "n$t -> n$s [color=$ECOLOR,penwidth=$width,weight=$ew]\n";
 	}
     }
 }
@@ -302,6 +316,7 @@ topset2word.pl - Create graphic from hca STEM.topset/.topcor files
 topset2word.pl [options] STEM RES
 
   Options:
+   --bgcolor=s         background color
    --ccfact=f          stop adding smaller correlations once (f*#topics) got
    --ccmin=f           ignore correlations less than this
    --dot=s             pass on string to dot
